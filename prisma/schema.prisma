@@ -1,0 +1,138 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum ChangeSourceType {
+  BULK_UPLOAD
+  COMMUNITY_SUBMISSION
+  MANUAL_EDIT
+}
+
+enum ChangeType {
+  INSERT
+  UPDATE
+  DELETE
+}
+
+enum SubmissionType {
+  FLAG
+  EDIT
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUPERSEDED
+}
+
+enum DecisionAction {
+  UPDATE
+  DELETE
+}
+
+model Person {
+  id                String            @id @default(uuid())
+  externalId        String            @unique
+  name              String
+  gender            Gender
+  dateOfBirth       DateTime
+  dateOfDeath       DateTime?
+  locationOfDeath   String?
+  obituary          String?
+  isDeleted         Boolean           @default(false)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  versions          PersonVersion[]
+  submissions       CommunitySubmission[]
+}
+
+model PersonVersion {
+  id                String            @id @default(uuid())
+  personId          String
+  externalId        String
+  name              String
+  gender            Gender
+  dateOfBirth       DateTime
+  dateOfDeath       DateTime?
+  locationOfDeath   String?
+  obituary          String?
+  versionNumber     Int
+  sourceId          String
+  isDeleted         Boolean           @default(false)
+  createdAt         DateTime          @default(now())
+  
+  person            Person            @relation(fields: [personId], references: [id])
+  source            ChangeSource      @relation(fields: [sourceId], references: [id])
+  
+  baseVersionSubmissions    CommunitySubmission[] @relation("BaseVersion")
+  appliedVersionSubmissions CommunitySubmission[] @relation("AppliedVersion")
+  
+  @@index([personId])
+  @@index([sourceId])
+}
+
+model ChangeSource {
+  id                String              @id @default(uuid())
+  type              ChangeSourceType
+  changeType        ChangeType
+  description       String?
+  createdAt         DateTime            @default(now())
+  
+  versions          PersonVersion[]
+  bulkUpload        BulkUpload?
+  communitySubmission CommunitySubmission?
+}
+
+model BulkUpload {
+  id                String            @id @default(uuid())
+  changeSourceId    String            @unique
+  filename          String
+  rawFile           Bytes
+  uploadedAt        DateTime          @default(now())
+  
+  changeSource      ChangeSource      @relation(fields: [changeSourceId], references: [id])
+}
+
+model CommunitySubmission {
+  id                      String            @id @default(uuid())
+  type                    SubmissionType
+  baseVersionId           String
+  personId                String
+  proposedPayload         Json?
+  reason                  String?
+  submittedBy             String            // Clerk user ID
+  status                  SubmissionStatus  @default(PENDING)
+  createdAt               DateTime          @default(now())
+  
+  approvedBy              String?           // Clerk user ID
+  approvedAt              DateTime?
+  decisionAction          DecisionAction?
+  decisionNote            String?
+  approvedChangeSourceId  String?           @unique
+  appliedVersionId        String?
+  
+  baseVersion             PersonVersion     @relation("BaseVersion", fields: [baseVersionId], references: [id])
+  person                  Person            @relation(fields: [personId], references: [id])
+  approvedChangeSource    ChangeSource?     @relation(fields: [approvedChangeSourceId], references: [id])
+  appliedVersion          PersonVersion?    @relation("AppliedVersion", fields: [appliedVersionId], references: [id])
+  
+  @@index([personId])
+  @@index([baseVersionId])
+  @@index([status])
+}
