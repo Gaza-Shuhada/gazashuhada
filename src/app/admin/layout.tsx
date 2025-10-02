@@ -96,7 +96,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 </div>
-                <h1 className="text-xl font-semibold text-gray-900">Control Panel</h1>
+                <h1 className="text-xl font-semibold text-gray-900">Admin Tools</h1>
               </div>
             </div>
             <div className="flex items-center space-x-4">

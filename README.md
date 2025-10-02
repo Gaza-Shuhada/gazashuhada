@@ -1,8 +1,8 @@
-# Gaza Deaths Control Panel
+# Gaza Deaths Admin Tools
 
 **Staff-Only Internal Administration Tool** for managing versioned person records with comprehensive audit trails.
 
-> ⚠️ **IMPORTANT**: This is the **control panel only**. A separate public-facing web application will be built for end-users, which will provide advanced search, filtering, sorting, analytics, and public data consumption features. This control panel is focused exclusively on data management, moderation, and internal operations.
+> ⚠️ **IMPORTANT**: This is the **admin tools only**. A separate public-facing web application will be built for end-users, which will provide advanced search, filtering, sorting, analytics, and public data consumption features. These admin tools are focused exclusively on data management, moderation, and internal operations.
 
 ## 🚀 Features
 

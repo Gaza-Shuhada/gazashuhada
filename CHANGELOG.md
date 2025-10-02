@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-> ⚠️ **PROJECT SCOPE**: This is the **control panel only**. A separate public-facing web application will provide end-user features (search, filtering, analytics, data visualization, etc.). This control panel focuses on data management, moderation, and internal operations.
+> ⚠️ **PROJECT SCOPE**: This is the **admin tools only**. A separate public-facing web application will provide end-user features (search, filtering, analytics, data visualization, etc.). These admin tools focus on data management, moderation, and internal operations.
 
 ---
 
@@ -98,7 +98,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Now properly handles commas in names, quoted fields, and escaped quotes
   - More robust parsing for real-world data
 - **Sticky Navbar**: Navbar now remains visible at top when scrolling
-- **Consistent Terminology**: All references changed from "Admin Panel" to "Control Panel"
+- **Consistent Terminology**: All references changed from "Admin Panel" to "Admin Tools"
 - Unique constraint on `PersonVersion(personId, versionNumber)` to prevent race conditions
 - Performance indexes:
   - `PersonVersion(sourceId, changeType)` - for filtering changes by upload and operation type

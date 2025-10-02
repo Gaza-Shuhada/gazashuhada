@@ -1,9 +1,9 @@
-# Product Specification - Control Panel
+# Product Specification - Admin Tools
 
 ## Overview
 **Staff-Only Internal Administration Tool** for managing versioned records of people. 
 
-> ⚠️ **CRITICAL DISTINCTION**: This is the **control panel only**. A separate public-facing web application will be built for end-users to consume the data with advanced search, filtering, sorting, analytics, and visualization features. This control panel is focused exclusively on:
+> ⚠️ **CRITICAL DISTINCTION**: This is the **admin tools only**. A separate public-facing web application will be built for end-users to consume the data with advanced search, filtering, sorting, analytics, and visualization features. These admin tools are focused exclusively on:
 > - Data management (bulk uploads, versioning)
 > - Moderation (reviewing community submissions)
 > - Internal operations (audit logs, access control)

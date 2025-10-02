@@ -14,7 +14,7 @@ export function Navbar() {
           <div className="flex items-center space-x-8">
             {/* Logo/Home */}
             <Link href="/" className="flex items-center">
-              <span className="text-xl font-bold text-gray-900">Gaza Deaths Control Panel</span>
+              <span className="text-xl font-bold text-gray-900">Gaza Deaths Admin Tools</span>
             </Link>
 
             {/* Navigation Links */}

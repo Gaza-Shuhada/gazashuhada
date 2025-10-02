@@ -1,6 +1,6 @@
-# Engineering Specification - Control Panel
+# Engineering Specification - Admin Tools
 
-> ⚠️ **SYSTEM SCOPE**: This specification covers the **control panel only**. A separate public-facing web application will be built to provide end-user features (advanced search, filtering, sorting, analytics, data visualization, API access, etc.). This control panel handles:
+> ⚠️ **SYSTEM SCOPE**: This specification covers the **admin tools only**. A separate public-facing web application will be built to provide end-user features (advanced search, filtering, sorting, analytics, data visualization, API access, etc.). These admin tools handle:
 > - Bulk data uploads and versioning
 > - Staff moderation workflows
 > - Audit logging and access control
