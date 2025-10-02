@@ -15,6 +15,8 @@
 - date_of_death (date, nullable)
 - location_of_death (string, nullable)
 - obituary (text, nullable)
+- photo_url (string, nullable) ⭐ **Vercel Blob URL for photo (max 2048x2048px, auto-resized before upload)**
+- confirmed_by_moh (boolean, default false) ⭐ **true for bulk uploads, false for community submissions**
 - is_deleted (boolean, default false)
 - created_at, updated_at
 
@@ -25,6 +27,8 @@
 - date_of_death (date, nullable)
 - location_of_death (string, nullable)
 - obituary (text, nullable)
+- photo_url (string, nullable) ⭐ **Vercel Blob URL for photo (max 2048x2048px, auto-resized before upload)**
+- confirmed_by_moh (boolean, default false) ⭐ **true for bulk uploads, false for community submissions**
 - version_number (int)
 - source_id (FK -> change_source.id)
 - change_type (enum: INSERT, UPDATE, DELETE) ⭐ **Tracks operation type per version**
@@ -52,13 +56,14 @@
 
 ### community_submission
 - id (UUID, PK)
-- type (enum: FLAG, EDIT)
-- base_version_id (FK -> person_version.id, not null)
-- person_id (FK -> person.id, not null)
-- proposed_payload (JSONB, nullable)
-  - ⚠️ Allowed fields: `date_of_death`, `location_of_death`, `obituary` only
-- reason (text, nullable)
-- submitted_by (FK -> user.id)
+- type (enum: NEW_RECORD, EDIT) ⭐ **FLAG removed - simplified to two types**
+- base_version_id (FK -> person_version.id, nullable) ⭐ **NULL for NEW_RECORD submissions**
+- person_id (FK -> person.id, nullable) ⭐ **NULL for NEW_RECORD submissions**
+- proposed_payload (JSONB, not null)
+  - **For NEW_RECORD**: All required fields (external_id, name, gender, date_of_birth) + optional death fields + photo
+  - **For EDIT**: Only `date_of_death`, `location_of_death`, `obituary`, `photo_url` allowed
+- reason (text, nullable) - Optional explanation for the submission
+- submitted_by (string, Clerk user ID)
 - status (enum: PENDING, APPROVED, REJECTED, SUPERSEDED)
 - created_at
 
@@ -99,11 +104,14 @@
    - CSV must contain header row with only: `external_id`, `name`, `gender`, `date_of_birth`
    - Any extra columns (including death fields) → reject
 2. Compare by `external_id` (the unique identifier):
-   - **New `external_id`** (not in database) → INSERT
-   - **Existing `external_id`** with data differences → UPDATE  
+   - **New `external_id`** (not in database) → INSERT with `confirmed_by_moh=true`
+   - **Existing `external_id`** with data differences → UPDATE
+     - ⚠️ If record was community-submitted (`confirmed_by_moh=false`), this UPDATE will set `confirmed_by_moh=true`
    - **Missing `external_id`** (in DB but not in CSV) → DELETE (soft delete)
    
-   ⚠️ **Important**: A single bulk upload can perform all three operation types simultaneously. The CSV represents the complete current state.
+   ⚠️ **Important**: 
+   - A single bulk upload can perform all three operation types simultaneously. The CSV represents the complete current state.
+   - All bulk upload records are marked `confirmed_by_moh=true`
    
 3. **Simulation** shows:
    - ALL deletions (critical review before applying)
@@ -136,12 +144,33 @@
 - ✅ Must rollback Upload B first, then can rollback Upload A
 
 ### Community Submission
-- **FLAG** → mark record as problematic.
-- **EDIT** → propose changes, but only for death-related fields (`date_of_death`, `location_of_death`, `obituary`).
+
+#### NEW_RECORD Submission
+- Community members can propose entirely new records for people not in the database
+- Required fields: `external_id`, `name`, `gender`, `date_of_birth`
+- Optional fields: `date_of_death`, `location_of_death`, `obituary`, `photo_url` (Vercel Blob)
+- **Photo specifications**:
+  - Maximum size: 2048x2048 pixels
+  - Automatically resized down to 2048x2048 before uploading to Vercel Blob
+  - Maintains aspect ratio during resize
+  - Stored as optimized format (WebP recommended for compression)
+- New records marked `confirmed_by_moh=false`
+- If later included in bulk upload, record is updated with `confirmed_by_moh=true`
+- Moderator reviews and approves/rejects
+
+#### EDIT Submission
+- Propose changes to existing records
+- **Restricted fields**: Only `date_of_death`, `location_of_death`, `obituary`, `photo_url` can be edited
+- Cannot edit: `external_id`, `name`, `gender`, `date_of_birth` (these are immutable except via bulk upload)
+- **Photo uploads**: Same specifications as NEW_RECORD (max 2048x2048px, auto-resized)
+- References `base_version_id` and `person_id`
+- Moderator can approve, reject, or mark as superseded if base version is stale
+
+#### Moderation Workflow
 - Moderator decides:
-  - Approve → create `change_source`, new `person_version`, update snapshot.
-  - Reject → mark submission rejected.
-  - Supersede → mark if base version stale.
+  - **Approve** → create `change_source`, new `person_version`, update snapshot
+  - **Reject** → mark submission rejected with note
+  - **Supersede** → mark if base version stale (record has been updated since submission)
 
 ---
 

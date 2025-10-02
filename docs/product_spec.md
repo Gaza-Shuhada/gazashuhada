@@ -128,15 +128,28 @@ The admin system supports:
 ### 🚧 Planned Features
 
 8. **Moderation Queue (Moderator)** - PLANNED
-   - List all pending submissions
+   - List all pending submissions (NEW_RECORD and EDIT types)
    - Approve/reject with notes
    - Handle stale proposals (mark as superseded or approve anyway)
    - Apply approved changes into main system as new versions
-   - ⚠️ Community submissions can propose edits **only to `date_of_death`, `location_of_death`, `obituary`**
    - Automatically logged in audit system
+   - **NEW_RECORD submissions**: Community proposes entirely new person records
+     - Records start with `confirmed_by_moh=false`
+     - If later included in bulk upload, updated to `confirmed_by_moh=true`
+   - **EDIT submissions**: Community can propose edits to:
+     - `date_of_death`, `location_of_death`, `obituary`, `photo_url` only
+     - Cannot edit name, gender, or date of birth (immutable except via bulk upload)
 
 9. **Community Submissions** - PLANNED (Future Phase)
-   - FLAG problematic records
-   - EDIT death-related fields only
-   - Submission forms with field restrictions
+   - **NEW_RECORD**: Propose new person records not yet in database
+     - Required: external_id, name, gender, date_of_birth
+     - Optional: death details, photo upload (Vercel Blob)
+   - **EDIT**: Propose edits to death-related fields and photo only
+   - **Photo Upload Features**:
+     - Maximum resolution: 2048x2048 pixels
+     - Automatic client-side resize before upload
+     - Maintains aspect ratio
+     - Optimized format (WebP) for reduced storage costs
+     - Vercel Blob storage integration
+   - Submission forms with strict field restrictions
    - **Note**: Currently not implemented; application is staff-only

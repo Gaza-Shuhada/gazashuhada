@@ -18,40 +18,35 @@ export function Navbar() {
             </Link>
 
             {/* Navigation Links */}
-            {isSignedIn && (user?.publicMetadata?.role === 'admin' || user?.publicMetadata?.role === 'moderator') && (
+            {isSignedIn && (
               <div className="flex items-center space-x-6">
-                <Link
-                  href="/dashboard"
-                  className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Dashboard
-                </Link>
-
-                {/* Admin Links - Only show if user has admin role */}
-                {user?.publicMetadata?.role === 'admin' && (
-                  <Link
-                    href="/bulk-uploads"
-                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    Bulk Uploads
-                  </Link>
-                )}
-
-                {/* Moderator Links - Only show if user has moderator or admin role */}
-                {(user?.publicMetadata?.role === 'moderator' || user?.publicMetadata?.role === 'admin') && (
+                {/* Staff Links - admin and moderator */}
+                {(user?.publicMetadata?.role === 'admin' || user?.publicMetadata?.role === 'moderator') && (
                   <>
+                    <Link
+                      href="/dashboard"
+                      className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                    >
+                      Dashboard
+                    </Link>
+
+                    {/* Admin Links - Only show if user has admin role */}
+                    {user?.publicMetadata?.role === 'admin' && (
+                      <Link
+                        href="/bulk-uploads"
+                        className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                      >
+                        Bulk Uploads
+                      </Link>
+                    )}
+
                     <Link
                       href="/moderation/pending"
                       className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
                     >
                       Moderation
                     </Link>
-                  </>
-                )}
 
-                {/* Staff Links - admin and moderator */}
-                {(user?.publicMetadata?.role === 'admin' || user?.publicMetadata?.role === 'moderator') && (
-                  <>
                     <Link
                       href="/records"
                       className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
@@ -66,6 +61,14 @@ export function Navbar() {
                     </Link>
                   </>
                 )}
+
+                {/* Community Links - Show for everyone (admins, moderators, and community members) */}
+                <Link
+                  href="/community/submit"
+                  className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                >
+                  Community
+                </Link>
               </div>
             )}
           </div>

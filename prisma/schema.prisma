@@ -29,7 +29,7 @@ enum ChangeType {
 }
 
 enum SubmissionType {
-  FLAG
+  NEW_RECORD
   EDIT
 }
 
@@ -55,6 +55,8 @@ model Person {
   dateOfDeath       DateTime?
   locationOfDeath   String?
   obituary          String?
+  photoUrl          String?           // Vercel Blob URL for photo
+  confirmedByMoh    Boolean           @default(false) // true for bulk uploads, false for community submissions
   isDeleted         Boolean           @default(false)
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
@@ -73,6 +75,8 @@ model PersonVersion {
   dateOfDeath       DateTime?
   locationOfDeath   String?
   obituary          String?
+  photoUrl          String?           // Vercel Blob URL for photo
+  confirmedByMoh    Boolean           @default(false) // true for bulk uploads, false for community submissions
   versionNumber     Int
   sourceId          String
   changeType        ChangeType        @default(INSERT)
@@ -118,10 +122,10 @@ model BulkUpload {
 model CommunitySubmission {
   id                      String            @id @default(uuid())
   type                    SubmissionType
-  baseVersionId           String
-  personId                String
-  proposedPayload         Json?
-  reason                  String?
+  baseVersionId           String?           // NULL for NEW_RECORD submissions
+  personId                String?           // NULL for NEW_RECORD submissions
+  proposedPayload         Json              // For NEW_RECORD: all fields; For EDIT: only date_of_death, location_of_death, obituary, photo_url
+  reason                  String?           // Optional explanation for the submission
   submittedBy             String            // Clerk user ID
   status                  SubmissionStatus  @default(PENDING)
   createdAt               DateTime          @default(now())
@@ -133,14 +137,15 @@ model CommunitySubmission {
   approvedChangeSourceId  String?           @unique
   appliedVersionId        String?
   
-  baseVersion             PersonVersion     @relation("BaseVersion", fields: [baseVersionId], references: [id])
-  person                  Person            @relation(fields: [personId], references: [id])
+  baseVersion             PersonVersion?    @relation("BaseVersion", fields: [baseVersionId], references: [id])
+  person                  Person?           @relation(fields: [personId], references: [id])
   approvedChangeSource    ChangeSource?     @relation(fields: [approvedChangeSourceId], references: [id])
   appliedVersion          PersonVersion?    @relation("AppliedVersion", fields: [appliedVersionId], references: [id])
   
   @@index([personId])
   @@index([baseVersionId])
   @@index([status])
+  @@index([submittedBy])
 }
 
 model AuditLog {
