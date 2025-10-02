@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Gaza Deaths - Admin Panel",
+  title: "Gaza Deaths Control Panel",
   description: "Track and document casualties in Gaza",
 };
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { parseCSV } from '@/lib/csv-utils';
 import { applyBulkUpload } from '@/lib/bulk-upload-service';
 import { requireAdmin } from '@/lib/auth-utils';
+import { createAuditLog, AuditAction, ResourceType } from '@/lib/audit-log';
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,9 +11,25 @@ export async function POST(request: NextRequest) {
     
     const formData = await request.formData();
     const file = formData.get('file') as File;
+    const label = formData.get('label') as string | null;
+    const dateReleased = formData.get('dateReleased') as string | null;
     
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    }
+    
+    if (!label || !label.trim()) {
+      return NextResponse.json({ error: 'Label is required' }, { status: 400 });
+    }
+    
+    if (!dateReleased || !dateReleased.trim()) {
+      return NextResponse.json({ error: 'Date released is required' }, { status: 400 });
+    }
+    
+    // Validate date format
+    const dateReleasedObj = new Date(dateReleased);
+    if (isNaN(dateReleasedObj.getTime())) {
+      return NextResponse.json({ error: 'Invalid date format for date released' }, { status: 400 });
     }
     
     const csvContent = await file.text();
@@ -30,7 +47,22 @@ export async function POST(request: NextRequest) {
     }
     
     // Apply the upload
-    const result = await applyBulkUpload(rows, file.name, rawFile);
+    const result = await applyBulkUpload(rows, file.name, rawFile, label.trim(), dateReleasedObj);
+    
+    // Create audit log
+    await createAuditLog({
+      action: AuditAction.BULK_UPLOAD_APPLIED,
+      resourceType: ResourceType.BULK_UPLOAD,
+      resourceId: result.uploadId,
+      description: `Applied bulk upload: ${file.name} (${rows.length} records)`,
+      metadata: {
+        filename: file.name,
+        totalRecords: rows.length,
+        uploadId: result.uploadId,
+        changeSourceId: result.changeSourceId,
+      },
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
+    });
     
     return NextResponse.json({
       success: true,

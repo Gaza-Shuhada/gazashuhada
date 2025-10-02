@@ -34,6 +34,11 @@ export async function requireModerator() {
   return { userId };
 }
 
+// Alias for requireModerator - requires admin or moderator (staff)
+export async function requireStaff() {
+  return requireModerator();
+}
+
 export async function getCurrentUser() {
   const { userId } = await auth();
   return userId ? { userId } : null;

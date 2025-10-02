@@ -75,6 +75,7 @@ model PersonVersion {
   obituary          String?
   versionNumber     Int
   sourceId          String
+  changeType        ChangeType        @default(INSERT)
   isDeleted         Boolean           @default(false)
   createdAt         DateTime          @default(now())
   
@@ -84,14 +85,16 @@ model PersonVersion {
   baseVersionSubmissions    CommunitySubmission[] @relation("BaseVersion")
   appliedVersionSubmissions CommunitySubmission[] @relation("AppliedVersion")
   
+  @@unique([personId, versionNumber])
   @@index([personId])
   @@index([sourceId])
+  @@index([sourceId, changeType])
+  @@index([createdAt])
 }
 
 model ChangeSource {
   id                String              @id @default(uuid())
   type              ChangeSourceType
-  changeType        ChangeType
   description       String?
   createdAt         DateTime            @default(now())
   
@@ -104,10 +107,12 @@ model BulkUpload {
   id                String            @id @default(uuid())
   changeSourceId    String            @unique
   filename          String
+  label             String            // Required: manual description/label for the upload
+  dateReleased      DateTime          // Required: when the source data was published/released
   rawFile           Bytes
   uploadedAt        DateTime          @default(now())
   
-  changeSource      ChangeSource      @relation(fields: [changeSourceId], references: [id])
+  changeSource      ChangeSource      @relation(fields: [changeSourceId], references: [id], onDelete: Cascade)
 }
 
 model CommunitySubmission {
@@ -136,4 +141,22 @@ model CommunitySubmission {
   @@index([personId])
   @@index([baseVersionId])
   @@index([status])
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  userId       String   // Clerk user ID who performed the action
+  userEmail    String?  // User email for display (cached from Clerk)
+  action       String   // Action type: BULK_UPLOAD_APPLIED, COMMUNITY_SUBMISSION_APPROVED, etc.
+  resourceType String   // Resource type: BULK_UPLOAD, COMMUNITY_SUBMISSION, PERSON, USER
+  resourceId   String?  // ID of the affected resource
+  description  String   // Human-readable description
+  metadata     Json?    // Additional context (stats, changes, etc.)
+  ipAddress    String?  // IP address of the user
+  createdAt    DateTime @default(now())
+  
+  @@index([userId, createdAt])
+  @@index([resourceType, resourceId])
+  @@index([createdAt])
+  @@index([action])
 }

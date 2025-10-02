@@ -10,6 +10,8 @@ interface Person {
   dateOfBirth: string;
   dateOfDeath?: string;
   locationOfDeath?: string;
+  isDeleted: boolean;
+  currentVersion: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -126,6 +128,12 @@ export function PersonsTable() {
                 Location
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Version
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Deleted
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Last Updated
               </th>
             </tr>
@@ -160,6 +168,22 @@ export function PersonsTable() {
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                   {person.locationOfDeath || <span className="text-gray-400">—</span>}
+                </td>
+                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded">
+                    v{person.currentVersion}
+                  </span>
+                </td>
+                <td className="px-4 py-4 whitespace-nowrap text-sm">
+                  {person.isDeleted ? (
+                    <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded">
+                      Yes
+                    </span>
+                  ) : (
+                    <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
+                      No
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
                   {formatDateTime(person.updatedAt)}

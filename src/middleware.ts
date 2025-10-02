@@ -1,6 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
 
 // Define public routes that don't require authentication
 const isPublicRoute = createRouteMatcher([
@@ -24,7 +23,7 @@ const isModeratorRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
-  const { userId } = await auth();
+  const { userId, sessionClaims } = await auth();
   const isPublic = isPublicRoute(req);
   const isAdmin = isAdminRoute(req);
   const isModerator = isModeratorRoute(req);
@@ -36,44 +35,25 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.redirect(signInUrl);
   }
   
+  // Get user role from session claims
+  const userRole = sessionClaims?.metadata?.role as string | undefined;
+  
   // Check admin routes - Only protect API routes in middleware, let layout handle page protection
   if (isAdmin && userId && req.nextUrl.pathname.startsWith('/api/admin')) {
-    try {
-      const user = await currentUser();
-      const userRole = user?.publicMetadata?.role as string;
-      
-      if (userRole !== 'admin') {
-        return NextResponse.json(
-          { error: 'Forbidden - Admin access required' },
-          { status: 403 }
-        );
-      }
-    } catch (error) {
-      console.error('Error checking admin role:', error);
+    if (userRole !== 'admin') {
       return NextResponse.json(
-        { error: 'Internal server error' },
-        { status: 500 }
+        { error: 'Forbidden - Admin access required' },
+        { status: 403 }
       );
     }
   }
   
   // Check moderator routes - Only protect API routes in middleware, let layout handle page protection
   if (isModerator && userId && req.nextUrl.pathname.startsWith('/api/moderation')) {
-    try {
-      const user = await currentUser();
-      const userRole = user?.publicMetadata?.role as string;
-      
-      if (userRole !== 'moderator' && userRole !== 'admin') {
-        return NextResponse.json(
-          { error: 'Forbidden - Moderator access required' },
-          { status: 403 }
-        );
-      }
-    } catch (error) {
-      console.error('Error checking moderator role:', error);
+    if (userRole !== 'moderator' && userRole !== 'admin') {
       return NextResponse.json(
-        { error: 'Internal server error' },
-        { status: 500 }
+        { error: 'Forbidden - Moderator access required' },
+        { status: 403 }
       );
     }
   }
