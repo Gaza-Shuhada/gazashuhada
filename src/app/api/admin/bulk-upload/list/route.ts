@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth-utils';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Check authentication and admin role
     await requireAdmin();
@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
               select: {
                 id: true,
                 versionNumber: true,
+                isDeleted: true,
               },
             },
           },
@@ -29,9 +30,15 @@ export async function GET(request: NextRequest) {
     // Calculate stats for each upload
     const uploadsWithStats = bulkUploads.map(upload => {
       const versions = upload.changeSource.versions;
-      const inserts = versions.filter(v => !v.changeType).length; // New persons
-      const updates = versions.filter(v => v.changeType === 'UPDATE').length;
-      const deletes = versions.filter(v => v.changeType === 'DELETE').length;
+      const changeType = upload.changeSource.changeType;
+      
+      // Calculate stats based on change source type and version status
+      const activeVersions = versions.filter(v => !v.isDeleted);
+      const deletedVersions = versions.filter(v => v.isDeleted);
+      
+      const inserts = changeType === 'INSERT' ? activeVersions.length : 0;
+      const updates = changeType === 'UPDATE' ? activeVersions.length : 0;
+      const deletes = deletedVersions.length;
       
       return {
         id: upload.id,
