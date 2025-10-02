@@ -6,13 +6,13 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication and admin role
     await requireAdmin();
     
-    const uploadId = params.id;
+    const { id: uploadId } = await params;
     
     // Get bulk upload details for logging
     const bulkUpload = await prisma.bulkUpload.findUnique({

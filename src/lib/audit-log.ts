@@ -1,5 +1,6 @@
 import { prisma } from './prisma';
 import { currentUser } from '@clerk/nextjs/server';
+import { Prisma } from '@prisma/client';
 
 export enum AuditAction {
   // Bulk Upload Actions
@@ -38,7 +39,7 @@ interface CreateAuditLogParams {
   resourceType: ResourceType | string;
   resourceId?: string;
   description: string;
-  metadata?: Record<string, any>;
+  metadata?: Prisma.InputJsonValue;
   ipAddress?: string;
 }
 
@@ -63,7 +64,7 @@ export async function createAuditLog(params: CreateAuditLogParams) {
         resourceType: params.resourceType,
         resourceId: params.resourceId,
         description: params.description,
-        metadata: params.metadata || null,
+        metadata: params.metadata ?? Prisma.JsonNull,
         ipAddress: params.ipAddress,
       },
     });
@@ -94,7 +95,7 @@ export async function createAuditLogWithUser(
         resourceType: params.resourceType,
         resourceId: params.resourceId,
         description: params.description,
-        metadata: params.metadata || null,
+        metadata: params.metadata ?? Prisma.JsonNull,
         ipAddress: params.ipAddress,
       },
     });

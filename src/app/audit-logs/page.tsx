@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Prisma } from '@prisma/client';
 
 interface AuditLog {
   id: string;
@@ -10,7 +11,7 @@ interface AuditLog {
   resourceType: string;
   resourceId: string | null;
   description: string;
-  metadata: any;
+  metadata: Prisma.JsonValue | null;
   ipAddress: string | null;
   createdAt: string;
 }

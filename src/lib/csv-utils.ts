@@ -16,7 +16,7 @@ export function parseCSV(csvContent: string): BulkUploadRow[] {
     throw new Error('CSV file is empty');
   }
 
-  let records: any[];
+  let records: Record<string, string>[];
   
   // Parse CSV with proper library that handles quotes, commas, etc.
   try {
