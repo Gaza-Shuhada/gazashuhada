@@ -1,0 +1,46 @@
+{
+  "shadcn Button": {
+    "prefix": "sbutton",
+    "body": [
+      "<Button variant=\"${1|default,destructive,outline,secondary,ghost,link|}\" size=\"${2|default,sm,lg,icon|}\">",
+      "  ${3:Button text}",
+      "</Button>"
+    ],
+    "description": "shadcn Button component"
+  },
+  "shadcn Card": {
+    "prefix": "scard",
+    "body": [
+      "<Card>",
+      "  <CardHeader>",
+      "    <CardTitle>${1:Title}</CardTitle>",
+      "    <CardDescription>${2:Description}</CardDescription>",
+      "  </CardHeader>",
+      "  <CardContent>",
+      "    ${3:Content}",
+      "  </CardContent>",
+      "</Card>"
+    ],
+    "description": "shadcn Card component"
+  },
+  "shadcn Table": {
+    "prefix": "stable",
+    "body": [
+      "<Table>",
+      "  <TableHeader>",
+      "    <TableRow>",
+      "      <TableHead>${1:Column 1}</TableHead>",
+      "    </TableRow>",
+      "  </TableHeader>",
+      "  <TableBody>",
+      "    {${2:data}.map((${3:item}) => (",
+      "      <TableRow key={${3:item}.id}>",
+      "        <TableCell>{${3:item}.${4:field}}</TableCell>",
+      "      </TableRow>",
+      "    ))}",
+      "  </TableBody>",
+      "</Table>"
+    ],
+    "description": "shadcn Table component"
+  }
+}

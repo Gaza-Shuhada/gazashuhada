@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { UserButton, useAuth, useUser } from '@clerk/nextjs';
+import { Button } from '@/components/ui/button';
 
 export function Navbar() {
   const { isSignedIn } = useAuth();
@@ -14,7 +15,7 @@ export function Navbar() {
           <div className="flex items-center space-x-8">
             {/* Logo/Home */}
             <Link href="/" className="flex items-center">
-              <span className="text-xl font-bold text-gray-900">Gaza Deaths Admin Tools</span>
+              <span className="text-xl font-bold text-gray-900">Admin Tools</span>
             </Link>
 
             {/* Navigation Links */}
@@ -86,18 +87,12 @@ export function Navbar() {
               />
             ) : (
               <div className="flex items-center space-x-4">
-                <Link
-                  href="/sign-in"
-                  className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/sign-up"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                >
-                  Sign Up
-                </Link>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/sign-in">Sign In</Link>
+                </Button>
+                <Button size="sm" asChild>
+                  <Link href="/sign-up">Sign Up</Link>
+                </Button>
               </div>
             )}
           </div>

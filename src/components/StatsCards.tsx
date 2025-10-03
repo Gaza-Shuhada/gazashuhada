@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Stats {
   totalPersons: number;
@@ -36,12 +38,14 @@ export function StatsCards() {
     return (
       <div className="grid gap-6 md:grid-cols-2 mb-8">
         {[...Array(2)].map((_, i) => (
-          <div key={i} className="bg-white rounded-lg shadow p-6">
-            <div className="animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-              <div className="h-8 bg-gray-200 rounded w-1/2"></div>
-            </div>
-          </div>
+          <Card key={i}>
+            <CardContent className="p-6">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-8 w-1/2" />
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
     );
@@ -53,33 +57,37 @@ export function StatsCards() {
 
   return (
     <div className="grid gap-6 md:grid-cols-2 mb-8">
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-muted-foreground">Total Records</p>
+              <p className="text-2xl font-bold">{stats.totalPersons.toLocaleString()}</p>
+            </div>
           </div>
-          <div className="ml-4">
-            <p className="text-sm font-medium text-gray-600">Total Records</p>
-            <p className="text-2xl font-bold text-gray-900">{stats.totalPersons.toLocaleString()}</p>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center">
-          <div className="p-2 bg-yellow-100 rounded-lg">
-            <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-yellow-500/10 rounded-lg">
+              <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-muted-foreground">Recent (7 days)</p>
+              <p className="text-2xl font-bold">{stats.recentUploads.toLocaleString()}</p>
+            </div>
           </div>
-          <div className="ml-4">
-            <p className="text-sm font-medium text-gray-600">Recent (7 days)</p>
-            <p className="text-2xl font-bold text-gray-900">{stats.recentUploads.toLocaleString()}</p>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

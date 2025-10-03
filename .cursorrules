@@ -1,0 +1,219 @@
+# Cursor AI Rules for Gaza Death Toll Admin Tools
+
+## 📋 Project Context
+
+**What**: Internal admin control panel for managing Gaza Death Toll database  
+**Purpose**: Data management, bulk uploads, community moderation  
+**Status**: ✅ Production-ready, all core features complete
+
+**Tech Stack**:
+- Next.js 15 (App Router, Server Components)
+- PostgreSQL + Prisma ORM
+- Clerk (authentication, role-based access)
+- shadcn/ui (UI components - MANDATORY)
+- Vercel Blob (photo storage)
+- Tailwind CSS 4
+
+**Key Documentation**:
+- `docs/PROJECT.md` - Complete project details, features, setup
+- `docs/engineering_spec.md` - Database schema, API architecture
+- `docs/API_DOCUMENTATION.md` - API endpoint reference
+- `CONTRIBUTING.md` - Contribution guidelines
+
+---
+
+## 🎨 UI Component Standards
+
+### MANDATORY: Always Use shadcn/ui
+**NEVER build custom UI components. ALWAYS use shadcn/ui first.**
+
+Before writing ANY UI code:
+1. Search shadcn registry: `npx shadcn@latest search [keyword]`
+2. If component exists → install and use it
+3. If not → combine existing shadcn components
+4. Only build custom as absolute last resort (rare)
+
+### Quick Reference
+- Buttons → `<Button>` from `@/components/ui/button`
+- Forms → `<Form>` + `<Field>` from `@/components/ui/form`
+- Tables → `<Table>` from `@/components/ui/table`
+- Cards → `<Card>` from `@/components/ui/card`
+- Alerts → `<Alert>` from `@/components/ui/alert`
+- Loading → `<Spinner>` or `<Skeleton>`
+
+### Anti-Patterns (DON'T DO THIS)
+❌ `<button className="px-4 py-2 bg-blue-500 ...">` 
+✅ `<Button>Click me</Button>`
+
+❌ `<div className="bg-white rounded-lg shadow p-6">`
+✅ `<Card><CardContent>...</CardContent></Card>`
+
+❌ Custom table with Tailwind classes
+✅ `<Table>` component
+
+## 📦 Available Components
+
+All shadcn components are installed in `src/components/ui/`. Check this directory first.
+
+See full list: `ls src/components/ui/`
+
+## 🎯 Component Discovery Process
+
+```
+1. Need UI element?
+   ↓
+2. Check: Does shadcn have it?
+   Command: npx shadcn@latest search [keyword]
+   ↓
+3. YES → Install: npx shadcn@latest add [component]
+   ↓
+4. NO → Can I combine shadcn components?
+   ↓
+5. RARE → Build custom (document why)
+```
+
+## 🚫 What NOT to Build
+
+Never create custom versions of these (use shadcn instead):
+- Buttons, inputs, textareas, selects
+- Cards, alerts, badges
+- Tables, dialogs, modals
+- Tabs, accordions, dropdowns
+- Loading spinners, skeletons
+- Forms and form fields
+- Toasts, tooltips
+
+## 📝 Styling Standards
+
+Use shadcn color tokens (NOT raw Tailwind colors):
+- `text-foreground` (not `text-gray-900`)
+- `text-muted-foreground` (not `text-gray-600`)
+- `bg-background` (not `bg-gray-50`)
+- `bg-card` (not `bg-white`)
+- `border` (not `border-gray-200`)
+- `text-destructive` (not `text-red-600`)
+- `text-primary` (not `text-blue-600`)
+
+## 🏗️ Development Standards
+
+### Code Style
+- **TypeScript**: Strict mode enabled, no `any` types
+- **Async/Await**: Use async/await, not `.then()` chains
+- **Server Components**: Default to server components, only use `'use client'` when needed
+- **Error Handling**: Always wrap API calls in try/catch blocks
+
+### Database Changes
+```bash
+# Edit schema
+vim prisma/schema.prisma
+
+# Create migration
+npx prisma migrate dev --name description
+
+# Generate client
+npx prisma generate
+```
+
+### Authentication
+- Role-based access control: Admin, Moderator, Community
+- Use Clerk's `useAuth()`, `useUser()` in client components
+- Use `auth()`, `currentUser()` in server components
+- Always check roles before granting access
+
+---
+
+## 📚 Documentation
+
+**Essential Reading**:
+1. `docs/PROJECT.md` ⭐ - Project status, features, setup
+2. This file (`.cursorrules`) - Development standards
+3. `docs/engineering_spec.md` - Database schema, architecture
+
+**Reference**:
+- `docs/API_DOCUMENTATION.md` - API endpoints
+- `CONTRIBUTING.md` - How to contribute
+- Official shadcn: https://ui.shadcn.com/docs
+
+## 🔄 Adding New Components
+
+```bash
+# Always add from shadcn, never build from scratch
+npx shadcn@latest add [component-name]
+
+# View examples first
+npx shadcn@latest view @shadcn/[component]-demo
+```
+
+## ✅ Code Review Checklist
+
+Before submitting any UI changes:
+- [ ] Using shadcn components (not custom)
+- [ ] Using shadcn color tokens (not raw colors)
+- [ ] Checked shadcn registry first
+- [ ] No duplicate/custom buttons/cards/forms
+- [ ] Documented if custom component is truly necessary
+
+## 💡 Philosophy
+
+### UI Components
+**"If shadcn has it, use it. Period."**
+
+This project uses shadcn/ui as the single source of truth for all UI components. This ensures:
+- Consistent design throughout the app
+- Accessibility built-in
+- Easier maintenance
+- Faster development
+- Better developer experience
+
+### Code Quality
+- **DRY**: Don't repeat yourself - extract reusable logic
+- **Type Safety**: Leverage TypeScript, define proper interfaces
+- **Performance**: Use server components by default, minimize client-side JavaScript
+- **Security**: Validate all inputs, check permissions, sanitize data
+
+---
+
+## 🚀 Quick Commands
+
+```bash
+# Development
+npm run dev                          # Start dev server
+npm run lint                         # Run linter
+
+# Database
+npx prisma studio                    # Open database GUI
+npx prisma migrate dev               # Create and apply migration
+npx prisma generate                  # Regenerate Prisma client
+
+# shadcn
+npx shadcn@latest search [keyword]   # Search for component
+npx shadcn@latest add [component]    # Add component
+npx shadcn@latest view @shadcn/[component]-demo  # View example
+```
+
+---
+
+## 🎯 For AI Agents: Quick Context
+
+**Project**: Admin tools for Gaza Death Toll database  
+**Status**: All features complete, production-ready  
+**Your Job**: Maintain, fix bugs, add minor features
+
+**Before Coding**:
+1. ✅ Check `docs/PROJECT.md` for current features
+2. ✅ Use shadcn for ALL UI (see above)
+3. ✅ Follow TypeScript/Next.js best practices
+4. ✅ Check `docs/engineering_spec.md` for database schema
+
+**Common Tasks**:
+- Fix bugs: Check error logs, trace through code
+- Add UI: Always use shadcn components
+- Database changes: Update schema → migrate → generate
+- New features: Follow existing patterns in codebase
+
+---
+
+**Last Updated**: 2025-10-03  
+**Status**: ✅ Production-ready, all core features complete  
+**Documentation**: See `docs/PROJECT.md` for complete details
+

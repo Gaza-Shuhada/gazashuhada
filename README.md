@@ -56,10 +56,13 @@ Admin control panel for managing the Gaza Death Toll database. Handles bulk uplo
 - **Framework**: Next.js 15.5.4 (App Router, Turbopack)
 - **Database**: PostgreSQL (Prisma ORM)
 - **Authentication**: Clerk
+- **UI Components**: shadcn/ui ⭐ **Required for all UI development**
 - **Storage**: Vercel Blob (photo uploads)
 - **Image Processing**: Sharp
 - **Styling**: Tailwind CSS 4
 - **Deployment**: Vercel
+
+> **🎨 UI Development Rule**: This project uses [shadcn/ui](https://ui.shadcn.com) for ALL UI components. Never build custom buttons, forms, tables, etc. Always check shadcn first! See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ---
 
