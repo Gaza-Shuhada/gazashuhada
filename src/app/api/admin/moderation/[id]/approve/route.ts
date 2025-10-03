@@ -78,7 +78,8 @@ export async function POST(
             gender: payload.gender as 'MALE' | 'FEMALE' | 'OTHER',
             dateOfBirth: new Date(payload.dateOfBirth),
             dateOfDeath: payload.dateOfDeath ? new Date(payload.dateOfDeath) : null,
-            locationOfDeath: payload.locationOfDeath || null,
+            locationOfDeathLat: typeof payload.locationOfDeathLat === 'number' ? payload.locationOfDeathLat : null,
+            locationOfDeathLng: typeof payload.locationOfDeathLng === 'number' ? payload.locationOfDeathLng : null,
             obituary: payload.obituary || null,
             photoUrl: payload.photoUrl || null,
             confirmedByMoh: false, // Community submissions are not MoH confirmed
@@ -95,7 +96,8 @@ export async function POST(
             gender: person.gender as 'MALE' | 'FEMALE' | 'OTHER',
             dateOfBirth: person.dateOfBirth,
             dateOfDeath: person.dateOfDeath,
-            locationOfDeath: person.locationOfDeath,
+            locationOfDeathLat: person.locationOfDeathLat,
+            locationOfDeathLng: person.locationOfDeathLng,
             obituary: person.obituary,
             photoUrl: person.photoUrl,
             confirmedByMoh: false,
@@ -173,9 +175,10 @@ export async function POST(
         });
 
         // Update person record
-        const updateData: Record<string, string | Date | null> = {};
+        const updateData: Record<string, string | Date | number | null> = {};
         if ('dateOfDeath' in payload) updateData.dateOfDeath = payload.dateOfDeath ? new Date(payload.dateOfDeath) : null;
-        if ('locationOfDeath' in payload) updateData.locationOfDeath = payload.locationOfDeath || null;
+        if ('locationOfDeathLat' in payload) updateData.locationOfDeathLat = typeof payload.locationOfDeathLat === 'number' ? payload.locationOfDeathLat : null;
+        if ('locationOfDeathLng' in payload) updateData.locationOfDeathLng = typeof payload.locationOfDeathLng === 'number' ? payload.locationOfDeathLng : null;
         if ('obituary' in payload) updateData.obituary = payload.obituary || null;
         if ('photoUrl' in payload) updateData.photoUrl = payload.photoUrl || null;
 
@@ -193,7 +196,8 @@ export async function POST(
             gender: person.gender,
             dateOfBirth: person.dateOfBirth,
             dateOfDeath: updatedPerson.dateOfDeath,
-            locationOfDeath: updatedPerson.locationOfDeath,
+            locationOfDeathLat: updatedPerson.locationOfDeathLat,
+            locationOfDeathLng: updatedPerson.locationOfDeathLng,
             obituary: updatedPerson.obituary,
             photoUrl: updatedPerson.photoUrl,
             confirmedByMoh: person.confirmedByMoh, // Keep existing confirmation status

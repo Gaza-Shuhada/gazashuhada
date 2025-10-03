@@ -3,6 +3,7 @@
 import { useUser } from '@clerk/nextjs';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 interface Submission {
   id: string;
@@ -31,19 +32,32 @@ export default function CommunitySubmitPage() {
     gender: 'MALE',
     dateOfBirth: '',
     dateOfDeath: '',
-    locationOfDeath: '',
+    locationOfDeathLat: '',
+    locationOfDeathLng: '',
     obituary: '',
+    photoUrl: '',
     reason: '',
   });
+
+  // Photo upload states
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   // Form states for EDIT
   const [editForm, setEditForm] = useState({
     externalId: '',
     dateOfDeath: '',
-    locationOfDeath: '',
+    locationOfDeathLat: '',
+    locationOfDeathLng: '',
     obituary: '',
+    photoUrl: '',
     reason: '',
   });
+
+  // Photo upload states for edit
+  const [editPhotoFile, setEditPhotoFile] = useState<File | null>(null);
+  const [editPhotoPreview, setEditPhotoPreview] = useState<string | null>(null);
 
   // Redirect if not signed in
   useEffect(() => {
@@ -72,20 +86,91 @@ export default function CommunitySubmitPage() {
     }
   };
 
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      setMessage({ type: 'error', text: 'Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.' });
+      return;
+    }
+
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'File too large. Maximum size is 10MB.' });
+      return;
+    }
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (isEdit) {
+        setEditPhotoPreview(reader.result as string);
+        setEditPhotoFile(file);
+      } else {
+        setPhotoPreview(reader.result as string);
+        setPhotoFile(file);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemovePhoto = (isEdit = false) => {
+    if (isEdit) {
+      setEditPhotoFile(null);
+      setEditPhotoPreview(null);
+      setEditForm({ ...editForm, photoUrl: '' });
+    } else {
+      setPhotoFile(null);
+      setPhotoPreview(null);
+      setNewRecordForm({ ...newRecordForm, photoUrl: '' });
+    }
+  };
+
+  const uploadPhoto = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('photo', file);
+
+    const response = await fetch('/api/upload-photo', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to upload photo');
+    }
+
+    return data.url;
+  };
+
   const handleNewRecordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
 
     try {
+      // Upload photo if provided
+      let photoUrl = newRecordForm.photoUrl;
+      if (photoFile) {
+        setUploadingPhoto(true);
+        photoUrl = await uploadPhoto(photoFile);
+        setUploadingPhoto(false);
+      }
+
       const payload = {
         externalId: newRecordForm.externalId,
         name: newRecordForm.name,
         gender: newRecordForm.gender,
         dateOfBirth: newRecordForm.dateOfBirth,
         ...(newRecordForm.dateOfDeath && { dateOfDeath: newRecordForm.dateOfDeath }),
-        ...(newRecordForm.locationOfDeath && { locationOfDeath: newRecordForm.locationOfDeath }),
+        ...(newRecordForm.locationOfDeathLat && { locationOfDeathLat: parseFloat(newRecordForm.locationOfDeathLat) }),
+        ...(newRecordForm.locationOfDeathLng && { locationOfDeathLng: parseFloat(newRecordForm.locationOfDeathLng) }),
         ...(newRecordForm.obituary && { obituary: newRecordForm.obituary }),
+        ...(photoUrl && { photoUrl }),
       };
 
       const response = await fetch('/api/community/submit', {
@@ -108,18 +193,24 @@ export default function CommunitySubmitPage() {
           gender: 'MALE',
           dateOfBirth: '',
           dateOfDeath: '',
-          locationOfDeath: '',
+          locationOfDeathLat: '',
+          locationOfDeathLng: '',
           obituary: '',
+          photoUrl: '',
           reason: '',
         });
+        setPhotoFile(null);
+        setPhotoPreview(null);
         fetchSubmissions();
       } else {
         setMessage({ type: 'error', text: data.error || 'Failed to submit record' });
       }
-    } catch {
-      setMessage({ type: 'error', text: 'An error occurred while submitting' });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred while submitting';
+      setMessage({ type: 'error', text: errorMessage });
     } finally {
       setLoading(false);
+      setUploadingPhoto(false);
     }
   };
 
@@ -129,10 +220,20 @@ export default function CommunitySubmitPage() {
     setMessage(null);
 
     try {
-      const payload: Record<string, string> = {};
+      // Upload photo if provided
+      let photoUrl = editForm.photoUrl;
+      if (editPhotoFile) {
+        setUploadingPhoto(true);
+        photoUrl = await uploadPhoto(editPhotoFile);
+        setUploadingPhoto(false);
+      }
+
+      const payload: Record<string, string | number> = {};
       if (editForm.dateOfDeath) payload.dateOfDeath = editForm.dateOfDeath;
-      if (editForm.locationOfDeath) payload.locationOfDeath = editForm.locationOfDeath;
+      if (editForm.locationOfDeathLat) payload.locationOfDeathLat = parseFloat(editForm.locationOfDeathLat);
+      if (editForm.locationOfDeathLng) payload.locationOfDeathLng = parseFloat(editForm.locationOfDeathLng);
       if (editForm.obituary) payload.obituary = editForm.obituary;
+      if (photoUrl) payload.photoUrl = photoUrl;
 
       const response = await fetch('/api/community/submit', {
         method: 'POST',
@@ -152,18 +253,24 @@ export default function CommunitySubmitPage() {
         setEditForm({
           externalId: '',
           dateOfDeath: '',
-          locationOfDeath: '',
+          locationOfDeathLat: '',
+          locationOfDeathLng: '',
           obituary: '',
+          photoUrl: '',
           reason: '',
         });
+        setEditPhotoFile(null);
+        setEditPhotoPreview(null);
         fetchSubmissions();
       } else {
         setMessage({ type: 'error', text: data.error || 'Failed to submit edit' });
       }
-    } catch {
-      setMessage({ type: 'error', text: 'An error occurred while submitting' });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred while submitting';
+      setMessage({ type: 'error', text: errorMessage });
     } finally {
       setLoading(false);
+      setUploadingPhoto(false);
     }
   };
 
@@ -232,7 +339,7 @@ export default function CommunitySubmitPage() {
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Propose a New Person Record</h3>
                   <p className="text-sm text-gray-600 mb-6">
                     All new records start as unconfirmed. If the Ministry of Health includes this person in a future bulk upload,
-                    the record will be marked as officially confirmed.
+                    the record will be marked as officially confirmed. Location coordinates should be provided as latitude/longitude pairs.
                   </p>
                 </div>
 
@@ -308,14 +415,33 @@ export default function CommunitySubmitPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Location of Death <span className="text-gray-500">(Optional)</span>
+                      Location Latitude <span className="text-gray-500">(Optional)</span>
                     </label>
                     <input
-                      type="text"
-                      value={newRecordForm.locationOfDeath}
-                      onChange={(e) => setNewRecordForm({ ...newRecordForm, locationOfDeath: e.target.value })}
+                      type="number"
+                      step="any"
+                      value={newRecordForm.locationOfDeathLat}
+                      onChange={(e) => setNewRecordForm({ ...newRecordForm, locationOfDeathLat: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                      placeholder="City, region"
+                      placeholder="e.g., 31.5"
+                      min="-90"
+                      max="90"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Location Longitude <span className="text-gray-500">(Optional)</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={newRecordForm.locationOfDeathLng}
+                      onChange={(e) => setNewRecordForm({ ...newRecordForm, locationOfDeathLng: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                      placeholder="e.g., 34.5"
+                      min="-180"
+                      max="180"
                     />
                   </div>
                 </div>
@@ -328,9 +454,50 @@ export default function CommunitySubmitPage() {
                     rows={4}
                     value={newRecordForm.obituary}
                     onChange={(e) => setNewRecordForm({ ...newRecordForm, obituary: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                     placeholder="Additional information or obituary text"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Photo <span className="text-gray-500">(Optional)</span>
+                  </label>
+                  <div className="space-y-3">
+                    {photoPreview ? (
+                      <div className="relative inline-block">
+                        <Image 
+                          src={photoPreview} 
+                          alt="Preview" 
+                          width={192}
+                          height={192}
+                          className="w-48 h-48 object-cover rounded-lg border-2 border-gray-300"
+                          unoptimized
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePhoto(false)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                          onChange={(e) => handlePhotoChange(e, false)}
+                          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          JPEG, PNG, WebP, or GIF. Max 10MB. Will be resized to 2048x2048px.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div>
@@ -341,17 +508,17 @@ export default function CommunitySubmitPage() {
                     rows={3}
                     value={newRecordForm.reason}
                     onChange={(e) => setNewRecordForm({ ...newRecordForm, reason: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                     placeholder="Why are you submitting this record? Any sources or context?"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || uploadingPhoto}
                   className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                 >
-                  {loading ? 'Submitting...' : 'Submit New Record'}
+                  {uploadingPhoto ? 'Uploading photo...' : loading ? 'Submitting...' : 'Submit New Record'}
                 </button>
               </form>
             )}
@@ -362,7 +529,8 @@ export default function CommunitySubmitPage() {
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Suggest Edit to Existing Record</h3>
                   <p className="text-sm text-gray-600 mb-6">
-                    You can only propose changes to death-related information. Name, gender, and date of birth cannot be edited.
+                    You can only propose changes to death-related information. Name, gender, and date of birth cannot be edited. 
+                    Location coordinates should be provided as latitude/longitude pairs (both required if updating location).
                   </p>
                 </div>
 
@@ -375,7 +543,7 @@ export default function CommunitySubmitPage() {
                     required
                     value={editForm.externalId}
                     onChange={(e) => setEditForm({ ...editForm, externalId: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                     placeholder="e.g., P12345"
                   />
                   <p className="text-xs text-gray-500 mt-1">Enter the External ID of the person record you want to edit</p>
@@ -399,14 +567,33 @@ export default function CommunitySubmitPage() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Location of Death
+                        Location Latitude
                       </label>
                       <input
-                        type="text"
-                        value={editForm.locationOfDeath}
-                        onChange={(e) => setEditForm({ ...editForm, locationOfDeath: e.target.value })}
+                        type="number"
+                        step="any"
+                        value={editForm.locationOfDeathLat}
+                        onChange={(e) => setEditForm({ ...editForm, locationOfDeathLat: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                        placeholder="City, region"
+                        placeholder="e.g., 31.5"
+                        min="-90"
+                        max="90"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Location Longitude
+                      </label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={editForm.locationOfDeathLng}
+                        onChange={(e) => setEditForm({ ...editForm, locationOfDeathLng: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                        placeholder="e.g., 34.5"
+                        min="-180"
+                        max="180"
                       />
                     </div>
 
@@ -422,6 +609,47 @@ export default function CommunitySubmitPage() {
                         placeholder="Additional information or obituary text"
                       />
                     </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Photo
+                      </label>
+                      <div className="space-y-3">
+                        {editPhotoPreview ? (
+                          <div className="relative inline-block">
+                            <Image 
+                              src={editPhotoPreview} 
+                              alt="Preview" 
+                              width={192}
+                              height={192}
+                              className="w-48 h-48 object-cover rounded-lg border-2 border-gray-300"
+                              unoptimized
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePhoto(true)}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ) : (
+                          <div>
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                              onChange={(e) => handlePhotoChange(e, true)}
+                              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              JPEG, PNG, WebP, or GIF. Max 10MB. Will replace existing photo if approved.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -433,17 +661,17 @@ export default function CommunitySubmitPage() {
                     rows={3}
                     value={editForm.reason}
                     onChange={(e) => setEditForm({ ...editForm, reason: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                     placeholder="Why are you proposing this edit? Any sources or context?"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  disabled={loading || (!editForm.dateOfDeath && !editForm.locationOfDeath && !editForm.obituary)}
+                  disabled={loading || uploadingPhoto || (!editForm.dateOfDeath && !editForm.locationOfDeathLat && !editForm.locationOfDeathLng && !editForm.obituary && !editPhotoFile)}
                   className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                 >
-                  {loading ? 'Submitting...' : 'Submit Edit Proposal'}
+                  {uploadingPhoto ? 'Uploading photo...' : loading ? 'Submitting...' : 'Submit Edit Proposal'}
                 </button>
               </form>
             )}

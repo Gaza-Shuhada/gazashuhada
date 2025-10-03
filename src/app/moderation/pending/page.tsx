@@ -9,7 +9,8 @@ interface Person {
   gender: string;
   dateOfBirth: string;
   dateOfDeath: string | null;
-  locationOfDeath: string | null;
+  locationOfDeathLat: number | null;
+  locationOfDeathLng: number | null;
   obituary: string | null;
   confirmedByMoh: boolean;
 }
@@ -17,7 +18,8 @@ interface Person {
 interface BaseVersion {
   versionNumber: number;
   dateOfDeath: string | null;
-  locationOfDeath: string | null;
+  locationOfDeathLat: number | null;
+  locationOfDeathLng: number | null;
   obituary: string | null;
 }
 
@@ -213,10 +215,10 @@ export default function ModerationPage() {
                               <p className="text-gray-900">{new Date(String(submission.proposedPayload.dateOfDeath)).toLocaleDateString()}</p>
                             </div>
                           )}
-                          {submission.proposedPayload.locationOfDeath && (
+                          {(submission.proposedPayload.locationOfDeathLat && submission.proposedPayload.locationOfDeathLng) && (
                             <div>
-                              <span className="text-sm font-medium text-gray-500">Location of Death:</span>
-                              <p className="text-gray-900">{String(submission.proposedPayload.locationOfDeath)}</p>
+                              <span className="text-sm font-medium text-gray-500">Location of Death (Lat, Lng):</span>
+                              <p className="text-gray-900">{Number(submission.proposedPayload.locationOfDeathLat).toFixed(4)}, {Number(submission.proposedPayload.locationOfDeathLng).toFixed(4)}</p>
                             </div>
                           )}
                         </div>
@@ -224,6 +226,23 @@ export default function ModerationPage() {
                           <div className="mb-4">
                             <span className="text-sm font-medium text-gray-500">Obituary:</span>
                             <p className="text-gray-900 mt-1">{String(submission.proposedPayload.obituary)}</p>
+                          </div>
+                        )}
+                        {submission.proposedPayload.photoUrl && (
+                          <div className="mb-4">
+                            <span className="text-sm font-medium text-gray-500">Photo:</span>
+                            <a 
+                              href={String(submission.proposedPayload.photoUrl)} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="block mt-2"
+                            >
+                              <img 
+                                src={String(submission.proposedPayload.photoUrl)} 
+                                alt="Submitted photo" 
+                                className="w-32 h-32 object-cover rounded-lg border-2 border-gray-300 hover:border-blue-500 transition-colors cursor-pointer"
+                              />
+                            </a>
                           </div>
                         )}
                       </div>
@@ -250,6 +269,27 @@ export default function ModerationPage() {
                           <p className="text-sm font-medium text-gray-700">Proposed Changes:</p>
                           
                           {Object.entries(submission.proposedPayload).map(([key, value]) => {
+                            // Handle photo URL separately
+                            if (key === 'photoUrl' && value) {
+                              return (
+                                <div key={key} className="text-sm">
+                                  <span className="font-medium text-gray-600 mb-2 block">New Photo:</span>
+                                  <a 
+                                    href={String(value)} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="block"
+                                  >
+                                    <img 
+                                      src={String(value)} 
+                                      alt="Proposed photo" 
+                                      className="w-32 h-32 object-cover rounded-lg border-2 border-gray-300 hover:border-blue-500 transition-colors cursor-pointer"
+                                    />
+                                  </a>
+                                </div>
+                              );
+                            }
+
                             const currentValue = submission.person ? submission.person[key as keyof Person] : null;
                             const displayValue = value && typeof value === 'string' && key.includes('Date') 
                               ? new Date(value).toLocaleDateString() 

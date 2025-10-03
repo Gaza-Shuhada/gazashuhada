@@ -13,10 +13,12 @@
     "@clerk/nextjs": "^6.33.1",
     "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "^6.16.3",
+    "@vercel/blob": "^2.0.0",
     "csv-parse": "^6.1.0",
     "next": "15.5.4",
     "react": "19.2.0",
     "react-dom": "19.2.0",
+    "sharp": "^0.34.4",
     "svix": "^1.76.1",
     "zod": "^4.1.11"
   },
@@ -29,6 +31,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
     "prisma": "^6.16.3",
+    "shadcn": "^3.3.1",
     "tailwindcss": "^4",
     "tsx": "^4.19.1",
     "typescript": "^5"

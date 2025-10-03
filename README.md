@@ -1,171 +1,297 @@
-# Gaza Deaths Admin Tools
+# Gaza Death Toll - Admin Tools
 
-**Staff-Only Internal Administration Tool** for managing versioned person records with comprehensive audit trails.
+Admin control panel for managing the Gaza Death Toll database. Handles bulk uploads, community submissions, and moderation workflows.
 
-> ⚠️ **IMPORTANT**: This is the **admin tools only**. A separate public-facing web application will be built for end-users, which will provide advanced search, filtering, sorting, analytics, and public data consumption features. These admin tools are focused exclusively on data management, moderation, and internal operations.
+> **Note**: This is the **admin tools** repository. A separate public-facing web application provides end-user features (search, filtering, analytics).
 
-## 🚀 Features
+---
 
-### ✅ Implemented
-- **Bulk Upload System** (Admin only) - CSV upload with validation, simulation, apply, and rollback
-- **Bulk Upload Metadata** - Mandatory label and date released fields for organization and provenance tracking
-- **Bulk Upload Rollback** - LIFO-safe rollback with conflict detection and smart UI indicators
-- **Records Browser** (Staff only) - Browse all records with version numbers and deletion status
-- **Audit Log System** - Comprehensive activity tracking for all admin actions
-- **Dashboard** (Staff only) - Statistics overview with role-based access
-- **Role-Based Access Control** - Admin, moderator, and community roles via Clerk
-- **Database Versioning** - Full audit trail with PersonVersion and ChangeSource tracking
-- **Multi-layer Security** - Middleware, layout, and API route protection
-- **Modern UI** - Next.js 15 with TypeScript and Tailwind CSS
+## Features
 
-### 🚧 Planned
-- **Community Submissions** - FLAG/EDIT functionality for death-related fields only
-- **Moderation Queue** - Approve/reject community submissions with notes
-- **Advanced Analytics** - Detailed statistics and reporting
+### ✅ Core Features (Completed)
 
-## 🛠 Tech Stack
+#### 1. Bulk Upload System
+- Upload CSV files with person records (name, gender, date of birth)
+- Simulation preview showing INSERT/UPDATE/DELETE operations
+- Transaction-safe apply with rollback capability
+- LIFO rollback protection (prevents conflicts)
+- Audit logging for all operations
+- Label and date tracking for uploads
 
-- **Framework**: Next.js 15 with App Router
-- **Database**: PostgreSQL with Prisma ORM
-- **Authentication**: Clerk with role-based access control
-- **Styling**: Tailwind CSS
-- **Language**: TypeScript
+#### 2. Community Submissions
+- **New Record Proposals**: Community members can propose new person records
+- **Edit Suggestions**: Propose changes to death-related information
+- **Photo Upload**: Integrated Vercel Blob storage with automatic resizing
+  - Automatic resize to 2048x2048px max
+  - Converts to optimized JPEG
+  - 10MB file size limit
+- **Location Coordinates**: Lat/lng coordinates for death locations
+  - Validation: -90 to 90 (latitude), -180 to 180 (longitude)
+- **Submission History**: Track your own submissions and their status
 
-## 📋 Getting Started
+#### 3. Moderation Queue
+- Review pending community submissions (FIFO queue)
+- Approve or reject with optional notes
+- Photo preview with click-to-enlarge
+- Before/after comparison for edits
+- Transaction-safe operations
+- Audit logging
 
-1. **Install dependencies**:
+#### 4. Records Management
+- Browse all person records with pagination
+- Version tracking for each record
+- Deletion status indicators
+- Photo thumbnails with click-to-enlarge
+- Location coordinates display
+
+#### 5. Audit System
+- Complete audit trail of all admin actions
+- User, timestamp, and metadata tracking
+- Filterable by action type and resource
+
+---
+
+## Tech Stack
+
+- **Framework**: Next.js 15.5.4 (App Router, Turbopack)
+- **Database**: PostgreSQL (Prisma ORM)
+- **Authentication**: Clerk
+- **Storage**: Vercel Blob (photo uploads)
+- **Image Processing**: Sharp
+- **Styling**: Tailwind CSS 4
+- **Deployment**: Vercel
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+ and npm
+- PostgreSQL database
+- Clerk account (for authentication)
+- Vercel account (for Blob storage)
+
+### Installation
+
+1. **Clone the repository**
+```bash
+git clone <repository-url>
+cd gazadeathtoll-admin
+```
+
+2. **Install dependencies**
 ```bash
 npm install
 ```
 
-2. **Set up environment variables**:
+3. **Set up environment variables**
+
+Create a `.env` file:
+
 ```bash
-cp .env.example .env.local
-# Add your database URL and Clerk keys
+# Database
+DATABASE_URL="prisma+postgres://..."
+
+# Clerk Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_..."
+CLERK_SECRET_KEY="sk_test_..."
+NEXT_PUBLIC_CLERK_SIGN_IN_URL="/sign-in"
+NEXT_PUBLIC_CLERK_SIGN_UP_URL="/sign-up"
+CLERK_WEBHOOK_SECRET="whsec_..."
+
+# Vercel Blob Storage (for photo uploads)
+BLOB_READ_WRITE_TOKEN="vercel_blob_rw_..."
 ```
 
-3. **Run database migrations**:
+4. **Set up the database**
 ```bash
 npx prisma migrate dev
+npx prisma generate
 ```
 
-4. **Start the development server**:
+5. **Run the development server**
 ```bash
 npm run dev
 ```
 
-5. **Open [http://localhost:3000](http://localhost:3000)** in your browser
+Open [http://localhost:3000](http://localhost:3000)
 
-## 🔐 Access Control
+---
 
-### Role System
+## Project Structure
 
-| Role | Access Level | Features |
-|------|--------------|----------|
-| **Admin** | Full Access | Dashboard, Bulk Uploads, Records, Audit Logs, Moderation |
-| **Moderator** | Staff Access | Dashboard, Records, Audit Logs, Moderation |
-| **Community** | No Access | Blocked with clear access denied message |
-
-**Note**: This is a staff-only application. Community members cannot access any features.
-
-### Page Routes
-
-- `/dashboard` - Staff dashboard with statistics (staff only)
-- `/bulk-uploads` - Upload, simulate, apply, and rollback CSV files (admin only)
-- `/records` - Browse database with version info and deletion status (staff only)
-- `/audit-logs` - View recent admin actions (staff only)
-- `/moderation/pending` - Review community submissions (staff only, planned)
-
-### Protection Layers
-
-1. **Client-Side Layout Guards** - Blocks UI rendering for unauthorized users
-2. **Server-Side Page Checks** - Redirects or shows access denied pages
-3. **API Endpoint Guards** - Returns 403 for unauthorized API requests
-4. **Navbar Visibility** - Only shows links user can access
-
-## 📚 Documentation
-
-### Core Documentation
-- **[CHANGELOG.md](./CHANGELOG.md)** - Version history and breaking changes with today's updates
-- **[docs/](./docs/)** - Detailed specifications:
-  - `SYSTEM_ARCHITECTURE.md` - ⭐ **Critical overview of two-app architecture**
-  - `API_DOCUMENTATION.md` - ⭐ **Complete API reference for public webapp integration**
-  - `product_spec.md` - Product requirements, features, and access control matrix
-  - `engineering_spec.md` - Database schema, API routes, and technical architecture
-  - `bulk_upload_guide.md` - Complete bulk upload workflow and rollback guide
-  - `csv_test_examples.md` - CSV validation test cases and examples
-  - `tasks_breakdown.md` - Development phases and completion status
-
-### Key Features Documentation
-
-**Bulk Upload System**:
-- Mandatory metadata fields:
-  - **Label**: Descriptive text for organization (max 200 characters)
-  - **Date Released**: When source data was published/released (tracks provenance)
-- CSV validation with comprehensive error messages
-- Simulation preview showing ALL deletions, ALL updates, sample inserts
-- LIFO-safe rollback with conflict detection
-- Smart UI indicators showing rollback eligibility
-- Full audit trail maintained
-
-**Records Browser**:
-- Pagination (10 records per page)
-- Version number column (v1, v2, v3...)
-- Deletion status column (color-coded badges)
-- Shows ALL records including deleted ones
-- Search and filter capabilities
-
-**Audit Log System**:
-- Last 50 admin actions
-- User, timestamp, action type, resource details
-- IP address tracking
-- Expandable JSON metadata
-- Color-coded action and resource badges
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## 🔧 Development
-
-### Database Schema Updates
-
-The application uses Prisma with PostgreSQL. Recent schema changes:
-- Added `BulkUpload.label` field (nullable String)
-- Moved `changeType` from `ChangeSource` to `PersonVersion`
-- Added `AuditLog` table for comprehensive activity tracking
-- Multiple performance indexes on `PersonVersion`
-
-Run migrations:
-```bash
-npx prisma migrate dev
-# or for production:
-npx prisma migrate deploy
+```
+├── prisma/
+│   ├── schema.prisma           # Database schema
+│   └── migrations/             # Database migrations
+├── src/
+│   ├── app/
+│   │   ├── api/                # API routes
+│   │   │   ├── admin/          # Admin endpoints
+│   │   │   └── community/      # Community endpoints
+│   │   ├── audit-logs/         # Audit log page
+│   │   ├── bulk-uploads/       # Bulk upload page
+│   │   ├── community/submit/   # Community submission form
+│   │   ├── dashboard/          # Main dashboard
+│   │   ├── moderation/         # Moderation queue
+│   │   └── records/            # Records browser
+│   ├── components/             # React components
+│   ├── lib/                    # Utilities and services
+│   └── middleware.ts           # Auth middleware
+└── docs/                       # Documentation
 ```
 
-### Testing
+---
 
-To test bulk upload functionality:
-1. Navigate to `/bulk-uploads` (admin account required)
-2. Upload test CSV from `docs/seed.csv`
-3. Provide a descriptive label (e.g., "Test Upload")
-4. Review simulation showing all changes
-5. Apply or cancel as needed
-6. Test rollback on past uploads
+## Role-Based Access Control
 
-## 📖 Additional Resources
+### Roles
 
-- [Clerk RBAC Documentation](https://clerk.com/docs/guides/secure/basic-rbac)
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Prisma Documentation](https://www.prisma.io/docs)
+1. **Admin**: Full system access
+2. **Moderator**: Can moderate submissions and view records
+3. **Community**: Can submit new records and edits
+
+### Access Matrix
+
+| Feature | Admin | Moderator | Community |
+|---------|-------|-----------|-----------|
+| Bulk Uploads | ✅ | ❌ | ❌ |
+| Community Submissions | ✅ | ✅ | ✅ |
+| Moderation Queue | ✅ | ✅ | ❌ |
+| Records Browser | ✅ | ✅ | ❌ |
+| Audit Logs | ✅ | ✅ | ❌ |
+| Dashboard | ✅ | ✅ | ❌ |
+
+---
+
+## Key Concepts
+
+### Person Record
+- **Identity Fields**: Cannot be edited (name, gender, date of birth)
+- **Death Information**: Can be updated via community submissions
+- **Version Tracking**: Every change creates a new version
+- **Confirmation Status**: MoH-confirmed (bulk) vs community-submitted
+
+### Versioning
+- Each person has multiple versions tracked in `PersonVersion`
+- Version 1 = initial creation (INSERT)
+- Subsequent versions = updates (UPDATE) or soft-deletes (DELETE)
+- All versions linked to a `ChangeSource` (bulk upload or community submission)
+
+### Bulk Upload Workflow
+1. Upload CSV file
+2. Simulation shows what will change
+3. Review INSERTs, UPDATEs, DELETEs
+4. Apply to database (transaction-safe)
+5. Can rollback if needed (LIFO protection)
+
+### Community Submission Workflow
+1. Community member submits NEW_RECORD or EDIT
+2. Submission enters moderation queue (PENDING)
+3. Moderator reviews and approves/rejects
+4. If approved, changes applied to database
+5. Community records marked as `confirmedByMoh=false`
+
+---
+
+## Documentation
+
+- [API Documentation](docs/API_DOCUMENTATION.md) - Complete API reference
+- [Tasks Breakdown](docs/tasks_breakdown.md) - Development progress
+- [Engineering Spec](docs/engineering_spec.md) - Technical architecture
+- [Product Spec](docs/product_spec.md) - Product requirements
+- [System Architecture](docs/SYSTEM_ARCHITECTURE.md) - System design
+- [Implementation Summary](docs/IMPLEMENTATION_SUMMARY.md) - Recent changes
+- [Changelog](CHANGELOG.md) - Version history
+
+---
+
+## Development
+
+### Commands
+
+```bash
+# Development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
+
+# Run linter
+npm run lint
+
+# Database commands
+npx prisma studio              # Open database GUI
+npx prisma migrate dev         # Create and apply migration
+npx prisma db push             # Push schema changes
+npx prisma generate            # Regenerate Prisma client
+```
+
+### Database Migrations
+
+When changing the schema:
+
+1. Edit `prisma/schema.prisma`
+2. Run `npx prisma migrate dev --name description`
+3. Commit both schema and migration files
+
+---
+
+## Environment Setup
+
+### Clerk Authentication
+
+1. Create account at [clerk.com](https://clerk.com)
+2. Create application
+3. Get API keys from dashboard
+4. Add to `.env`
+
+### Vercel Blob Storage
+
+1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
+2. Storage → Create Blob store
+3. Copy `BLOB_READ_WRITE_TOKEN`
+4. Add to `.env`
+
+---
+
+## Deployment
+
+### Vercel (Recommended)
+
+1. Push to GitHub
+2. Import to Vercel
+3. Add environment variables
+4. Deploy
+
+### Manual
+
+```bash
+npm run build
+npm start
+```
+
+---
+
+## Contributing
+
+1. Follow existing code style
+2. Test changes locally
+3. Update documentation
+4. Create pull request
+
+---
+
+## License
+
+[To be determined]
+
+---
+
+## Contact
+
+[To be determined]

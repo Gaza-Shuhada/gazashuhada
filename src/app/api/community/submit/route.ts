@@ -41,6 +41,33 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid gender value' }, { status: 400 });
       }
 
+      // Validate location coordinates (both must be provided or both must be absent)
+      const hasLat = proposedPayload.locationOfDeathLat !== undefined && proposedPayload.locationOfDeathLat !== null;
+      const hasLng = proposedPayload.locationOfDeathLng !== undefined && proposedPayload.locationOfDeathLng !== null;
+      
+      if (hasLat !== hasLng) {
+        return NextResponse.json({ 
+          error: 'Both latitude and longitude must be provided together for location of death' 
+        }, { status: 400 });
+      }
+
+      if (hasLat && hasLng) {
+        const lat = Number(proposedPayload.locationOfDeathLat);
+        const lng = Number(proposedPayload.locationOfDeathLng);
+        
+        if (isNaN(lat) || isNaN(lng)) {
+          return NextResponse.json({ error: 'Location coordinates must be valid numbers' }, { status: 400 });
+        }
+        
+        if (lat < -90 || lat > 90) {
+          return NextResponse.json({ error: 'Latitude must be between -90 and 90' }, { status: 400 });
+        }
+        
+        if (lng < -180 || lng > 180) {
+          return NextResponse.json({ error: 'Longitude must be between -180 and 180' }, { status: 400 });
+        }
+      }
+
       // Check if external ID already exists
       const existingPerson = await prisma.person.findUnique({
         where: { externalId: proposedPayload.externalId },
@@ -97,7 +124,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Validate that only allowed fields are being edited
-      const allowedFields = ['dateOfDeath', 'locationOfDeath', 'obituary', 'photoUrl'];
+      const allowedFields = ['dateOfDeath', 'locationOfDeathLat', 'locationOfDeathLng', 'obituary', 'photoUrl'];
       const proposedFields = Object.keys(proposedPayload);
       const invalidFields = proposedFields.filter(field => !allowedFields.includes(field));
 
@@ -109,6 +136,33 @@ export async function POST(request: NextRequest) {
 
       if (proposedFields.length === 0) {
         return NextResponse.json({ error: 'At least one field must be provided for edit' }, { status: 400 });
+      }
+
+      // Validate location coordinates (both must be provided or both must be absent)
+      const hasLat = proposedPayload.locationOfDeathLat !== undefined && proposedPayload.locationOfDeathLat !== null;
+      const hasLng = proposedPayload.locationOfDeathLng !== undefined && proposedPayload.locationOfDeathLng !== null;
+      
+      if (hasLat !== hasLng) {
+        return NextResponse.json({ 
+          error: 'Both latitude and longitude must be provided together for location of death' 
+        }, { status: 400 });
+      }
+
+      if (hasLat && hasLng) {
+        const lat = Number(proposedPayload.locationOfDeathLat);
+        const lng = Number(proposedPayload.locationOfDeathLng);
+        
+        if (isNaN(lat) || isNaN(lng)) {
+          return NextResponse.json({ error: 'Location coordinates must be valid numbers' }, { status: 400 });
+        }
+        
+        if (lat < -90 || lat > 90) {
+          return NextResponse.json({ error: 'Latitude must be between -90 and 90' }, { status: 400 });
+        }
+        
+        if (lng < -180 || lng > 180) {
+          return NextResponse.json({ error: 'Longitude must be between -180 and 180' }, { status: 400 });
+        }
       }
 
       const latestVersion = person.versions[0];

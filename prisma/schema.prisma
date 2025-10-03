@@ -53,7 +53,8 @@ model Person {
   gender            Gender
   dateOfBirth       DateTime
   dateOfDeath       DateTime?
-  locationOfDeath   String?
+  locationOfDeathLat Float?           // Latitude coordinate
+  locationOfDeathLng Float?           // Longitude coordinate
   obituary          String?
   photoUrl          String?           // Vercel Blob URL for photo
   confirmedByMoh    Boolean           @default(false) // true for bulk uploads, false for community submissions
@@ -73,7 +74,8 @@ model PersonVersion {
   gender            Gender
   dateOfBirth       DateTime
   dateOfDeath       DateTime?
-  locationOfDeath   String?
+  locationOfDeathLat Float?           // Latitude coordinate
+  locationOfDeathLng Float?           // Longitude coordinate
   obituary          String?
   photoUrl          String?           // Vercel Blob URL for photo
   confirmedByMoh    Boolean           @default(false) // true for bulk uploads, false for community submissions

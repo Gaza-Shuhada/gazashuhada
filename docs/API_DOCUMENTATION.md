@@ -517,7 +517,8 @@ GET /api/stats (Staff only - includes sensitive stats)
   gender: "MALE" | "FEMALE" | "OTHER";
   dateOfBirth: string;           // ISO 8601 date
   dateOfDeath: string | null;    // ISO 8601 date
-  locationOfDeath: string | null;
+  locationOfDeathLat: number | null; // Latitude (-90 to 90)
+  locationOfDeathLng: number | null; // Longitude (-180 to 180)
   obituary: string | null;
   photoUrl: string | null;       // Vercel Blob URL
   confirmedByMoh: boolean;       // true = bulk upload, false = community

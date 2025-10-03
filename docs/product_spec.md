@@ -64,9 +64,10 @@ The admin system supports:
    - **Features**:
      - Browse all database records with basic pagination (10 per page)
      - Shows ALL records including deleted ones
-     - Columns: External ID, Name, Gender, DOB, DOD, Location, **Version**, **Deleted Status**, Last Updated
+     - Columns: External ID, Name, Gender, DOB, DOD, Location (lat/lng), **Photo**, **Version**, **Deleted Status**, Last Updated
      - Version numbers displayed as badges (v1, v2, v3...)
      - Deletion status with color-coded badges (Green "No", Red "Yes")
+     - Photo thumbnails (48x48px) clickable to open full-size
    - **Security**: Staff only (admin + moderator)
    - **Note**: Advanced search, filtering, and analytics will be in the separate public-facing application
 
@@ -113,6 +114,7 @@ The admin system supports:
 | Records Browser | ✅ | ✅ | ❌ |
 | Audit Logs | ✅ | ✅ | ❌ |
 | Moderation Queue | ✅ | ✅ | ❌ |
+| Community Submissions | ✅ | ✅ | ✅ |
 | Rollback Uploads | ✅ | ❌ | ❌ |
 
 ## Page Routes
@@ -124,32 +126,50 @@ The admin system supports:
 | Audit Logs | `/audit-logs` | Layout guard | Staff only |
 | Records | `/records` | Server check | Staff only |
 | Moderation | `/moderation/pending` | Layout guard | Staff only |
+| Community Submit | `/community/submit` | Auth required | All authenticated users |
 
-### 🚧 Planned Features
-
-8. **Moderation Queue (Moderator)** - PLANNED
-   - List all pending submissions (NEW_RECORD and EDIT types)
-   - Approve/reject with notes
-   - Handle stale proposals (mark as superseded or approve anyway)
-   - Apply approved changes into main system as new versions
-   - Automatically logged in audit system
+8. **Moderation Queue (Staff Only)** - COMPLETED
+   - **Location**: `/moderation/pending`
+   - **Features**:
+     - List all pending submissions (NEW_RECORD and EDIT types)
+     - FIFO queue display (oldest first)
+     - Approve/reject with optional notes
+     - Handle stale proposals (detect conflicts with newer versions)
+     - Apply approved changes into main system as new versions
+     - Photo preview with 128x128px clickable thumbnails
+     - Before/after comparison for EDIT submissions
+     - Transaction-safe atomic operations
+     - Automatically logged in audit system
    - **NEW_RECORD submissions**: Community proposes entirely new person records
      - Records start with `confirmed_by_moh=false`
      - If later included in bulk upload, updated to `confirmed_by_moh=true`
    - **EDIT submissions**: Community can propose edits to:
-     - `date_of_death`, `location_of_death`, `obituary`, `photo_url` only
+     - `date_of_death`, `location_of_death_lat`, `location_of_death_lng`, `obituary`, `photo_url` only
      - Cannot edit name, gender, or date of birth (immutable except via bulk upload)
+   - **Security**: Staff only (admin + moderator)
 
-9. **Community Submissions** - PLANNED (Future Phase)
-   - **NEW_RECORD**: Propose new person records not yet in database
-     - Required: external_id, name, gender, date_of_birth
-     - Optional: death details, photo upload (Vercel Blob)
-   - **EDIT**: Propose edits to death-related fields and photo only
+9. **Community Submissions** - COMPLETED
+   - **Location**: `/community/submit`
+   - **Features**:
+     - Three-tab interface: "Propose New Record", "Suggest Edit", "My Submissions"
+     - **NEW_RECORD**: Propose new person records not yet in database
+       - Required: external_id, name, gender, date_of_birth
+       - Optional: death details, location coordinates, obituary, photo
+     - **EDIT**: Propose edits to death-related fields and photo only
+     - Submission history showing status, dates, moderator notes
+     - Form validation with required field checks
    - **Photo Upload Features**:
      - Maximum resolution: 2048x2048 pixels
-     - Automatic client-side resize before upload
+     - Automatic server-side resize before upload using Sharp
      - Maintains aspect ratio
-     - Optimized format (WebP) for reduced storage costs
+     - Optimized JPEG format (quality 90, mozjpeg)
+     - 10MB file size limit
      - Vercel Blob storage integration
-   - Submission forms with strict field restrictions
-   - **Note**: Currently not implemented; application is staff-only
+     - Client-side preview before submission
+   - **Location Coordinates**:
+     - Latitude/longitude float fields (replaced string location)
+     - Validation: -90 to 90 (latitude), -180 to 180 (longitude)
+     - Both coordinates required together
+   - **Security**: All authenticated users (admin, moderator, community)
+
+### 🚧 Planned Features

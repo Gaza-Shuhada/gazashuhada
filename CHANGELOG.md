@@ -14,7 +14,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- No unreleased changes yet
+- **Photo Upload System** (Vercel Blob):
+  - Integrated `@vercel/blob` SDK for cloud photo storage
+  - Server-side image processing with Sharp library
+  - Automatic resizing to max 2048x2048px (maintains aspect ratio)
+  - Converts all images to optimized JPEG (quality 90, mozjpeg)
+  - File validation: max 10MB, supports JPEG/PNG/WebP/GIF
+  - Upload endpoint at `/api/upload-photo` with authentication
+  - Client-side preview before submission
+  - Photo replacement logic for EDIT submissions
+
+- **Location Coordinates System** (BREAKING):
+  - Changed `locationOfDeath` from String to Float lat/lng coordinates
+  - Added `locationOfDeathLat` and `locationOfDeathLng` fields to Person and PersonVersion
+  - Both coordinates required together with validation:
+    - Latitude: -90 to 90
+    - Longitude: -180 to 180
+  - Form inputs use number type with step="any"
+  - Display format: "31.5000, 34.5000" in tables
+  - Migration: Removed old `locationOfDeath` string field (no backward compatibility)
+
+- **Photo Display in Admin Interface**:
+  - Moderation page shows 128x128px clickable photo thumbnails
+  - Records table shows 48x48px photo thumbnails in dedicated column
+  - Click to open full-size photo in new tab
+  - Hover effects with blue border for better UX
+  - Shows "—" placeholder when no photo exists
+
+- **UI/UX Improvements**:
+  - Fixed form input text visibility by adding `text-gray-900` class to all inputs
+  - Improved form styling consistency across all pages
+  - Better visual feedback for interactive elements
+
+### Changed
+- Removed deprecated `locationOfDeath` string field (breaking change for rapid development)
+- Database schema cleaned up - no backward compatibility fields
+- Photo URLs stored as public Vercel Blob URLs in `photoUrl` field
+
+### Technical Details
+- Dependencies added: `@vercel/blob@^0.23.0`, `sharp@^0.33.0`
+- Environment variable required: `BLOB_READ_WRITE_TOKEN`
+- Photos stored in `person-photos/` folder with timestamped filenames
+- Image processing happens server-side before upload
 
 ---
 

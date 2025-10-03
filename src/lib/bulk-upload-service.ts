@@ -155,7 +155,7 @@ export async function applyBulkUpload(
   // OPTIMIZED: For DELETE detection, only fetch IDs
   const allExistingPersons = await prisma.person.findMany({
     where: { isDeleted: false },
-    select: { id: true, externalId: true, name: true, gender: true, dateOfBirth: true, dateOfDeath: true, locationOfDeath: true, obituary: true },
+    select: { id: true, externalId: true, name: true, gender: true, dateOfBirth: true, dateOfDeath: true, locationOfDeathLat: true, locationOfDeathLng: true, obituary: true },
   });
   
   // Use a transaction to ensure atomicity
@@ -244,7 +244,8 @@ export async function applyBulkUpload(
               gender: row.gender,
               dateOfBirth: incomingDate,
               dateOfDeath: existing.dateOfDeath,
-              locationOfDeath: existing.locationOfDeath,
+              locationOfDeathLat: existing.locationOfDeathLat,
+              locationOfDeathLng: existing.locationOfDeathLng,
               obituary: existing.obituary,
               versionNumber: nextVersionNumber,
               sourceId: changeSource.id,
@@ -281,7 +282,8 @@ export async function applyBulkUpload(
             gender: existing.gender,
             dateOfBirth: existing.dateOfBirth,
             dateOfDeath: existing.dateOfDeath,
-            locationOfDeath: existing.locationOfDeath,
+            locationOfDeathLat: existing.locationOfDeathLat,
+            locationOfDeathLng: existing.locationOfDeathLng,
             obituary: existing.obituary,
             versionNumber: nextVersionNumber,
             sourceId: changeSource.id,
@@ -422,7 +424,8 @@ export async function rollbackBulkUpload(
             gender: previousVersion.gender,
             dateOfBirth: previousVersion.dateOfBirth,
             dateOfDeath: previousVersion.dateOfDeath,
-            locationOfDeath: previousVersion.locationOfDeath,
+            locationOfDeathLat: previousVersion.locationOfDeathLat,
+            locationOfDeathLng: previousVersion.locationOfDeathLng,
             obituary: previousVersion.obituary,
             isDeleted: previousVersion.isDeleted,
           },
@@ -457,7 +460,8 @@ export async function rollbackBulkUpload(
             gender: previousVersion.gender,
             dateOfBirth: previousVersion.dateOfBirth,
             dateOfDeath: previousVersion.dateOfDeath,
-            locationOfDeath: previousVersion.locationOfDeath,
+            locationOfDeathLat: previousVersion.locationOfDeathLat,
+            locationOfDeathLng: previousVersion.locationOfDeathLng,
             obituary: previousVersion.obituary,
           },
         });

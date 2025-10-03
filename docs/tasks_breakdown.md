@@ -101,13 +101,21 @@
 - [x] API endpoint `POST /api/community/submit` for NEW_RECORD and EDIT submissions
 - [x] API endpoint `GET /api/community/my-submissions` for user's submission history
 - [x] Backend validation: NEW_RECORD requires all identity fields
-- [x] Backend validation: EDIT restricted to `date_of_death`, `location_of_death`, `obituary`, `photo_url`
+- [x] Backend validation: EDIT restricted to `date_of_death`, `locationOfDeathLat`, `locationOfDeathLng`, `obituary`, `photo_url`
 - [x] UI submission form at `/community/submit` with three tabs
 - [x] NEW_RECORD form with required and optional fields
 - [x] EDIT form with field restrictions enforced
 - [x] Submission history view showing status, dates, and moderator notes
 - [x] Access control: All authenticated users (admin, moderator, community) can submit
-- [x] Text input visibility improvements (dark text)
+- [x] Text input visibility improvements (dark text with `text-gray-900` class)
+- [x] **Photo Upload**: Integrated Vercel Blob storage with Sharp for resizing
+- [x] Photo endpoint `/api/upload-photo` with automatic resize to 2048x2048px
+- [x] Client-side photo preview before submission
+- [x] File validation: 10MB max, JPEG/PNG/WebP/GIF formats
+- [x] **Location Coordinates**: Changed from string to Float lat/lng (BREAKING)
+- [x] Removed `locationOfDeath` string field (no backward compatibility)
+- [x] Added `locationOfDeathLat` and `locationOfDeathLng` with validation
+- [x] Validation: Both coordinates required together, proper ranges (-90/90, -180/180)
 
 ## Phase 5: Moderation ✅ COMPLETED
 - [x] Build `/moderation/pending` page with pending submissions queue
@@ -125,6 +133,12 @@
 - [x] Integrate with audit log: Log all approve/reject actions with metadata
 - [x] Set `confirmedByMoh=false` for community-submitted records
 - [x] FIFO queue display (oldest first)
+- [x] **Photo Display**: 128x128px clickable thumbnails in moderation interface
+- [x] Click photo to open full-size in new tab
+- [x] Photo shown for both NEW_RECORD and EDIT submissions
+- [x] Photo replacement logic: New photo replaces old when EDIT approved
+- [x] **Records Table Photo Column**: 48x48px thumbnails with click-to-enlarge
+- [x] Hover effects and visual feedback on all photo elements
 
 ## Phase 6: Public API for Public Webapp 🚧 IN PROGRESS
 **Goal**: Enable public-facing webapp to query data and submit community contributions

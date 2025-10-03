@@ -9,7 +9,9 @@ interface Person {
   gender: string;
   dateOfBirth: string;
   dateOfDeath?: string;
-  locationOfDeath?: string;
+  locationOfDeathLat?: number | null;
+  locationOfDeathLng?: number | null;
+  photoUrl?: string | null;
   isDeleted: boolean;
   currentVersion: number;
   createdAt: string;
@@ -128,6 +130,9 @@ export function PersonsTable() {
                 Location
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Photo
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Version
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -167,7 +172,28 @@ export function PersonsTable() {
                   )}
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {person.locationOfDeath || <span className="text-gray-400">—</span>}
+                  {person.locationOfDeathLat && person.locationOfDeathLng ? (
+                    <span>{person.locationOfDeathLat.toFixed(4)}, {person.locationOfDeathLng.toFixed(4)}</span>
+                  ) : (
+                    <span className="text-gray-400">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {person.photoUrl ? (
+                    <a 
+                      href={person.photoUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                    >
+                      <img 
+                        src={person.photoUrl} 
+                        alt={`Photo of ${person.name}`}
+                        className="w-12 h-12 object-cover rounded border-2 border-gray-300 hover:border-blue-500 transition-colors cursor-pointer"
+                      />
+                    </a>
+                  ) : (
+                    <span className="text-gray-400">—</span>
+                  )}
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                   <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded">

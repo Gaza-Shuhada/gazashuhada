@@ -13,7 +13,8 @@
 - external_id (string, unique, not null)
 - name, gender, date_of_birth
 - date_of_death (date, nullable)
-- location_of_death (string, nullable)
+- location_of_death_lat (float, nullable) ⭐ **Latitude coordinate (-90 to 90)**
+- location_of_death_lng (float, nullable) ⭐ **Longitude coordinate (-180 to 180)**
 - obituary (text, nullable)
 - photo_url (string, nullable) ⭐ **Vercel Blob URL for photo (max 2048x2048px, auto-resized before upload)**
 - confirmed_by_moh (boolean, default false) ⭐ **true for bulk uploads, false for community submissions**
@@ -25,7 +26,8 @@
 - external_id (string, not null)
 - name, gender, date_of_birth
 - date_of_death (date, nullable)
-- location_of_death (string, nullable)
+- location_of_death_lat (float, nullable) ⭐ **Latitude coordinate (-90 to 90)**
+- location_of_death_lng (float, nullable) ⭐ **Longitude coordinate (-180 to 180)**
 - obituary (text, nullable)
 - photo_url (string, nullable) ⭐ **Vercel Blob URL for photo (max 2048x2048px, auto-resized before upload)**
 - confirmed_by_moh (boolean, default false) ⭐ **true for bulk uploads, false for community submissions**
@@ -61,7 +63,7 @@
 - person_id (FK -> person.id, nullable) ⭐ **NULL for NEW_RECORD submissions**
 - proposed_payload (JSONB, not null)
   - **For NEW_RECORD**: All required fields (external_id, name, gender, date_of_birth) + optional death fields + photo
-  - **For EDIT**: Only `date_of_death`, `location_of_death`, `obituary`, `photo_url` allowed
+  - **For EDIT**: Only `date_of_death`, `location_of_death_lat`, `location_of_death_lng`, `obituary`, `photo_url` allowed
 - reason (text, nullable) - Optional explanation for the submission
 - submitted_by (string, Clerk user ID)
 - status (enum: PENDING, APPROVED, REJECTED, SUPERSEDED)
