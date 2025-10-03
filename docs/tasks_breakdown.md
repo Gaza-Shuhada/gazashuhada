@@ -94,23 +94,121 @@
   - [x] Update bulk_upload_guide.md with label and rollback info
   - [x] Update tasks_breakdown.md with completion status
 
-## Phase 4: Community Submissions
-- [ ] Endpoints `/community/flag` and `/community/edit`
-- [ ] Store proposals with base_version_id + proposed_payload or reason
-- [ ] Backend validation: EDIT proposals may only contain `date_of_death`, `location_of_death`, `obituary`
-- [ ] UI submission form restricted to these three fields
+## Phase 4: Community Submissions ✅ COMPLETED
+- [x] Schema updates for `confirmedByMoh` and `photoUrl` fields
+- [x] Updated `SubmissionType` enum: `NEW_RECORD`, `EDIT` (removed `FLAG`)
+- [x] Make `personId` and `baseVersionId` nullable for NEW_RECORD submissions
+- [x] API endpoint `POST /api/community/submit` for NEW_RECORD and EDIT submissions
+- [x] API endpoint `GET /api/community/my-submissions` for user's submission history
+- [x] Backend validation: NEW_RECORD requires all identity fields
+- [x] Backend validation: EDIT restricted to `date_of_death`, `location_of_death`, `obituary`, `photo_url`
+- [x] UI submission form at `/community/submit` with three tabs
+- [x] NEW_RECORD form with required and optional fields
+- [x] EDIT form with field restrictions enforced
+- [x] Submission history view showing status, dates, and moderator notes
+- [x] Access control: All authenticated users (admin, moderator, community) can submit
+- [x] Text input visibility improvements (dark text)
 
-## Phase 5: Moderation
-- [ ] Build `/moderation/pending` page with table of proposals
-- [ ] Detail view: show diffs (restricted to death fields for EDIT)
-- [ ] Actions: approve (→ person_version + update snapshot), reject, supersede
-- [ ] Persist moderator notes + audit trail
-- [ ] **Integrate with audit log**: Log all moderation decisions (approve/reject) with metadata
+## Phase 5: Moderation ✅ COMPLETED
+- [x] Build `/moderation/pending` page with pending submissions queue
+- [x] API endpoint `GET /api/admin/moderation/list` (staff only)
+- [x] API endpoint `POST /api/admin/moderation/[id]/approve` (staff only)
+- [x] API endpoint `POST /api/admin/moderation/[id]/reject` (staff only)
+- [x] NEW_RECORD approval: Create Person, PersonVersion, ChangeSource
+- [x] EDIT approval: Update Person, create new PersonVersion
+- [x] Validation: Check for duplicate External IDs (NEW_RECORD)
+- [x] Validation: Check for stale base versions (EDIT)
+- [x] Display NEW_RECORD proposals with all fields
+- [x] Display EDIT proposals with before/after comparison
+- [x] Approve/Reject modal with optional/required notes
+- [x] Transaction-safe atomic operations
+- [x] Integrate with audit log: Log all approve/reject actions with metadata
+- [x] Set `confirmedByMoh=false` for community-submitted records
+- [x] FIFO queue display (oldest first)
 
-## Phase 6: Testing
+## Phase 6: Public API for Public Webapp 🚧 IN PROGRESS
+**Goal**: Enable public-facing webapp to query data and submit community contributions
+
+### Documentation ✅ COMPLETED
+- [x] Create comprehensive API documentation (`docs/API_DOCUMENTATION.md`)
+- [x] Document all existing endpoints with examples
+- [x] Design public API endpoints with filtering, pagination, sorting
+- [x] Define data models and TypeScript interfaces
+- [x] Document authentication and security requirements
+- [x] Add rate limiting and caching recommendations
+- [x] Provide curl examples and use cases
+- [x] Update README.md to reference API documentation
+
+### Public Query Endpoints 🚧 TO IMPLEMENT
+- [ ] `GET /api/public/persons` - Paginated, filtered, sortable records
+  - [ ] Query params: page, limit, sortBy, sortOrder
+  - [ ] Search by name or external ID
+  - [ ] Filter by gender, confirmedByMoh, date ranges, location
+  - [ ] Return pagination metadata
+  - [ ] Optimize query performance with proper indexes
+- [ ] `GET /api/public/persons/{externalId}` - Single person with history
+  - [ ] Include full version history with change types
+  - [ ] Show MoH vs community submission timeline
+  - [ ] Optional `includeHistory` query param
+- [ ] `GET /api/public/stats` - Aggregate statistics
+  - [ ] Total records, confirmed vs community
+  - [ ] Breakdown by gender, age groups
+  - [ ] Optional groupBy parameter
+  - [ ] Cache results (15 minute TTL)
+
+### Photo Upload Integration 🚧 TO IMPLEMENT
+- [ ] `POST /api/public/community/upload-photo`
+  - [ ] Integrate Vercel Blob storage
+  - [ ] Validate file types (jpg, png, webp only)
+  - [ ] Enforce 10MB max file size
+  - [ ] Auto-resize to 2048x2048px max
+  - [ ] Maintain aspect ratio
+  - [ ] Convert to WebP format for compression
+  - [ ] Return Blob URL for use in submissions
+- [ ] Client-side image resize before upload
+- [ ] Progress indicator for uploads
+
+### Infrastructure & Performance 🚧 TO IMPLEMENT
+- [ ] Configure CORS for public webapp domain
+- [ ] Implement rate limiting middleware
+  - [ ] 100 req/min for read operations
+  - [ ] 10 req/min for write operations (submissions)
+  - [ ] 5 req/min for photo uploads
+- [ ] Add caching headers for public endpoints
+  - [ ] 5 min cache for `/api/public/persons`
+  - [ ] 10 min cache for single person records
+  - [ ] 15 min cache for stats
+- [ ] Set up CDN for Vercel Blob photos
+- [ ] Add database indexes for common queries
+  - [ ] Index on name (for search)
+  - [ ] Index on dateOfDeath (for filtering)
+  - [ ] Index on locationOfDeath (for filtering)
+  - [ ] Composite index on (confirmedByMoh, isDeleted)
+
+### Security & Monitoring 🚧 TO IMPLEMENT
+- [ ] API authentication for public webapp (JWT or API keys)
+- [ ] Input sanitization for all query parameters
+- [ ] SQL injection prevention (Prisma handles this)
+- [ ] Implement abuse detection for submissions
+- [ ] Monitor API usage and performance
+- [ ] Set up error tracking (Sentry or similar)
+- [ ] Add request logging for debugging
+
+### Testing & Validation 🚧 TO IMPLEMENT
+- [ ] API integration tests for public endpoints
+- [ ] Performance testing with large result sets
+- [ ] Rate limiting tests
+- [ ] Photo upload tests (various formats and sizes)
+- [ ] CORS configuration tests
+- [ ] Pagination edge cases
+- [ ] Search and filter accuracy tests
+
+## Phase 7: Testing & Quality Assurance
 - [ ] Jest + Supertest setup
 - [ ] Bulk upload simulate/apply tests
 - [ ] CSV validation test: reject invalid headers/columns
 - [ ] Community submission validation: reject EDIT proposals on non-death fields
 - [ ] Moderation approve/reject/supersede tests
 - [ ] End-to-end DB integration tests
+- [ ] Performance benchmarking
+- [ ] Load testing for public API endpoints

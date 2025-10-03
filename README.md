@@ -89,6 +89,7 @@ npm run dev
 - **[CHANGELOG.md](./CHANGELOG.md)** - Version history and breaking changes with today's updates
 - **[docs/](./docs/)** - Detailed specifications:
   - `SYSTEM_ARCHITECTURE.md` - ⭐ **Critical overview of two-app architecture**
+  - `API_DOCUMENTATION.md` - ⭐ **Complete API reference for public webapp integration**
   - `product_spec.md` - Product requirements, features, and access control matrix
   - `engineering_spec.md` - Database schema, API routes, and technical architecture
   - `bulk_upload_guide.md` - Complete bulk upload workflow and rollback guide
