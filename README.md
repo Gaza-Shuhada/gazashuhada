@@ -107,7 +107,7 @@ CLERK_WEBHOOK_SECRET="whsec_..."
 BLOB_READ_WRITE_TOKEN="vercel_blob_rw_..."
 ```
 
-4. **Set up the database**
+4. **Set up the database** (development)
 ```bash
 npx prisma migrate dev
 npx prisma generate
@@ -202,11 +202,10 @@ Open [http://localhost:3000](http://localhost:3000)
 ## Documentation
 
 - [API Documentation](docs/API_DOCUMENTATION.md) - Complete API reference
-- [Tasks Breakdown](docs/tasks_breakdown.md) - Development progress
-- [Engineering Spec](docs/engineering_spec.md) - Technical architecture
-- [Product Spec](docs/product_spec.md) - Product requirements
-- [System Architecture](docs/SYSTEM_ARCHITECTURE.md) - System design
-- [Implementation Summary](docs/IMPLEMENTATION_SUMMARY.md) - Recent changes
+- [Engineering](docs/ENGINEERING.md) - Technical architecture and workflows
+- [Product Overview](docs/PRODUCT.md) - Product context and features
+- [Contributing](docs/CONTRIBUTING.md) - How to contribute
+- [TODOs](docs/TODO.md) - Follow-up tasks
 - [Changelog](CHANGELOG.md) - Version history
 
 ---
@@ -240,7 +239,8 @@ npx prisma generate            # Regenerate Prisma client
 When changing the schema:
 
 1. Edit `prisma/schema.prisma`
-2. Run `npx prisma migrate dev --name description`
+2. Dev: run `npx prisma migrate dev --name description`
+3. CI/Prod: run `npx prisma migrate deploy`
 3. Commit both schema and migration files
 
 ---

@@ -9,6 +9,8 @@
 
 This API provides access to the Gaza Deaths database for both the **Admin Control Panel** (this repo) and the **Public-Facing Web Application** (separate repo).
 
+> Scope note: This repository implements staff/admin and authenticated community endpoints. The public API endpoints under `/api/public/*` are designed here but are not implemented in this repository.
+
 ### Two Application Architecture
 
 - **Admin Control Panel** (this repo): Internal staff tool for data management and moderation
@@ -70,7 +72,10 @@ GET /api/public/persons
 | `maxAge` | integer | No | Maximum age at time of death |
 | `dateOfDeathFrom` | date | No | Filter deaths from this date (YYYY-MM-DD) |
 | `dateOfDeathTo` | date | No | Filter deaths to this date (YYYY-MM-DD) |
-| `location` | string | No | Filter by location of death (partial match) |
+| `minLat` | number | No | Minimum latitude (-90 to 90) |
+| `maxLat` | number | No | Maximum latitude (-90 to 90) |
+| `minLng` | number | No | Minimum longitude (-180 to 180) |
+| `maxLng` | number | No | Maximum longitude (-180 to 180) |
 
 **Response:** `200 OK`
 
@@ -85,9 +90,11 @@ GET /api/public/persons
       "gender": "MALE",
       "dateOfBirth": "1990-05-15",
       "dateOfDeath": "2024-01-20",
-      "locationOfDeath": "Gaza City",
+      "locationOfDeathLat": 31.501,
+      "locationOfDeathLng": 34.467,
       "obituary": "...",
-      "photoUrl": "https://blob.vercel-storage.com/...",
+      "photoUrlOriginal": "https://blob.vercel-storage.com/...",
+      "photoUrlThumb": "https://blob.vercel-storage.com/...",
       "confirmedByMoh": true,
       "isDeleted": false,
       "currentVersion": 3,
@@ -162,10 +169,12 @@ GET /api/public/persons/{externalId}
     "name": "John Doe",
     "gender": "MALE",
     "dateOfBirth": "1990-05-15",
-    "dateOfDeath": "2024-01-20",
-    "locationOfDeath": "Gaza City",
+      "dateOfDeath": "2024-01-20",
+      "locationOfDeathLat": 31.501,
+      "locationOfDeathLng": 34.467,
     "obituary": "...",
-    "photoUrl": "https://blob.vercel-storage.com/...",
+    "photoUrlOriginal": "https://blob.vercel-storage.com/...",
+    "photoUrlThumb": "https://blob.vercel-storage.com/...",
     "confirmedByMoh": true,
     "isDeleted": false,
     "currentVersion": 3,
@@ -191,7 +200,7 @@ GET /api/public/persons/{externalId}
           "type": "COMMUNITY_SUBMISSION",
           "description": "Community-submitted edit"
         },
-        "changes": ["dateOfDeath", "locationOfDeath"]
+        "changes": ["dateOfDeath", "locationOfDeathLat", "locationOfDeathLng"]
       },
       {
         "versionNumber": 3,
@@ -274,9 +283,11 @@ POST /api/public/community/submit
     "gender": "MALE",
     "dateOfBirth": "1995-03-10",
     "dateOfDeath": "2024-01-15",
-    "locationOfDeath": "Rafah",
+    "locationOfDeathLat": 31.298,
+    "locationOfDeathLng": 34.245,
     "obituary": "...",
-    "photoUrl": "https://blob.vercel-storage.com/..."
+    "photoUrlOriginal": "https://blob.vercel-storage.com/...",
+    "photoUrlThumb": "https://blob.vercel-storage.com/..."
   },
   "reason": "Personal knowledge - family member"
 }
@@ -285,7 +296,7 @@ POST /api/public/community/submit
 **Validation Rules:**
 
 - **Required fields**: `externalId`, `name`, `gender`, `dateOfBirth`
-- **Optional fields**: `dateOfDeath`, `locationOfDeath`, `obituary`, `photoUrl`
+- **Optional fields**: `dateOfDeath`, `locationOfDeathLat`, `locationOfDeathLng`, `obituary`, `photoUrlOriginal`, `photoUrlThumb`
 - `gender` must be: `MALE`, `FEMALE`, or `OTHER`
 - `dateOfBirth` must be in format: `YYYY-MM-DD`
 - `externalId` must not already exist in the database
@@ -335,9 +346,11 @@ POST /api/public/community/submit
   "externalId": "P12345",
   "proposedPayload": {
     "dateOfDeath": "2024-01-20",
-    "locationOfDeath": "Gaza City",
+    "locationOfDeathLat": 31.501,
+    "locationOfDeathLng": 34.467,
     "obituary": "Updated information...",
-    "photoUrl": "https://blob.vercel-storage.com/..."
+    "photoUrlOriginal": "https://blob.vercel-storage.com/...",
+    "photoUrlThumb": "https://blob.vercel-storage.com/..."
   },
   "reason": "Correcting location based on family confirmation"
 }
@@ -346,7 +359,7 @@ POST /api/public/community/submit
 **Validation Rules:**
 
 - **Required**: `externalId` (must exist in database)
-- **Editable fields**: Only `dateOfDeath`, `locationOfDeath`, `obituary`, `photoUrl`
+- **Editable fields**: Only `dateOfDeath`, `locationOfDeathLat`, `locationOfDeathLng`, `obituary`, `photoUrlOriginal`, `photoUrlThumb`
 - **Immutable fields**: `name`, `gender`, `dateOfBirth` (cannot be edited via community submissions)
 - At least one field must be provided
 - Person record must exist
@@ -431,20 +444,20 @@ GET /api/public/community/my-submissions
 
 ---
 
-### 7. Upload Photo
+### 7. Upload Photo (Implemented in this repo)
 
 Upload a photo to Vercel Blob storage.
 
 ```http
-POST /api/public/community/upload-photo
+POST /api/upload-photo
 ```
 
-**Authentication:** Required (Clerk or JWT)
+**Authentication:** Required (Clerk)
 
 **Request:** `multipart/form-data`
 
 ```
-photo: [file] (max 10MB, formats: jpg, jpeg, png, webp)
+photo: [file] (max 10MB, formats: jpg, jpeg, png, webp, gif)
 ```
 
 **Response:** `200 OK`
@@ -452,7 +465,7 @@ photo: [file] (max 10MB, formats: jpg, jpeg, png, webp)
 ```json
 {
   "success": true,
-  "url": "https://blob.vercel-storage.com/xyz123.webp",
+  "url": "https://blob.vercel-storage.com/person-photos/1699999999999-abc123.webp",
   "dimensions": {
     "width": 2048,
     "height": 2048
@@ -462,9 +475,8 @@ photo: [file] (max 10MB, formats: jpg, jpeg, png, webp)
 ```
 
 **Processing:**
-- Automatically resized to max 2048x2048px
-- Maintains aspect ratio
-- Converted to WebP format for optimal compression
+- Automatically resized to max 2048x2048px (maintains aspect ratio)
+- All images converted to optimized WebP (quality ~85)
 - Original aspect ratio preserved
 
 ---
@@ -520,7 +532,8 @@ GET /api/stats (Staff only - includes sensitive stats)
   locationOfDeathLat: number | null; // Latitude (-90 to 90)
   locationOfDeathLng: number | null; // Longitude (-180 to 180)
   obituary: string | null;
-  photoUrl: string | null;       // Vercel Blob URL
+  photoUrlOriginal: string | null; // Original uploaded image URL
+  photoUrlThumb: string | null;    // Thumbnail (e.g., 512x512 WebP) URL
   confirmedByMoh: boolean;       // true = bulk upload, false = community
   isDeleted: boolean;
   currentVersion: number;        // Current version number
@@ -629,7 +642,7 @@ All endpoints follow this error format:
 5. **Authentication**: Clerk for community submissions
 
 ### Photo Uploads
-1. **File Type Validation**: Only jpg, png, webp allowed
+1. **File Type Validation**: jpg, jpeg, png, webp, gif accepted; converted to WebP on upload
 2. **Size Limits**: Max 10MB
 3. **Malware Scanning**: Consider integration
 4. **CDN**: Use Vercel Blob with CDN for performance

@@ -18,7 +18,7 @@ interface Person {
   dateOfDeath?: string;
   locationOfDeathLat?: number | null;
   locationOfDeathLng?: number | null;
-  photoUrl?: string | null;
+  photoUrlThumb?: string | null;
   isDeleted: boolean;
   currentVersion: number;
   createdAt: string;
@@ -178,14 +178,14 @@ export function PersonsTable() {
                     )}
                   </TableCell>
                   <TableCell>
-                    {person.photoUrl ? (
+                    {person.photoUrlThumb ? (
                       <a 
-                        href={person.photoUrl} 
+                        href={person.photoUrlThumb} 
                         target="_blank" 
                         rel="noopener noreferrer"
                       >
                         <Image 
-                          src={person.photoUrl} 
+                          src={person.photoUrlThumb} 
                           alt={`Photo of ${person.name}`}
                           width={48}
                           height={48}

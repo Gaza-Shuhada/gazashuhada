@@ -1,6 +1,6 @@
-'use client';
-
-import { useState, useEffect } from 'react';
+import { auth, currentUser } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
+import BulkUploadsClient from './BulkUploadsClient';
 
 interface BulkUpload {
   id: string;
@@ -569,6 +569,11 @@ function BulkUploadsContent() {
   );
 }
 
-export default function BulkUploadsPage() {
-  return <BulkUploadsContent />;
+export default async function BulkUploadsPage() {
+  const { userId } = await auth();
+  if (!userId) redirect('/sign-in');
+  const user = await currentUser();
+  const role = user?.publicMetadata?.role as string;
+  if (role !== 'admin') redirect('/?error=admin_required');
+  return <BulkUploadsClient />;
 }

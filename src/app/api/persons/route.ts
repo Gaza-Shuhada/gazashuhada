@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
           dateOfDeath: true,
           locationOfDeathLat: true,
           locationOfDeathLng: true,
-          photoUrl: true,
+          photoUrlThumb: true,
           isDeleted: true,
           createdAt: true,
           updatedAt: true,

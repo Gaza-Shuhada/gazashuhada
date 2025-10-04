@@ -35,7 +35,7 @@ See `.cursorrules` for complete details.
 3. **Test locally**: `npm run dev`
 4. **Check for errors**: `npm run lint`
 5. **Commit changes**: Use clear commit messages
-6. **Push and create PR**
+6. **Push and create PR`
 
 ---
 
@@ -61,9 +61,9 @@ See `.cursorrules` for anti-patterns and examples.
 ## 📚 Documentation
 
 - **Development standards**: `.cursorrules` ⭐
-- **Project details**: `docs/PROJECT.md`
-- **API reference**: `docs/API_DOCUMENTATION.md`
-- **Database schema**: `docs/engineering_spec.md`
+- **Product overview**: `./PRODUCT.md`
+- **API reference**: `./API_DOCUMENTATION.md`
+- **Engineering**: `./ENGINEERING.md`
 
 ---
 
@@ -77,5 +77,4 @@ See `.cursorrules` for anti-patterns and examples.
 
 ---
 
-**Questions?** Read `.cursorrules` first, then check `docs/PROJECT.md`
-
+**Questions?** Read `.cursorrules` first, then check `./PRODUCT.md`

@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Validate that only allowed fields are being edited
-      const allowedFields = ['dateOfDeath', 'locationOfDeathLat', 'locationOfDeathLng', 'obituary', 'photoUrl'];
+      const allowedFields = ['dateOfDeath', 'locationOfDeathLat', 'locationOfDeathLng', 'obituary', 'photoUrlThumb', 'photoUrlOriginal'];
       const proposedFields = Object.keys(proposedPayload);
       const invalidFields = proposedFields.filter(field => !allowedFields.includes(field));
 

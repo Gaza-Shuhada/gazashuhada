@@ -8,7 +8,7 @@ export default function SignUpPage() {
           appearance={{
             elements: {
               rootBox: "mx-auto",
-              card: "bg-white shadow-2xl rounded-lg",
+              card: "bg-card shadow-2xl rounded-lg",
             }
           }}
           routing="path"

@@ -6,11 +6,11 @@ import { createAuditLogWithUser } from '@/lib/audit-log';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const user = await requireStaff();
-    const { id } = await params;
+    const { id } = params;
 
     const body = await request.json();
     const { note } = body;
@@ -81,7 +81,8 @@ export async function POST(
             locationOfDeathLat: typeof payload.locationOfDeathLat === 'number' ? payload.locationOfDeathLat : null,
             locationOfDeathLng: typeof payload.locationOfDeathLng === 'number' ? payload.locationOfDeathLng : null,
             obituary: payload.obituary || null,
-            photoUrl: payload.photoUrl || null,
+            photoUrlThumb: payload.photoUrlThumb || null,
+            photoUrlOriginal: payload.photoUrlOriginal || null,
             confirmedByMoh: false, // Community submissions are not MoH confirmed
             isDeleted: false,
           },
@@ -99,7 +100,8 @@ export async function POST(
             locationOfDeathLat: person.locationOfDeathLat,
             locationOfDeathLng: person.locationOfDeathLng,
             obituary: person.obituary,
-            photoUrl: person.photoUrl,
+            photoUrlThumb: person.photoUrlThumb,
+            photoUrlOriginal: person.photoUrlOriginal,
             confirmedByMoh: false,
             versionNumber: 1,
             sourceId: changeSource.id,
@@ -151,7 +153,7 @@ export async function POST(
       }
 
       const person = submission.person;
-      const payload = submission.proposedPayload as Record<string, string>;
+      const payload = submission.proposedPayload as Record<string, any>;
       const latestVersion = person.versions[0];
 
       if (!latestVersion) {
@@ -180,7 +182,8 @@ export async function POST(
         if ('locationOfDeathLat' in payload) updateData.locationOfDeathLat = typeof payload.locationOfDeathLat === 'number' ? payload.locationOfDeathLat : null;
         if ('locationOfDeathLng' in payload) updateData.locationOfDeathLng = typeof payload.locationOfDeathLng === 'number' ? payload.locationOfDeathLng : null;
         if ('obituary' in payload) updateData.obituary = payload.obituary || null;
-        if ('photoUrl' in payload) updateData.photoUrl = payload.photoUrl || null;
+        if ('photoUrlThumb' in payload) updateData.photoUrlThumb = payload.photoUrlThumb || null;
+        if ('photoUrlOriginal' in payload) updateData.photoUrlOriginal = payload.photoUrlOriginal || null;
 
         const updatedPerson = await tx.person.update({
           where: { id: person.id },
@@ -199,7 +202,8 @@ export async function POST(
             locationOfDeathLat: updatedPerson.locationOfDeathLat,
             locationOfDeathLng: updatedPerson.locationOfDeathLng,
             obituary: updatedPerson.obituary,
-            photoUrl: updatedPerson.photoUrl,
+            photoUrlThumb: updatedPerson.photoUrlThumb,
+            photoUrlOriginal: updatedPerson.photoUrlOriginal,
             confirmedByMoh: person.confirmedByMoh, // Keep existing confirmation status
             versionNumber: latestVersion.versionNumber + 1,
             sourceId: changeSource.id,

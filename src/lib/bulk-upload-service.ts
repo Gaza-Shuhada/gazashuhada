@@ -42,6 +42,7 @@ export async function simulateBulkUpload(rows: BulkUploadRow[]): Promise<Simulat
       externalId: { in: incomingIds },
       isDeleted: false 
     },
+    select: { externalId: true, name: true, gender: true, dateOfBirth: true },
   });
   
   const existingMap = new Map(matchingPersons.map(p => [p.externalId, p]));
@@ -147,6 +148,17 @@ export async function applyBulkUpload(
     where: { 
       externalId: { in: incomingIds },
       isDeleted: false 
+    },
+    select: {
+      id: true,
+      externalId: true,
+      name: true,
+      gender: true,
+      dateOfBirth: true,
+      dateOfDeath: true,
+      locationOfDeathLat: true,
+      locationOfDeathLng: true,
+      obituary: true,
     },
   });
   

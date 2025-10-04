@@ -35,7 +35,8 @@ export default function CommunitySubmitPage() {
     locationOfDeathLat: '',
     locationOfDeathLng: '',
     obituary: '',
-    photoUrl: '',
+    photoUrlThumb: '',
+    photoUrlOriginal: '',
     reason: '',
   });
 
@@ -51,7 +52,8 @@ export default function CommunitySubmitPage() {
     locationOfDeathLat: '',
     locationOfDeathLng: '',
     obituary: '',
-    photoUrl: '',
+    photoUrlThumb: '',
+    photoUrlOriginal: '',
     reason: '',
   });
 
@@ -121,15 +123,15 @@ export default function CommunitySubmitPage() {
     if (isEdit) {
       setEditPhotoFile(null);
       setEditPhotoPreview(null);
-      setEditForm({ ...editForm, photoUrl: '' });
+      setEditForm({ ...editForm, photoUrlThumb: '', photoUrlOriginal: '' });
     } else {
       setPhotoFile(null);
       setPhotoPreview(null);
-      setNewRecordForm({ ...newRecordForm, photoUrl: '' });
+      setNewRecordForm({ ...newRecordForm, photoUrlThumb: '', photoUrlOriginal: '' });
     }
   };
 
-  const uploadPhoto = async (file: File): Promise<string> => {
+  const uploadPhoto = async (file: File): Promise<{ thumbUrl: string; originalUrl: string }> => {
     const formData = new FormData();
     formData.append('photo', file);
 
@@ -144,7 +146,7 @@ export default function CommunitySubmitPage() {
       throw new Error(data.error || 'Failed to upload photo');
     }
 
-    return data.url;
+    return { thumbUrl: data.thumbUrl as string, originalUrl: data.originalUrl as string };
   };
 
   const handleNewRecordSubmit = async (e: React.FormEvent) => {
@@ -154,10 +156,13 @@ export default function CommunitySubmitPage() {
 
     try {
       // Upload photo if provided
-      let photoUrl = newRecordForm.photoUrl;
+      let photoUrlThumb = newRecordForm.photoUrlThumb;
+      let photoUrlOriginal = newRecordForm.photoUrlOriginal;
       if (photoFile) {
         setUploadingPhoto(true);
-        photoUrl = await uploadPhoto(photoFile);
+        const uploaded = await uploadPhoto(photoFile);
+        photoUrlThumb = uploaded.thumbUrl;
+        photoUrlOriginal = uploaded.originalUrl;
         setUploadingPhoto(false);
       }
 
@@ -170,7 +175,8 @@ export default function CommunitySubmitPage() {
         ...(newRecordForm.locationOfDeathLat && { locationOfDeathLat: parseFloat(newRecordForm.locationOfDeathLat) }),
         ...(newRecordForm.locationOfDeathLng && { locationOfDeathLng: parseFloat(newRecordForm.locationOfDeathLng) }),
         ...(newRecordForm.obituary && { obituary: newRecordForm.obituary }),
-        ...(photoUrl && { photoUrl }),
+        ...(photoUrlThumb && { photoUrlThumb }),
+        ...(photoUrlOriginal && { photoUrlOriginal }),
       };
 
       const response = await fetch('/api/community/submit', {
@@ -196,7 +202,8 @@ export default function CommunitySubmitPage() {
           locationOfDeathLat: '',
           locationOfDeathLng: '',
           obituary: '',
-          photoUrl: '',
+          photoUrlThumb: '',
+          photoUrlOriginal: '',
           reason: '',
         });
         setPhotoFile(null);
@@ -221,10 +228,13 @@ export default function CommunitySubmitPage() {
 
     try {
       // Upload photo if provided
-      let photoUrl = editForm.photoUrl;
+      let photoUrlThumb = editForm.photoUrlThumb;
+      let photoUrlOriginal = editForm.photoUrlOriginal;
       if (editPhotoFile) {
         setUploadingPhoto(true);
-        photoUrl = await uploadPhoto(editPhotoFile);
+        const uploaded = await uploadPhoto(editPhotoFile);
+        photoUrlThumb = uploaded.thumbUrl;
+        photoUrlOriginal = uploaded.originalUrl;
         setUploadingPhoto(false);
       }
 
@@ -233,7 +243,8 @@ export default function CommunitySubmitPage() {
       if (editForm.locationOfDeathLat) payload.locationOfDeathLat = parseFloat(editForm.locationOfDeathLat);
       if (editForm.locationOfDeathLng) payload.locationOfDeathLng = parseFloat(editForm.locationOfDeathLng);
       if (editForm.obituary) payload.obituary = editForm.obituary;
-      if (photoUrl) payload.photoUrl = photoUrl;
+      if (photoUrlThumb) (payload as any).photoUrlThumb = photoUrlThumb;
+      if (photoUrlOriginal) (payload as any).photoUrlOriginal = photoUrlOriginal;
 
       const response = await fetch('/api/community/submit', {
         method: 'POST',
@@ -256,7 +267,8 @@ export default function CommunitySubmitPage() {
           locationOfDeathLat: '',
           locationOfDeathLng: '',
           obituary: '',
-          photoUrl: '',
+          photoUrlThumb: '',
+          photoUrlOriginal: '',
           reason: '',
         });
         setEditPhotoFile(null);

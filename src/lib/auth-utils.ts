@@ -35,6 +35,7 @@ export async function requireModerator() {
 }
 
 // Alias for requireModerator - requires admin or moderator (staff)
+// Backwards-compatible alias (deprecated): use requireModerator instead
 export async function requireStaff() {
   return requireModerator();
 }
