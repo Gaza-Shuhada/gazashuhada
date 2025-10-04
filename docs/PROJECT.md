@@ -132,7 +132,9 @@ See `docs/engineering_spec.md` for complete schema.
 |------|--------|
 | **Admin** | Everything (bulk uploads, moderation, records, audit logs) |
 | **Moderator** | Moderation, records, audit logs (no bulk uploads) |
-| **Community** | Submit proposals only |
+| **Any Logged-In User** | Community submissions (not a role, just authenticated) |
+
+**Note**: "Community" is not a role stored in the system. Any authenticated user can submit community proposals.
 
 ---
 

@@ -22,6 +22,7 @@ Thank you for your interest in contributing!
 2. **Use shadcn color tokens** - `text-foreground` not `text-gray-900`
 3. **Follow TypeScript best practices** - Strict type checking enabled
 4. **Server components by default** - Only use `'use client'` when necessary
+5. **Access control**: Only 2 roles exist (Admin, Moderator). "Community" = any logged-in user.
 
 See `.cursorrules` for complete details.
 

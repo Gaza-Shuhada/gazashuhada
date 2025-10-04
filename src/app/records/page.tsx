@@ -14,7 +14,7 @@ export default async function RecordsPage() {
   const userRole = user?.publicMetadata?.role as string;
   
   if (userRole !== 'admin' && userRole !== 'moderator') {
-    redirect('/dashboard?error=staff_required');
+    redirect('/?error=staff_required');
   }
 
   return (

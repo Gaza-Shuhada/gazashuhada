@@ -101,6 +101,10 @@ Use shadcn color tokens (NOT raw Tailwind colors):
 - **Async/Await**: Use async/await, not `.then()` chains
 - **Server Components**: Default to server components, only use `'use client'` when needed
 - **Error Handling**: Always wrap API calls in try/catch blocks
+- **Next.js Components**: 
+  - ALWAYS use `<Image>` from `next/image`, NEVER `<img>`
+  - ALWAYS use `<Link>` from `next/link` for internal links, NOT `<a>`
+  - Only use `<a>` for external links (with `target="_blank"`)
 
 ### Database Changes
 ```bash
@@ -115,10 +119,12 @@ npx prisma generate
 ```
 
 ### Authentication
-- Role-based access control: Admin, Moderator, Community
+- Role-based access control: **Admin**, **Moderator** (stored in Clerk publicMetadata)
+- **Community** = ANY logged-in user (NOT a role, just authenticated)
 - Use Clerk's `useAuth()`, `useUser()` in client components
 - Use `auth()`, `currentUser()` in server components
-- Always check roles before granting access
+- Always check roles before granting access to staff-only features
+- Community submissions: Accessible to ALL logged-in users
 
 ---
 

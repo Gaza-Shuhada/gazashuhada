@@ -182,11 +182,11 @@
 
 | Page | Route | Protection | Access Level |
 |------|-------|------------|--------------|
-| Dashboard | `/dashboard` | Server-side check | Staff only (admin + moderator) |
+| Dashboard | `/` (home) | Server-side check | All logged-in users (different content per role) |
 | Bulk Uploads | `/bulk-uploads` | Client layout guard | Admin only |
 | Audit Logs | `/audit-logs` | Client layout guard | Staff only (admin + moderator) |
 | Records Browser | `/records` | Server-side check | Staff only (admin + moderator) |
-| Moderation | `/moderation/pending` | Client layout guard | Staff only (admin + moderator) |
+| Moderation | `/moderation` | Client layout guard | Staff only (admin + moderator) |
 
 ### API Endpoints
 
@@ -218,7 +218,7 @@
 2. **Server-Side Page Checks** (page components):
    - Verifies role via `currentUser()` before rendering
    - Redirects or shows access denied page
-   - Used for: `/dashboard`, `/records`
+   - Used for: `/` (home/dashboard), `/records`
 
 3. **API Endpoint Guards** (helper functions):
    - `requireAdmin()` - Admin only endpoints
@@ -227,9 +227,9 @@
    - Throws descriptive error messages
 
 **Role Hierarchy:**
-- **Admin**: Full access to all features
-- **Moderator**: Staff features (no bulk uploads)
-- **Community**: No access (blocked at dashboard)
+- **Admin**: Full access to all features (bulk uploads, moderation, records, audit logs)
+- **Moderator**: Staff features (moderation, records, audit logs) - no bulk uploads
+- **Any Logged-In User** (not a role): Can submit community proposals, sees personalized home page
 
 ---
 

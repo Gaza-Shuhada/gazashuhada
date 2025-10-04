@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -183,10 +184,13 @@ export function PersonsTable() {
                         target="_blank" 
                         rel="noopener noreferrer"
                       >
-                        <img 
+                        <Image 
                           src={person.photoUrl} 
                           alt={`Photo of ${person.name}`}
+                          width={48}
+                          height={48}
                           className="w-12 h-12 object-cover rounded border-2 hover:border-primary transition-colors cursor-pointer"
+                          unoptimized
                         />
                       </a>
                     ) : (

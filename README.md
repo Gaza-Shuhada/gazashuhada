@@ -149,16 +149,17 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ## Role-Based Access Control
 
-### Roles
+### Roles (2 roles stored in Clerk)
 
 1. **Admin**: Full system access
 2. **Moderator**: Can moderate submissions and view records
-3. **Community**: Can submit new records and edits
+
+**Note**: "Community" is NOT a role - it refers to any logged-in user who can submit proposals.
 
 ### Access Matrix
 
-| Feature | Admin | Moderator | Community |
-|---------|-------|-----------|-----------|
+| Feature | Admin | Moderator | Any Logged-In User |
+|---------|-------|-----------|-------------------|
 | Bulk Uploads | ✅ | ❌ | ❌ |
 | Community Submissions | ✅ | ✅ | ✅ |
 | Moderation Queue | ✅ | ✅ | ❌ |

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 interface Person {
   id: string;
@@ -237,10 +238,13 @@ export default function ModerationPage() {
                               rel="noopener noreferrer"
                               className="block mt-2"
                             >
-                              <img 
+                              <Image 
                                 src={String(submission.proposedPayload.photoUrl)} 
-                                alt="Submitted photo" 
+                                alt="Submitted photo"
+                                width={128}
+                                height={128}
                                 className="w-32 h-32 object-cover rounded-lg border-2 border-gray-300 hover:border-blue-500 transition-colors cursor-pointer"
+                                unoptimized
                               />
                             </a>
                           </div>
@@ -280,10 +284,13 @@ export default function ModerationPage() {
                                     rel="noopener noreferrer"
                                     className="block"
                                   >
-                                    <img 
+                                    <Image 
                                       src={String(value)} 
-                                      alt="Proposed photo" 
+                                      alt="Proposed photo"
+                                      width={128}
+                                      height={128}
                                       className="w-32 h-32 object-cover rounded-lg border-2 border-gray-300 hover:border-blue-500 transition-colors cursor-pointer"
+                                      unoptimized
                                     />
                                   </a>
                                 </div>

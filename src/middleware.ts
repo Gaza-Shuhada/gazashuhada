@@ -64,16 +64,10 @@ export default clerkMiddleware(async (auth, req) => {
   // Community routes are accessible by everyone (admin, moderator, and community members)
   // No special restrictions needed - everyone is part of the community
   
-  // If user is signed in and the current path is /sign-in or /sign-up, redirect based on role
+  // If user is signed in and the current path is /sign-in or /sign-up, redirect to home
   if (userId && (req.nextUrl.pathname === '/sign-in' || req.nextUrl.pathname === '/sign-up')) {
-    if (userRole === 'admin' || userRole === 'moderator') {
-      const dashboardUrl = new URL('/dashboard', req.url);
-      return NextResponse.redirect(dashboardUrl);
-    } else {
-      // Community members go to submissions page
-      const communityUrl = new URL('/community/submit', req.url);
-      return NextResponse.redirect(communityUrl);
-    }
+    const homeUrl = new URL('/', req.url);
+    return NextResponse.redirect(homeUrl);
   }
   
   return NextResponse.next();
