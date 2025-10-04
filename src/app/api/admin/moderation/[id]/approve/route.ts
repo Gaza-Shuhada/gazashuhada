@@ -4,13 +4,35 @@ import { requireStaff } from '@/lib/auth-utils';
 import { currentUser } from '@clerk/nextjs/server';
 import { createAuditLogWithUser } from '@/lib/audit-log';
 
+type ProposedNewRecordPayload = {
+  externalId: string;
+  name: string;
+  gender: 'MALE' | 'FEMALE' | 'OTHER';
+  dateOfBirth: string;
+  dateOfDeath?: string;
+  locationOfDeathLat?: number;
+  locationOfDeathLng?: number;
+  obituary?: string;
+  photoUrlThumb?: string;
+  photoUrlOriginal?: string;
+};
+
+type ProposedEditPayload = Partial<{
+  dateOfDeath: string;
+  locationOfDeathLat: number;
+  locationOfDeathLng: number;
+  obituary: string;
+  photoUrlThumb: string;
+  photoUrlOriginal: string;
+}>;
+
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await requireStaff();
-    const { id } = params;
+    const { id } = await context.params;
 
     const body = await request.json();
     const { note } = body;
@@ -43,7 +65,7 @@ export async function POST(
 
     // Handle NEW_RECORD approval
     if (submission.type === 'NEW_RECORD') {
-      const payload = submission.proposedPayload as Record<string, string>;
+      const payload = submission.proposedPayload as ProposedNewRecordPayload;
 
       // Validate required fields
       if (!payload.externalId || !payload.name || !payload.gender || !payload.dateOfBirth) {
@@ -153,7 +175,7 @@ export async function POST(
       }
 
       const person = submission.person;
-      const payload = submission.proposedPayload as Record<string, any>;
+      const payload = submission.proposedPayload as ProposedEditPayload;
       const latestVersion = person.versions[0];
 
       if (!latestVersion) {

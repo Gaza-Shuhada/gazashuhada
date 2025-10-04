@@ -238,13 +238,20 @@ export default function CommunitySubmitPage() {
         setUploadingPhoto(false);
       }
 
-      const payload: Record<string, string | number> = {};
+      const payload: {
+        dateOfDeath?: string;
+        locationOfDeathLat?: number;
+        locationOfDeathLng?: number;
+        obituary?: string;
+        photoUrlThumb?: string;
+        photoUrlOriginal?: string;
+      } = {};
       if (editForm.dateOfDeath) payload.dateOfDeath = editForm.dateOfDeath;
       if (editForm.locationOfDeathLat) payload.locationOfDeathLat = parseFloat(editForm.locationOfDeathLat);
       if (editForm.locationOfDeathLng) payload.locationOfDeathLng = parseFloat(editForm.locationOfDeathLng);
       if (editForm.obituary) payload.obituary = editForm.obituary;
-      if (photoUrlThumb) (payload as any).photoUrlThumb = photoUrlThumb;
-      if (photoUrlOriginal) (payload as any).photoUrlOriginal = photoUrlOriginal;
+      if (photoUrlThumb) payload.photoUrlThumb = photoUrlThumb;
+      if (photoUrlOriginal) payload.photoUrlOriginal = photoUrlOriginal;
 
       const response = await fetch('/api/community/submit', {
         method: 'POST',
