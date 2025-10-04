@@ -129,11 +129,14 @@ export default function ModerationPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-8 pb-8 px-8">
+      <div className="min-h-screen bg-background pt-8 pb-8 px-8">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">Pending Moderation</h1>
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold">Pending Moderation</h1>
+            <p className="text-muted-foreground mt-2">Review and approve community submissions</p>
+          </div>
           <div className="text-center py-12">
-            <div className="text-gray-600">Loading submissions...</div>
+            <div className="text-muted-foreground">Loading submissions...</div>
           </div>
         </div>
       </div>
@@ -142,27 +145,30 @@ export default function ModerationPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50 pt-8 pb-8 px-8">
+      <div className="min-h-screen bg-background pt-8 pb-8 px-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Pending Moderation</h1>
+            <div>
+              <h1 className="text-3xl font-bold">Pending Moderation</h1>
+              <p className="text-muted-foreground mt-2">Review and approve community submissions</p>
+            </div>
             <button
               onClick={fetchSubmissions}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
             >
               Refresh
             </button>
           </div>
 
           {message && (
-            <div className={`mb-6 p-4 rounded-lg ${message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+            <div className={`mb-6 p-4 rounded-lg ${message.type === 'success' ? 'bg-accent text-accent-foreground' : 'bg-destructive/5 text-destructive'}`}>
               {message.text}
             </div>
           )}
 
           {submissions.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-12 text-center">
-              <div className="text-gray-500">
+            <div className="bg-card rounded-lg border p-12 text-center">
+              <div className="text-muted-foreground">
                 <p className="text-lg font-medium mb-2">No pending submissions</p>
                 <p className="text-sm">All submissions have been reviewed!</p>
               </div>
@@ -170,17 +176,17 @@ export default function ModerationPage() {
           ) : (
             <div className="space-y-6">
               {submissions.map((submission) => (
-                <div key={submission.id} className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+                <div key={submission.id} className="bg-card rounded-lg border overflow-hidden">
                   {/* Header */}
-                  <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                  <div className="bg-muted/50 px-6 py-4 border-b">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <span className={`px-3 py-1 text-sm font-medium rounded-full ${
-                          submission.type === 'NEW_RECORD' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                          submission.type === 'NEW_RECORD' ? 'bg-accent text-accent-foreground' : 'bg-primary/10 text-primary'
                         }`}>
                           {submission.type === 'NEW_RECORD' ? 'New Record Proposal' : 'Edit Proposal'}
                         </span>
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-muted-foreground">
                           Submitted {new Date(submission.createdAt).toLocaleString()}
                         </span>
                       </div>
@@ -192,46 +198,46 @@ export default function ModerationPage() {
                     {submission.type === 'NEW_RECORD' ? (
                       // NEW RECORD DISPLAY
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Proposed New Person Record</h3>
+                        <h3 className="text-lg font-semibold text-foreground mb-4">Proposed New Person Record</h3>
                         <div className="grid grid-cols-2 gap-4 mb-4">
                           <div>
-                            <span className="text-sm font-medium text-gray-500">External ID:</span>
-                            <p className="text-gray-900 font-medium">{String(submission.proposedPayload.externalId)}</p>
+                            <span className="text-sm font-medium text-muted-foreground">External ID:</span>
+                            <p className="text-foreground font-medium">{String(submission.proposedPayload.externalId)}</p>
                           </div>
                           <div>
-                            <span className="text-sm font-medium text-gray-500">Name:</span>
-                            <p className="text-gray-900 font-medium">{String(submission.proposedPayload.name)}</p>
+                            <span className="text-sm font-medium text-muted-foreground">Name:</span>
+                            <p className="text-foreground font-medium">{String(submission.proposedPayload.name)}</p>
                           </div>
                           <div>
-                            <span className="text-sm font-medium text-gray-500">Gender:</span>
-                            <p className="text-gray-900">{String(submission.proposedPayload.gender)}</p>
+                            <span className="text-sm font-medium text-muted-foreground">Gender:</span>
+                            <p className="text-foreground">{String(submission.proposedPayload.gender)}</p>
                           </div>
                           <div>
-                            <span className="text-sm font-medium text-gray-500">Date of Birth:</span>
-                            <p className="text-gray-900">{submission.proposedPayload.dateOfBirth ? new Date(String(submission.proposedPayload.dateOfBirth)).toLocaleDateString() : 'N/A'}</p>
+                            <span className="text-sm font-medium text-muted-foreground">Date of Birth:</span>
+                            <p className="text-foreground">{submission.proposedPayload.dateOfBirth ? new Date(String(submission.proposedPayload.dateOfBirth)).toLocaleDateString() : 'N/A'}</p>
                           </div>
                           {submission.proposedPayload.dateOfDeath && (
                             <div>
-                              <span className="text-sm font-medium text-gray-500">Date of Death:</span>
-                              <p className="text-gray-900">{new Date(String(submission.proposedPayload.dateOfDeath)).toLocaleDateString()}</p>
+                              <span className="text-sm font-medium text-muted-foreground">Date of Death:</span>
+                              <p className="text-foreground">{new Date(String(submission.proposedPayload.dateOfDeath)).toLocaleDateString()}</p>
                             </div>
                           )}
                           {(submission.proposedPayload.locationOfDeathLat && submission.proposedPayload.locationOfDeathLng) && (
                             <div>
-                              <span className="text-sm font-medium text-gray-500">Location of Death (Lat, Lng):</span>
-                              <p className="text-gray-900">{Number(submission.proposedPayload.locationOfDeathLat).toFixed(4)}, {Number(submission.proposedPayload.locationOfDeathLng).toFixed(4)}</p>
+                              <span className="text-sm font-medium text-muted-foreground">Location of Death (Lat, Lng):</span>
+                              <p className="text-foreground">{Number(submission.proposedPayload.locationOfDeathLat).toFixed(4)}, {Number(submission.proposedPayload.locationOfDeathLng).toFixed(4)}</p>
                             </div>
                           )}
                         </div>
                         {submission.proposedPayload.obituary && (
                           <div className="mb-4">
-                            <span className="text-sm font-medium text-gray-500">Obituary:</span>
-                            <p className="text-gray-900 mt-1">{String(submission.proposedPayload.obituary)}</p>
+                            <span className="text-sm font-medium text-muted-foreground">Obituary:</span>
+                            <p className="text-foreground mt-1">{String(submission.proposedPayload.obituary)}</p>
                           </div>
                         )}
                         {submission.proposedPayload.photoUrl && (
                           <div className="mb-4">
-                            <span className="text-sm font-medium text-gray-500">Photo:</span>
+                            <span className="text-sm font-medium text-muted-foreground">Photo:</span>
                             <a 
                               href={String(submission.proposedPayload.photoUrl)} 
                               target="_blank" 
@@ -243,7 +249,7 @@ export default function ModerationPage() {
                                 alt="Submitted photo"
                                 width={128}
                                 height={128}
-                                className="w-32 h-32 object-cover rounded-lg border-2 border-gray-300 hover:border-blue-500 transition-colors cursor-pointer"
+                                className="w-32 h-32 object-cover rounded-lg border-2 border hover:border-primary transition-colors cursor-pointer"
                                 unoptimized
                               />
                             </a>
@@ -253,16 +259,16 @@ export default function ModerationPage() {
                     ) : (
                       // EDIT DISPLAY
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Proposed Edit to Existing Record</h3>
+                        <h3 className="text-lg font-semibold text-foreground mb-4">Proposed Edit to Existing Record</h3>
                         
                         {/* Current Record Info */}
                         {submission.person && (
-                          <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                            <p className="text-sm font-medium text-gray-500 mb-2">Current Record:</p>
-                            <p className="text-gray-900 font-semibold">
+                          <div className="mb-4 p-4 bg-muted/50 rounded-lg border">
+                            <p className="text-sm font-medium text-muted-foreground mb-2">Current Record:</p>
+                            <p className="text-foreground font-semibold">
                               {submission.person.name} ({submission.person.externalId})
                             </p>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-muted-foreground">
                               {submission.person.confirmedByMoh ? '✓ MoH Confirmed' : '○ Community Submitted'}
                             </p>
                           </div>
@@ -270,14 +276,14 @@ export default function ModerationPage() {
 
                         {/* Proposed Changes */}
                         <div className="space-y-3">
-                          <p className="text-sm font-medium text-gray-700">Proposed Changes:</p>
+                          <p className="text-sm font-medium text-foreground">Proposed Changes:</p>
                           
                           {Object.entries(submission.proposedPayload).map(([key, value]) => {
                             // Handle photo URL separately
                             if (key === 'photoUrl' && value) {
                               return (
                                 <div key={key} className="text-sm">
-                                  <span className="font-medium text-gray-600 mb-2 block">New Photo:</span>
+                                  <span className="font-medium text-muted-foreground mb-2 block">New Photo:</span>
                                   <a 
                                     href={String(value)} 
                                     target="_blank" 
@@ -289,7 +295,7 @@ export default function ModerationPage() {
                                       alt="Proposed photo"
                                       width={128}
                                       height={128}
-                                      className="w-32 h-32 object-cover rounded-lg border-2 border-gray-300 hover:border-blue-500 transition-colors cursor-pointer"
+                                      className="w-32 h-32 object-cover rounded-lg border-2 border hover:border-primary transition-colors cursor-pointer"
                                       unoptimized
                                     />
                                   </a>
@@ -307,12 +313,12 @@ export default function ModerationPage() {
 
                             return (
                               <div key={key} className="flex items-center space-x-2 text-sm">
-                                <span className="font-medium text-gray-600 min-w-[150px]">
+                                <span className="font-medium text-muted-foreground min-w-[150px]">
                                   {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
                                 </span>
-                                <span className="text-red-600 line-through">{displayCurrent}</span>
-                                <span className="text-gray-400">→</span>
-                                <span className="text-green-600 font-medium">{displayValue}</span>
+                                <span className="text-destructive line-through">{displayCurrent}</span>
+                                <span className="text-muted-foreground">→</span>
+                                <span className="text-accent-foreground font-medium">{displayValue}</span>
                               </div>
                             );
                           })}
@@ -322,26 +328,26 @@ export default function ModerationPage() {
 
                     {/* Submitter's Reason */}
                     {submission.reason && (
-                      <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                        <p className="text-sm font-medium text-blue-900 mb-1">Submitter&apos;s Note:</p>
-                        <p className="text-sm text-blue-800">{submission.reason}</p>
+                      <div className="mt-4 p-3 bg-muted/50 rounded-lg border">
+                        <p className="text-sm font-medium text-foreground mb-1">Submitter&apos;s Note:</p>
+                        <p className="text-sm text-primary">{submission.reason}</p>
                       </div>
                     )}
                   </div>
 
                   {/* Actions */}
-                  <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                  <div className="bg-muted/50 px-6 py-4 border-t flex justify-end space-x-3">
                     <button
                       onClick={() => setModalState({ type: 'reject', submission, note: '' })}
                       disabled={actionLoading === submission.id}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                      className="px-4 py-2 bg-destructive text-white rounded-lg hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       Reject
                     </button>
                     <button
                       onClick={() => setModalState({ type: 'approve', submission, note: '' })}
                       disabled={actionLoading === submission.id}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                      className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       {actionLoading === submission.id ? 'Processing...' : 'Approve'}
                     </button>
@@ -356,26 +362,26 @@ export default function ModerationPage() {
       {/* Modal */}
       {modalState && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">
+          <div className="bg-card rounded-lg border max-w-lg w-full p-6">
+            <h3 className="text-lg font-bold text-foreground mb-4">
               {modalState.type === 'approve' ? 'Approve Submission' : 'Reject Submission'}
             </h3>
             
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               {modalState.type === 'approve' 
                 ? 'Are you sure you want to approve this submission? This will create a new record or update an existing one.'
                 : 'Are you sure you want to reject this submission? Please provide a reason for the submitter.'}
             </p>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Note {modalState.type === 'reject' ? '(Required)' : '(Optional)'}
               </label>
               <textarea
                 rows={3}
                 value={modalState.note}
                 onChange={(e) => setModalState({ ...modalState, note: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
                 placeholder={modalState.type === 'approve' ? 'Optional note for audit log...' : 'Explain why this was rejected...'}
               />
             </div>
@@ -383,7 +389,7 @@ export default function ModerationPage() {
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setModalState(null)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="px-4 py-2 text-foreground bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
               >
                 Cancel
               </button>
@@ -392,9 +398,9 @@ export default function ModerationPage() {
                 disabled={actionLoading !== null}
                 className={`px-4 py-2 text-white rounded-lg transition-colors ${
                   modalState.type === 'approve'
-                    ? 'bg-green-600 hover:bg-green-700'
-                    : 'bg-red-600 hover:bg-red-700'
-                } disabled:bg-gray-400 disabled:cursor-not-allowed`}
+                    ? 'bg-primary hover:bg-primary/90'
+                    : 'bg-destructive hover:bg-destructive/90'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {actionLoading ? 'Processing...' : modalState.type === 'approve' ? 'Approve' : 'Reject'}
               </button>

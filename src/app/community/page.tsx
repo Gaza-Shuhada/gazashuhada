@@ -276,34 +276,36 @@ export default function CommunitySubmitPage() {
 
   if (!isLoaded || !isSignedIn) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-8 pb-8 px-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Community Submissions</h1>
-        <p className="text-gray-600 mb-8">Propose new records or suggest edits to existing death-related information</p>
+    <div className="min-h-screen bg-background pt-8 pb-8 px-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold">Community Submissions</h1>
+          <p className="text-muted-foreground mt-2">Propose new records or suggest edits to existing death-related information</p>
+        </div>
 
         {message && (
-          <div className={`mb-6 p-4 rounded-lg ${message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+          <div className={`mb-6 p-4 rounded-lg ${message.type === 'success' ? 'bg-accent text-accent-foreground' : 'bg-destructive/5 text-destructive'}`}>
             {message.text}
           </div>
         )}
 
         {/* Tabs */}
-        <div className="bg-white rounded-lg shadow mb-6">
-          <div className="border-b border-gray-200">
+        <div className="bg-card border rounded-lg mb-6">
+          <div className="border-b">
             <nav className="flex -mb-px">
               <button
                 onClick={() => setActiveTab('new')}
                 className={`px-6 py-3 font-medium text-sm border-b-2 ${
                   activeTab === 'new'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border'
                 }`}
               >
                 Propose New Record
@@ -312,8 +314,8 @@ export default function CommunitySubmitPage() {
                 onClick={() => setActiveTab('edit')}
                 className={`px-6 py-3 font-medium text-sm border-b-2 ${
                   activeTab === 'edit'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border'
                 }`}
               >
                 Suggest Edit
@@ -322,8 +324,8 @@ export default function CommunitySubmitPage() {
                 onClick={() => setActiveTab('history')}
                 className={`px-6 py-3 font-medium text-sm border-b-2 ${
                   activeTab === 'history'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border'
                 }`}
               >
                 My Submissions ({submissions.length})
@@ -336,8 +338,8 @@ export default function CommunitySubmitPage() {
             {activeTab === 'new' && (
               <form onSubmit={handleNewRecordSubmit} className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Propose a New Person Record</h3>
-                  <p className="text-sm text-gray-600 mb-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4">Propose a New Person Record</h3>
+                  <p className="text-sm text-muted-foreground mb-6">
                     All new records start as unconfirmed. If the Ministry of Health includes this person in a future bulk upload,
                     the record will be marked as officially confirmed. Location coordinates should be provided as latitude/longitude pairs.
                   </p>
@@ -345,42 +347,42 @@ export default function CommunitySubmitPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      External ID <span className="text-red-500">*</span>
+                    <label className="block text-sm font-medium text-foreground mb-1">
+                      External ID <span className="text-destructive">*</span>
                     </label>
                     <input
                       type="text"
                       required
                       value={newRecordForm.externalId}
                       onChange={(e) => setNewRecordForm({ ...newRecordForm, externalId: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
                       placeholder="e.g., P12345"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Full Name <span className="text-red-500">*</span>
+                    <label className="block text-sm font-medium text-foreground mb-1">
+                      Full Name <span className="text-destructive">*</span>
                     </label>
                     <input
                       type="text"
                       required
                       value={newRecordForm.name}
                       onChange={(e) => setNewRecordForm({ ...newRecordForm, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
                       placeholder="Full name"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Gender <span className="text-red-500">*</span>
+                    <label className="block text-sm font-medium text-foreground mb-1">
+                      Gender <span className="text-destructive">*</span>
                     </label>
                     <select
                       required
                       value={newRecordForm.gender}
                       onChange={(e) => setNewRecordForm({ ...newRecordForm, gender: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
                     >
                       <option value="MALE">Male</option>
                       <option value="FEMALE">Female</option>
@@ -389,40 +391,40 @@ export default function CommunitySubmitPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Date of Birth <span className="text-red-500">*</span>
+                    <label className="block text-sm font-medium text-foreground mb-1">
+                      Date of Birth <span className="text-destructive">*</span>
                     </label>
                     <input
                       type="date"
                       required
                       value={newRecordForm.dateOfBirth}
                       onChange={(e) => setNewRecordForm({ ...newRecordForm, dateOfBirth: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Date of Death <span className="text-gray-500">(Optional)</span>
+                    <label className="block text-sm font-medium text-foreground mb-1">
+                      Date of Death <span className="text-muted-foreground">(Optional)</span>
                     </label>
                     <input
                       type="date"
                       value={newRecordForm.dateOfDeath}
                       onChange={(e) => setNewRecordForm({ ...newRecordForm, dateOfDeath: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Location Latitude <span className="text-gray-500">(Optional)</span>
+                    <label className="block text-sm font-medium text-foreground mb-1">
+                      Location Latitude <span className="text-muted-foreground">(Optional)</span>
                     </label>
                     <input
                       type="number"
                       step="any"
                       value={newRecordForm.locationOfDeathLat}
                       onChange={(e) => setNewRecordForm({ ...newRecordForm, locationOfDeathLat: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
                       placeholder="e.g., 31.5"
                       min="-90"
                       max="90"
@@ -430,15 +432,15 @@ export default function CommunitySubmitPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Location Longitude <span className="text-gray-500">(Optional)</span>
+                    <label className="block text-sm font-medium text-foreground mb-1">
+                      Location Longitude <span className="text-muted-foreground">(Optional)</span>
                     </label>
                     <input
                       type="number"
                       step="any"
                       value={newRecordForm.locationOfDeathLng}
                       onChange={(e) => setNewRecordForm({ ...newRecordForm, locationOfDeathLng: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
                       placeholder="e.g., 34.5"
                       min="-180"
                       max="180"
@@ -447,21 +449,21 @@ export default function CommunitySubmitPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Obituary <span className="text-gray-500">(Optional)</span>
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Obituary <span className="text-muted-foreground">(Optional)</span>
                   </label>
                   <textarea
                     rows={4}
                     value={newRecordForm.obituary}
                     onChange={(e) => setNewRecordForm({ ...newRecordForm, obituary: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
                     placeholder="Additional information or obituary text"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Photo <span className="text-gray-500">(Optional)</span>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Photo <span className="text-muted-foreground">(Optional)</span>
                   </label>
                   <div className="space-y-3">
                     {photoPreview ? (
@@ -471,13 +473,13 @@ export default function CommunitySubmitPage() {
                           alt="Preview" 
                           width={192}
                           height={192}
-                          className="w-48 h-48 object-cover rounded-lg border-2 border-gray-300"
+                          className="w-48 h-48 object-cover rounded-lg border-2 border"
                           unoptimized
                         />
                         <button
                           type="button"
                           onClick={() => handleRemovePhoto(false)}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                          className="absolute -top-2 -right-2 bg-destructive/50 text-white rounded-full p-1 hover:bg-destructive"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -490,9 +492,9 @@ export default function CommunitySubmitPage() {
                           type="file"
                           accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
                           onChange={(e) => handlePhotoChange(e, false)}
-                          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                          className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary/5 file:text-primary hover:file:bg-primary/10"
                         />
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           JPEG, PNG, WebP, or GIF. Max 10MB. Will be resized to 2048x2048px.
                         </p>
                       </div>
@@ -501,14 +503,14 @@ export default function CommunitySubmitPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Reason for Submission <span className="text-gray-500">(Optional)</span>
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Reason for Submission <span className="text-muted-foreground">(Optional)</span>
                   </label>
                   <textarea
                     rows={3}
                     value={newRecordForm.reason}
                     onChange={(e) => setNewRecordForm({ ...newRecordForm, reason: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
                     placeholder="Why are you submitting this record? Any sources or context?"
                   />
                 </div>
@@ -516,7 +518,7 @@ export default function CommunitySubmitPage() {
                 <button
                   type="submit"
                   disabled={loading || uploadingPhoto}
-                  className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                  className="w-full bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {uploadingPhoto ? 'Uploading photo...' : loading ? 'Submitting...' : 'Submit New Record'}
                 </button>
@@ -527,46 +529,46 @@ export default function CommunitySubmitPage() {
             {activeTab === 'edit' && (
               <form onSubmit={handleEditSubmit} className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Suggest Edit to Existing Record</h3>
-                  <p className="text-sm text-gray-600 mb-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4">Suggest Edit to Existing Record</h3>
+                  <p className="text-sm text-muted-foreground mb-6">
                     You can only propose changes to death-related information. Name, gender, and date of birth cannot be edited. 
                     Location coordinates should be provided as latitude/longitude pairs (both required if updating location).
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    External ID of Record to Edit <span className="text-red-500">*</span>
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    External ID of Record to Edit <span className="text-destructive">*</span>
                   </label>
                   <input
                     type="text"
                     required
                     value={editForm.externalId}
                     onChange={(e) => setEditForm({ ...editForm, externalId: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
                     placeholder="e.g., P12345"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Enter the External ID of the person record you want to edit</p>
+                  <p className="text-xs text-muted-foreground mt-1">Enter the External ID of the person record you want to edit</p>
                 </div>
 
                 <div className="border-t pt-4">
-                  <p className="text-sm font-medium text-gray-700 mb-4">Proposed Changes (at least one required):</p>
+                  <p className="text-sm font-medium text-foreground mb-4">Proposed Changes (at least one required):</p>
 
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-foreground mb-1">
                         Date of Death
                       </label>
                       <input
                         type="date"
                         value={editForm.dateOfDeath}
                         onChange={(e) => setEditForm({ ...editForm, dateOfDeath: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-foreground mb-1">
                         Location Latitude
                       </label>
                       <input
@@ -574,7 +576,7 @@ export default function CommunitySubmitPage() {
                         step="any"
                         value={editForm.locationOfDeathLat}
                         onChange={(e) => setEditForm({ ...editForm, locationOfDeathLat: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
                         placeholder="e.g., 31.5"
                         min="-90"
                         max="90"
@@ -582,7 +584,7 @@ export default function CommunitySubmitPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-foreground mb-1">
                         Location Longitude
                       </label>
                       <input
@@ -590,7 +592,7 @@ export default function CommunitySubmitPage() {
                         step="any"
                         value={editForm.locationOfDeathLng}
                         onChange={(e) => setEditForm({ ...editForm, locationOfDeathLng: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
                         placeholder="e.g., 34.5"
                         min="-180"
                         max="180"
@@ -598,20 +600,20 @@ export default function CommunitySubmitPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-foreground mb-1">
                         Obituary
                       </label>
                       <textarea
                         rows={4}
                         value={editForm.obituary}
                         onChange={(e) => setEditForm({ ...editForm, obituary: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
                         placeholder="Additional information or obituary text"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-foreground mb-2">
                         Photo
                       </label>
                       <div className="space-y-3">
@@ -622,13 +624,13 @@ export default function CommunitySubmitPage() {
                               alt="Preview" 
                               width={192}
                               height={192}
-                              className="w-48 h-48 object-cover rounded-lg border-2 border-gray-300"
+                              className="w-48 h-48 object-cover rounded-lg border-2 border"
                               unoptimized
                             />
                             <button
                               type="button"
                               onClick={() => handleRemovePhoto(true)}
-                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                              className="absolute -top-2 -right-2 bg-destructive/50 text-white rounded-full p-1 hover:bg-destructive"
                             >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -641,9 +643,9 @@ export default function CommunitySubmitPage() {
                               type="file"
                               accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
                               onChange={(e) => handlePhotoChange(e, true)}
-                              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                              className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary/5 file:text-primary hover:file:bg-primary/10"
                             />
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-muted-foreground mt-1">
                               JPEG, PNG, WebP, or GIF. Max 10MB. Will replace existing photo if approved.
                             </p>
                           </div>
@@ -654,14 +656,14 @@ export default function CommunitySubmitPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Reason for Edit <span className="text-gray-500">(Optional)</span>
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Reason for Edit <span className="text-muted-foreground">(Optional)</span>
                   </label>
                   <textarea
                     rows={3}
                     value={editForm.reason}
                     onChange={(e) => setEditForm({ ...editForm, reason: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
                     placeholder="Why are you proposing this edit? Any sources or context?"
                   />
                 </div>
@@ -669,7 +671,7 @@ export default function CommunitySubmitPage() {
                 <button
                   type="submit"
                   disabled={loading || uploadingPhoto || (!editForm.dateOfDeath && !editForm.locationOfDeathLat && !editForm.locationOfDeathLng && !editForm.obituary && !editPhotoFile)}
-                  className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                  className="w-full bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {uploadingPhoto ? 'Uploading photo...' : loading ? 'Submitting...' : 'Submit Edit Proposal'}
                 </button>
@@ -679,48 +681,48 @@ export default function CommunitySubmitPage() {
             {/* SUBMISSION HISTORY */}
             {activeTab === 'history' && (
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Submission History</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-4">Your Submission History</h3>
                 
                 {submissions.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">
+                  <div className="text-center py-12 text-muted-foreground">
                     <p>You haven&apos;t made any submissions yet.</p>
                     <p className="text-sm mt-2">Use the tabs above to propose a new record or suggest an edit.</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {submissions.map((submission) => (
-                      <div key={submission.id} className="border border-gray-200 rounded-lg p-4">
+                      <div key={submission.id} className="border rounded-lg p-4 bg-card">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center space-x-3">
                             <span className={`px-2 py-1 text-xs font-medium rounded ${
-                              submission.type === 'NEW_RECORD' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                              submission.type === 'NEW_RECORD' ? 'bg-accent text-accent-foreground' : 'bg-primary/10 text-primary'
                             }`}>
                               {submission.type === 'NEW_RECORD' ? 'New Record' : 'Edit'}
                             </span>
                             <span className={`px-2 py-1 text-xs font-medium rounded ${
-                              submission.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                              submission.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
-                              submission.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
-                              'bg-gray-100 text-gray-800'
+                              submission.status === 'PENDING' ? 'bg-secondary/50 text-secondary-foreground' :
+                              submission.status === 'APPROVED' ? 'bg-accent text-accent-foreground' :
+                              submission.status === 'REJECTED' ? 'bg-destructive/10 text-destructive' :
+                              'bg-accent text-accent-foreground'
                             }`}>
                               {submission.status}
                             </span>
                           </div>
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-muted-foreground">
                             {new Date(submission.createdAt).toLocaleDateString()}
                           </span>
                         </div>
 
-                        <div className="text-sm text-gray-700 mb-2">
+                        <div className="text-sm text-foreground mb-2">
                           {submission.type === 'NEW_RECORD' ? (
                             <div>
                               <p className="font-medium">{submission.proposedPayload.name}</p>
-                              <p className="text-gray-500">ID: {submission.proposedPayload.externalId}</p>
+                              <p className="text-muted-foreground">ID: {submission.proposedPayload.externalId}</p>
                             </div>
                           ) : (
                             <div>
                               <p className="font-medium">Edit to record: {submission.personId || 'N/A'}</p>
-                              <p className="text-gray-500">
+                              <p className="text-muted-foreground">
                                 Fields: {Object.keys(submission.proposedPayload).join(', ')}
                               </p>
                             </div>
@@ -728,19 +730,19 @@ export default function CommunitySubmitPage() {
                         </div>
 
                         {submission.reason && (
-                          <p className="text-sm text-gray-600 mb-2">
+                          <p className="text-sm text-muted-foreground mb-2">
                             <span className="font-medium">Your note:</span> {submission.reason}
                           </p>
                         )}
 
                         {submission.status === 'APPROVED' && submission.approvedAt && (
-                          <p className="text-sm text-green-600">
+                          <p className="text-sm text-accent-foreground">
                             ✓ Approved on {new Date(submission.approvedAt).toLocaleDateString()}
                           </p>
                         )}
 
                         {submission.status === 'REJECTED' && submission.decisionNote && (
-                          <p className="text-sm text-red-600">
+                          <p className="text-sm text-destructive">
                             <span className="font-medium">Moderator note:</span> {submission.decisionNote}
                           </p>
                         )}

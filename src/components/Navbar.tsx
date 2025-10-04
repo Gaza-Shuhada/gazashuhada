@@ -42,7 +42,7 @@ export function Navbar() {
                           <Link
                             href="/bulk-uploads"
                             onClick={() => setMobileMenuOpen(false)}
-                            className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors"
+                            className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors"
                           >
                             Bulk Uploads
                           </Link>
@@ -50,21 +50,21 @@ export function Navbar() {
                         <Link
                           href="/moderation"
                           onClick={() => setMobileMenuOpen(false)}
-                          className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors"
+                          className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors"
                         >
                           Moderation
                         </Link>
                         <Link
                           href="/records"
                           onClick={() => setMobileMenuOpen(false)}
-                          className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors"
+                          className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors"
                         >
                           Records
                         </Link>
                         <Link
                           href="/audit-logs"
                           onClick={() => setMobileMenuOpen(false)}
-                          className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors"
+                          className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors"
                         >
                           Audit Logs
                         </Link>
@@ -74,7 +74,7 @@ export function Navbar() {
                     <Link
                       href="/community"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors"
+                      className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors"
                     >
                       Community
                     </Link>
@@ -98,7 +98,7 @@ export function Navbar() {
                     {isAdmin && (
                       <Link
                         href="/bulk-uploads"
-                        className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                        className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
                       >
                         Bulk Uploads
                       </Link>
@@ -106,20 +106,20 @@ export function Navbar() {
 
                     <Link
                       href="/moderation"
-                      className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                      className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
                     >
                       Moderation
                     </Link>
 
                     <Link
                       href="/records"
-                      className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                      className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
                     >
                       Records
                     </Link>
                     <Link
                       href="/audit-logs"
-                      className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                      className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
                     >
                       Audit Logs
                     </Link>
@@ -129,7 +129,7 @@ export function Navbar() {
                 {/* Community Links - Show for everyone */}
                 <Link
                   href="/community"
-                  className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                  className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
                 >
                   Community
                 </Link>
@@ -147,7 +147,15 @@ export function Navbar() {
               <UserButton 
                 appearance={{
                   elements: {
-                    avatarBox: "h-8 w-8"
+                    avatarBox: "h-8 w-8",
+                    userButtonPopoverCard: "bg-background border-border",
+                    userButtonPopoverActionButton: "text-foreground hover:bg-accent",
+                    userButtonPopoverActionButtonText: "text-foreground",
+                    userButtonPopoverFooter: "hidden",
+                  },
+                  variables: {
+                    colorText: "hsl(var(--foreground))",
+                    colorTextSecondary: "hsl(var(--muted-foreground))",
                   }
                 }}
                 showName
