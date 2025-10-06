@@ -1,6 +1,6 @@
 import { prisma } from '../src/lib/prisma';
 import { parseCSV } from '../src/lib/csv-utils';
-import { simulateBulkUpload, applyBulkUpload } from '../src/lib/bulk-upload-service-optimized';
+import { simulateBulkUpload, applyBulkUpload } from '../src/lib/bulk-upload-service-ultra-optimized';
 import * as fs from 'fs';
 import * as path from 'path';
 

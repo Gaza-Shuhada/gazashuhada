@@ -39,13 +39,22 @@ export function Navbar() {
                     {isStaff && (
                       <>
                         {isAdmin && (
-                          <Link
-                            href="/bulk-uploads"
-                            onClick={() => setMobileMenuOpen(false)}
-                            className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors"
-                          >
-                            Bulk Uploads
-                          </Link>
+                          <>
+                            <Link
+                              href="/bulk-uploads"
+                              onClick={() => setMobileMenuOpen(false)}
+                              className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors"
+                            >
+                              Bulk Uploads
+                            </Link>
+                            <Link
+                              href="/admin/settings"
+                              onClick={() => setMobileMenuOpen(false)}
+                              className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors"
+                            >
+                              Settings
+                            </Link>
+                          </>
                         )}
                         <Link
                           href="/moderation"
@@ -96,12 +105,20 @@ export function Navbar() {
                   <>
                     {/* Admin Links - Only show if user has admin role */}
                     {isAdmin && (
-                      <Link
-                        href="/bulk-uploads"
-                        className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
-                      >
-                        Bulk Uploads
-                      </Link>
+                      <>
+                        <Link
+                          href="/bulk-uploads"
+                          className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
+                        >
+                          Bulk Uploads
+                        </Link>
+                        <Link
+                          href="/admin/settings"
+                          className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
+                        >
+                          Settings
+                        </Link>
+                      </>
                     )}
 
                     <Link

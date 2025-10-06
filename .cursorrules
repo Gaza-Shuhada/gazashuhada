@@ -22,6 +22,80 @@
 
 ---
 
+## 🚀 Development Philosophy: Move Fast, No Cruft
+
+### CRITICAL: Zero Backwards Compatibility
+
+**"When we delete, we delete clean. No legacy code. No transition periods. No cruft."**
+
+#### Core Principles
+
+1. **No Backwards Compatibility**
+   - Don't write code to support old/deprecated features
+   - Don't add "if legacy then..." conditional logic
+   - Don't keep old columns/tables "just in case"
+
+2. **Clean Deletions Only**
+   - When removing a feature, remove ALL related code
+   - Delete migrations that added deprecated features
+   - Remove documentation for old approaches
+   - No comments like "// TODO: remove after migration"
+
+3. **Fresh Start > Gradual Migration**
+   - If backwards compatibility is complex, DROP the database and start fresh
+   - It's okay to lose dev/staging data to maintain clean code
+   - Production migrations should be forward-only, never dual-mode
+
+4. **Examples of What NOT to Do**
+   ```typescript
+   ❌ const file = upload.rawFile || upload.fileUrl;  // Supporting old and new
+   ❌ if (upload.rawFile) { /* legacy path */ }       // Backwards compat logic
+   ❌ rawFile: Bytes?  // Deprecated: use fileUrl    // Keeping dead columns
+   ```
+
+5. **Examples of What TO Do**
+   ```typescript
+   ✅ const file = upload.fileUrl;                    // Only new way
+   ✅ DROP COLUMN "rawFile";                          // Delete completely
+   ✅ DELETE FROM records WHERE new_field IS NULL;    // Clean slate
+   ```
+
+#### Decision Framework
+
+When removing/changing a feature:
+
+```
+Q: "Can we make this backwards compatible?"
+A: NO. Delete the old code entirely.
+
+Q: "But what about existing data?"
+A: Delete it or migrate it ONCE, then remove migration code.
+
+Q: "Should we keep the old code during transition?"
+A: NO. Make the change, test, commit. No transition periods.
+
+Q: "What if something breaks?"
+A: Fix forward or revert completely. Never add backwards compat as a fix.
+```
+
+#### In Practice
+
+- **Schema Changes**: Drop columns immediately after data migration
+- **API Changes**: Update all consumers, no versioning (internal tool)
+- **File Storage**: Move to new system, delete old references entirely
+- **Features**: Remove completely or keep completely, no half-states
+
+#### Why This Matters
+
+- **Faster Development**: No maintenance burden of dual systems
+- **Cleaner Codebase**: Easy to understand, no historical baggage
+- **Better Testing**: Only one path to test, not multiple
+- **Easier Debugging**: No "which version am I dealing with?" questions
+
+**Remember**: This is an internal admin tool, not a public API. We control all consumers. Move fast.
+
+---
+
 ## 🎨 UI Component Standards
 
 ### MANDATORY: Always Use shadcn/ui
@@ -210,16 +284,25 @@ npx shadcn@latest view @shadcn/[component]-demo  # View example
 2. ✅ Use shadcn for ALL UI (see above)
 3. ✅ Follow TypeScript/Next.js best practices
 4. ✅ Check `docs/engineering_spec.md` for database schema
+5. ✅ **NEVER add backwards compatibility code** (see philosophy above)
 
 **Common Tasks**:
 - Fix bugs: Check error logs, trace through code
 - Add UI: Always use shadcn components
 - Database changes: Update schema → migrate → generate
 - New features: Follow existing patterns in codebase
+- Remove features: Delete ALL related code, no half-measures
+
+**Critical Reminder**:
+- No legacy code support
+- No "if old then..." logic
+- Clean deletions only
+- Move fast, no cruft
 
 ---
 
-**Last Updated**: 2025-10-03  
+**Last Updated**: 2025-10-06  
 **Status**: ✅ Production-ready, all core features complete  
+**Philosophy**: 🚀 Move fast, no cruft, zero backwards compatibility  
 **Documentation**: See `docs/PROJECT.md` for complete details
 

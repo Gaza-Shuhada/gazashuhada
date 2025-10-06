@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth-utils';
-import { rollbackBulkUpload } from '@/lib/bulk-upload-service';
+import { rollbackBulkUpload } from '@/lib/bulk-upload-service-ultra-optimized';
 import { createAuditLog, AuditAction, ResourceType } from '@/lib/audit-log';
 import { prisma } from '@/lib/prisma';
 

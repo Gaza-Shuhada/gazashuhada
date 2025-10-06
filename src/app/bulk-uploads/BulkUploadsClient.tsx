@@ -8,8 +8,8 @@ interface BulkUpload {
   label: string;
   dateReleased: string;
   uploadedAt: string;
-  fileUrl: string | null;
-  fileSize: number | null;
+  fileUrl: string;
+  fileSize: number;
   canRollback: boolean;
   stats: {
     total: number;
@@ -179,8 +179,7 @@ export default function BulkUploadsClient() {
   const formatDate = (dateString: string) => new Date(dateString).toLocaleString();
   const formatDateOfBirth = (date: Date | string) => new Date(date).toLocaleDateString();
   
-  const formatFileSize = (bytes: number | null) => {
-    if (!bytes) return 'N/A';
+  const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
@@ -235,6 +234,10 @@ export default function BulkUploadsClient() {
                   <div className="bg-accent p-4 rounded"><div className="text-sm text-accent-foreground">Inserts</div><div className="text-2xl font-bold text-accent-foreground">{simulation.summary.inserts}</div></div>
                   <div className="bg-secondary/20 p-4 rounded"><div className="text-sm text-secondary-foreground">Updates</div><div className="text-2xl font-bold text-secondary-foreground">{simulation.summary.updates}</div></div>
                   <div className="bg-destructive/5 p-4 rounded"><div className="text-sm text-destructive">Deletes</div><div className="text-2xl font-bold text-destructive">{simulation.summary.deletes}</div></div>
+                </div>
+                <div className="flex gap-4 pt-2">
+                  <button onClick={handleApply} disabled={applying} className="bg-primary text-white px-6 py-2 rounded-md hover:bg-primary/90 disabled:opacity-50">{applying ? 'Applying...' : 'Apply Upload'}</button>
+                  <button onClick={handleCancel} disabled={applying} className="bg-secondary text-secondary-foreground px-6 py-2 rounded-md hover:bg-secondary/80 disabled:opacity-50">Cancel</button>
                 </div>
                 {simulation.deletions.length > 0 && (
                   <div className="border border-destructive/20 rounded-lg p-4 bg-destructive/5">
@@ -311,10 +314,6 @@ export default function BulkUploadsClient() {
                     </div>
                   </div>
                 )}
-                <div className="flex gap-4">
-                  <button onClick={handleApply} disabled={applying} className="bg-primary text-white px-6 py-2 rounded-md hover:bg-primary/90 disabled:opacity-50">{applying ? 'Applying...' : 'Apply Upload'}</button>
-                  <button onClick={handleCancel} disabled={applying} className="bg-secondary text-secondary-foreground px-6 py-2 rounded-md hover:bg-secondary/80 disabled:opacity-50">Cancel</button>
-                </div>
               </div>
             )}
           </div>
@@ -348,22 +347,18 @@ export default function BulkUploadsClient() {
                     <tr key={upload.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{upload.filename}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {upload.fileUrl ? (
-                          <div className="flex flex-col gap-1">
-                            <a 
-                              href={upload.fileUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-primary hover:underline text-xs font-medium"
-                              title="Download original CSV from Blob storage"
-                            >
-                              📥 Download
-                            </a>
-                            <span className="text-muted-foreground text-xs">{formatFileSize(upload.fileSize)}</span>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground text-xs" title="Uploaded before Blob storage migration">Legacy</span>
-                        )}
+                        <div className="flex flex-col gap-1">
+                          <a 
+                            href={upload.fileUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline text-xs font-medium"
+                            title="Download original CSV from Blob storage"
+                          >
+                            📥 Download
+                          </a>
+                          <span className="text-muted-foreground text-xs">{formatFileSize(upload.fileSize)}</span>
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-muted-foreground"><span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-primary/10 text-primary">{upload.label}</span></td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{formatDateOfBirth(upload.dateReleased)}</td>

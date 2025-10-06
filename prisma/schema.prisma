@@ -120,14 +120,11 @@ model BulkUpload {
   label             String            // Required: manual description/label for the upload
   dateReleased      DateTime          // Required: when the source data was published/released
   
-  // Legacy: Will be removed after migration to Blob storage
-  rawFile           Bytes?            // Deprecated: use fileUrl instead
-  
-  // Blob storage references (replaces rawFile Bytes)
-  fileUrl           String?           // Vercel Blob URL (will be required after migration)
-  fileSize          Int?              // File size in bytes (will be required after migration)
-  fileSha256        String?           // SHA-256 hash for integrity verification (will be required after migration)
-  contentType       String?           @default("text/csv") // MIME type
+  // Blob storage references
+  fileUrl           String            // Vercel Blob URL
+  fileSize          Int               // File size in bytes
+  fileSha256        String            // SHA-256 hash for integrity verification
+  contentType       String            @default("text/csv") // MIME type
   previewLines      String?           // Optional: gzipped first ~20 lines for quick preview (<10KB)
   
   uploadedAt        DateTime          @default(now())
