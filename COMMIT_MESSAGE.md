@@ -1,83 +1,75 @@
-# feat: Add Prisma migrations to Vercel build process
+# fix: Make root page (/) public-only landing page
 
 ## Overview
-Updated build script to run database migrations before building the Next.js app in production. This ensures the database schema is always up-to-date when deploying to Vercel.
+Changed the root page from showing conditional content (dashboard for logged-in users, marketing for logged-out users) to always showing the public landing page for everyone.
 
-## Changes
+## Problem
+- Users visiting `/` while logged in were seeing a dashboard with stats and role information
+- This was confusing - the root should be a public landing page
+- Admin/staff dashboard should only be at `/tools`
 
-### Updated Build Script (`package.json`)
+## Solution
+Simplified the root page to **always** show the public landing page:
+- ✅ Shows to everyone (logged in or not)
+- ✅ Clean marketing page with "Document and Track Gaza Casualties"
+- ✅ Call-to-action buttons: "Get Started" and "Sign In"
+- ✅ Three feature cards: Document, Track, Remember
+
+## Changes Made
+
+### `src/app/page.tsx`
 **Before:**
-```json
-"build": "next build --turbopack"
-```
+- Checked if user is logged in
+- If logged out → Show marketing page
+- If logged in → Show personalized dashboard with stats and role badges
 
 **After:**
-```json
-"build": "prisma migrate deploy && prisma generate && next build --turbopack"
+- Simple static page
+- No authentication checks
+- Always shows public landing page
+- Removed conditional logic completely
+
+### Removed Unused Imports
+- `auth` and `currentUser` from Clerk
+- `StatsCards` component
+- `Alert`, `AlertDescription`, `AlertTitle` components
+- `Badge` component
+
+## Page Structure Now
+
+```
+/                    → Public landing page (for everyone)
+/community           → Community submissions (logged-in users)
+/records             → Database records (logged-in users)
+/tools               → Admin dashboard (admin/moderator only)
+/tools/settings      → Settings (admin only)
+/tools/bulk-uploads  → Bulk uploads (admin only)
+/tools/moderation    → Moderation queue (moderator + admin)
+/tools/audit-logs    → Audit logs (moderator + admin)
 ```
 
-## What This Does
+## Benefits
 
-### In Vercel (Production)
-When Vercel builds your app, it now:
-1. **`prisma migrate deploy`** - Applies any pending database migrations
-2. **`prisma generate`** - Generates the Prisma Client
-3. **`next build --turbopack`** - Builds the Next.js application
+1. **Clear separation** - Public site vs admin tools
+2. **Better UX** - Visitors immediately see what the platform is about
+3. **Consistent branding** - Everyone sees the same homepage
+4. **Simpler code** - No conditional rendering logic
+5. **Static page** - Can be prerendered (faster, better SEO)
 
-This ensures your database schema is always in sync with your code.
+## Build Optimization
 
-### Locally (Development)
-- Use `npm run dev` for development (doesn't run migrations)
-- Running `npm run build` locally requires `DATABASE_URL` in `.env.local`
-- If you get "DATABASE_URL not found" locally, that's expected - just use `npm run dev` instead
-
-## Why This Matters
-
-### Before This Change
-- Database migrations had to be run manually in production
-- Schema could be out of sync with code after deployment
-- Potential for runtime errors if schema not updated
-
-### After This Change
-- ✅ Migrations run automatically on every deployment
-- ✅ Database schema always matches the deployed code
-- ✅ No manual intervention needed
-- ✅ Fixes potential issues from GitHub Issues #1 and #2
-
-## Vercel Configuration
-
-No changes needed in Vercel dashboard - it will automatically use the build script from `package.json`.
-
-### Required Environment Variables (Vercel)
-Make sure these are set in Vercel dashboard:
-- `DATABASE_URL` - PostgreSQL connection string
-- `BLOB_READ_WRITE_TOKEN` - Vercel Blob storage token
-- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` - Clerk public key
-- `CLERK_SECRET_KEY` - Clerk secret key
+The root page is now **static** (○ in build output):
+- Prerendered at build time
+- No server-side rendering needed
+- Faster page loads
+- Better SEO
 
 ## Testing
-
-### Local Testing (Optional)
-If you want to test the build locally:
-```bash
-# Add DATABASE_URL to .env.local
-echo "DATABASE_URL=your-postgres-url" >> .env.local
-
-# Then build
-npm run build
-```
-
-### Vercel Testing
-- Push this change to GitHub
-- Vercel will automatically run the new build script
-- Check deployment logs to see migrations being applied
+- ✅ Production build passes
+- ✅ No TypeScript errors
+- ✅ No linting errors
+- ✅ Migrations ran successfully
+- ✅ All 26 routes compiled successfully
 
 ## Files Modified
-- `package.json` - Updated build script
-
-## Related Issues
-This may help resolve:
-- GitHub Issue #1: "Bulk Upload - Failed to simulate upload"
-- GitHub Issue #2: "Propose new record - Internal server error"
-
-By ensuring migrations run before build, the database schema will be up-to-date.
+- `src/app/page.tsx` - Simplified to public landing page only
