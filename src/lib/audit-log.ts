@@ -24,6 +24,7 @@ export enum AuditAction {
   
   // System Actions
   SYSTEM_CONFIG_CHANGED = 'SYSTEM_CONFIG_CHANGED',
+  DATABASE_CLEARED = 'DATABASE_CLEARED',
 }
 
 export enum ResourceType {

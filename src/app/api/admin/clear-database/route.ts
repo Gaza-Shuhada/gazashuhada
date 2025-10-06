@@ -26,8 +26,8 @@ export async function POST() {
 
     // Create audit log for this action
     await createAuditLog({
-      action: AuditAction.BULK_UPLOAD_ROLLED_BACK, // Closest action type
-      resourceType: ResourceType.BULK_UPLOAD,
+      action: AuditAction.DATABASE_CLEARED,
+      resourceType: ResourceType.SYSTEM,
       resourceId: 'database-clear',
       description: `Database cleared: ${persons.count} persons, ${personVersions.count} versions, ${bulkUploads.count} uploads, ${changeSources.count} sources, ${communitySubmissions.count} submissions`,
       metadata: {
