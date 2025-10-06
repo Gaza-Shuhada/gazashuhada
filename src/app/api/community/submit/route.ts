@@ -10,6 +10,8 @@ export async function POST(request: NextRequest) {
     if (!userId || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    
+    console.log('[Community Submit] User:', userId, 'Role:', user.publicMetadata?.role);
 
     // All authenticated users can submit (admin, moderator, community)
     // No role restriction needed
@@ -195,8 +197,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid submission type' }, { status: 400 });
 
   } catch (error) {
-    console.error('Community submission error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('[Community Submit] Error:', error);
+    console.error('[Community Submit] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
 

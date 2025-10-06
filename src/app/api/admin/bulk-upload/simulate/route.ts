@@ -6,7 +6,8 @@ import { requireAdmin } from '@/lib/auth-utils';
 export async function POST(request: NextRequest) {
   try {
     // Check authentication and admin role
-    await requireAdmin();
+    const { userId, role } = await requireAdmin();
+    console.log('[Bulk Upload Simulate] User:', userId, 'Role:', role);
     
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -36,7 +37,8 @@ export async function POST(request: NextRequest) {
       simulation,
     });
   } catch (error) {
-    console.error('Simulation error:', error);
+    console.error('[Bulk Upload Simulate] Error:', error);
+    console.error('[Bulk Upload Simulate] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     
     if (error instanceof Error && error.message.includes('Unauthorized')) {
       return NextResponse.json(
@@ -46,7 +48,10 @@ export async function POST(request: NextRequest) {
     }
     
     return NextResponse.json(
-      { error: 'Failed to simulate bulk upload' },
+      { 
+        error: 'Failed to simulate bulk upload',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }

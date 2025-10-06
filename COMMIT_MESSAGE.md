@@ -1,98 +1,71 @@
-# Major Restructure: Split Admin Tools and Public Site
+# fix: Add enhanced error logging for GitHub Issues #1 and #2
 
 ## Overview
-Complete separation of admin tools area from public-facing site with dedicated navigation components and improved routing structure.
+Improved error logging and details for two production issues reported on GitHub:
+- Issue #2: "Propose new record - Internal server error"
+- Issue #1: "Bulk Upload - Failed to simulate upload"
 
-## 🏗️ Structure Changes
+## Changes Made
 
-### Admin Tools Isolation
-- Moved all admin/moderator pages to `/tools/*` structure
-- `/tools` → Admin dashboard (staff only)
-- `/tools/settings` → Admin settings (admin only)
-- `/tools/bulk-uploads` → Bulk CSV uploads (admin only)
-- `/tools/moderation` → Moderation queue (moderator + admin)
-- `/tools/audit-logs` → Audit logs (moderator + admin)
+### Community Submit Endpoint (`/api/community/submit`)
+- Added console logging to track user ID and role on submission attempts
+- Enhanced error responses to include error details in addition to generic message
+- Added stack trace logging for better debugging in production logs
+- Error response now includes: `{ error: string, details: string }`
 
-### Public Pages Remain at Root
-- `/` → Public homepage
-- `/community` → Community submissions (any logged-in user)
-- `/records` → View database records (any logged-in user)
+### Bulk Upload Simulate Endpoint (`/api/admin/bulk-upload/simulate`)
+- Added console logging to track admin user ID and role
+- Enhanced error responses to include error details
+- Added stack trace logging for production debugging
+- Error response now includes: `{ error: string, details: string }`
 
-## 🎨 Navigation Components
+## Debugging Strategy
 
-### Created Two Navbars
-1. **PublicNavbar** (`src/components/PublicNavbar.tsx`)
-   - Used on public pages (/, /community, /records)
-   - Shows "Gaza Death Toll" branding
-   - Links: Submissions, Database
-   - "Admin Tools →" link for staff
+### For Users Experiencing Errors
+The errors will now show more specific information instead of just "Internal server error". Users and developers can see:
+1. What specific error occurred (via `details` field)
+2. Which user ID triggered the error (server logs)
+3. What role the user has (server logs)
+4. Full stack trace (server logs)
 
-2. **ToolsNavbar** (`src/components/ToolsNavbar.tsx`)
-   - Used on `/tools/*` pages
-   - Shows "Admin Tools" branding
-   - Links: Bulk Uploads, Settings (admin), Moderation, Audit Logs
-   - "← Back to Site" link
+### Common Issues to Check
 
-### Layout Updates
-- Root layout (`src/app/layout.tsx`): Uses PublicNavbar
-- Tools layout (`src/app/tools/layout.tsx`): Uses ToolsNavbar
-- Removed nested `/tools/admin` directory - consolidated to `/tools`
+#### Issue #2: Community Submission Errors
+Most likely causes:
+1. **Missing role assignment** - User needs to be authenticated (any role works)
+2. **Database connection** - Check `DATABASE_URL` in production environment
+3. **Blob storage issues** - Check `BLOB_READ_WRITE_TOKEN` if photo upload fails
+4. **Invalid data format** - Check date formats, gender enum values
 
-## 🔒 Security & Middleware
+#### Issue #1: Bulk Upload Simulation Errors
+Most likely causes:
+1. **User not admin** - Only users with `role='admin'` can upload
+2. **CSV parsing error** - Invalid CSV format or missing required columns
+3. **Database connection** - Check `DATABASE_URL` in production
+4. **Large file timeout** - File may be too large for single transaction
 
-### Updated Route Protection (`src/middleware.ts`)
-- Added `isStaffRoute` matcher for `/tools` (requires admin OR moderator)
-- Admin routes: `/tools/settings`, `/tools/bulk-uploads` (admin only)
-- Moderator routes: `/tools/moderation`, `/tools/audit-logs` (moderator + admin)
-- Public routes: `/`, `/api/public/*` (no auth required)
-- Community routes: `/community`, `/records`, `/api/community/*` (any logged-in user)
+## Next Steps
 
-## 🐛 Bug Fixes
+### To Diagnose in Production
+1. Check Vercel logs for the new console output:
+   - Look for `[Community Submit]` logs
+   - Look for `[Bulk Upload Simulate]` logs
+2. Error responses now include `details` field with specific error message
+3. Stack traces logged server-side for debugging
 
-### Fixed Optional Chaining Runtime Error
-- **File**: `src/app/tools/page.tsx`
-- **Issue**: `.toLocaleString()` called on undefined values
-- **Fix**: Changed from `stats?.totalRecords.toLocaleString() || 0` to `(stats?.totalRecords ?? 0).toLocaleString()`
-- Applied to all stat displays: `totalRecords`, `recordsWithPhoto`, `mohUpdates`, `communityContributions`
+### If Issues Persist
+1. Verify environment variables in Vercel dashboard
+2. Check user's role assignment in Clerk dashboard
+3. Run database migration: `npx prisma migrate deploy`
+4. Check Vercel function logs for timeout errors
+5. Verify Blob storage token is valid
 
-## 📝 UI/UX Improvements
+## Files Modified
+- `src/app/api/community/submit/route.ts`
+- `src/app/api/admin/bulk-upload/simulate/route.ts`
 
-### Navbar Label Updates
-- "Community" → "Submissions" (clearer purpose)
-- "Records" → "Database" (more accurate)
-
-### Removed Redundant Links
-- Removed "Dashboard" link from tools navbar
-- Logo ("Admin Tools") already navigates to dashboard
-
-## 📦 File Structure
-
-### Created
-- `src/components/PublicNavbar.tsx`
-- `src/components/ToolsNavbar.tsx`
-- `src/app/tools/layout.tsx`
-
-### Moved
-- `/admin/page.tsx` → `/tools/page.tsx`
-- `/settings/page.tsx` → `/tools/settings/page.tsx`
-- `/bulk-uploads/*` → `/tools/bulk-uploads/*`
-- `/moderation/*` → `/tools/moderation/*`
-- `/audit-logs/*` → `/tools/audit-logs/*`
-
-### Deleted
-- `src/components/Navbar.tsx` (renamed to ToolsNavbar.tsx)
-- `/admin/layout.tsx` (no longer needed)
-- `/admin/settings/` (moved to /tools/settings)
-
-### Updated
-- All internal links changed from old paths to `/tools/*` structure
-- Import statements updated to use `ToolsNavbar` and `PublicNavbar`
-
-## ✅ Testing
-- Production build validated: All 26 routes compile successfully
-- No linting errors
-- Middleware protection verified for all routes
-
-## 🎯 Result
-Clear separation between public site and admin tools, with dedicated navigation for each area. Admin tools are isolated under `/tools`, making it easy to build the public-facing site at the root.
-
+## Testing
+- ✅ Production build passes
+- ✅ No TypeScript errors
+- ✅ No linting errors
+- ✅ Error responses now include details for debugging
