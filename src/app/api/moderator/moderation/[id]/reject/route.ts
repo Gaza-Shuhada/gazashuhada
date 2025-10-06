@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireStaff } from '@/lib/auth-utils';
+import { requireModerator } from '@/lib/auth-utils';
 import { currentUser } from '@clerk/nextjs/server';
 import { createAuditLogWithUser } from '@/lib/audit-log';
 
@@ -9,7 +9,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await requireStaff();
+    const user = await requireModerator();
     const { id } = await params;
 
     const body = await request.json();

@@ -18,7 +18,7 @@ export function StatsCards() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('/api/stats');
+        const response = await fetch('/api/moderator/stats');
         const result = await response.json();
         
         if (result.success) {

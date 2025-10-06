@@ -1,24 +1,18 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getCurrentUser } from '@/lib/auth-utils';
 
+/**
+ * Public Stats Endpoint
+ * No authentication required
+ * Returns only public-safe statistics
+ */
 export async function GET() {
   try {
-    // Check if user is authenticated
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    // Get statistics
+    // Get public statistics (no sensitive data)
     const [
       totalPersons,
       totalDeceased,
-      totalAlive,
-      recentUploads
+      confirmedByMoh
     ] = await Promise.all([
       // Total persons (not deleted)
       prisma.person.count({
@@ -33,21 +27,11 @@ export async function GET() {
         }
       }),
       
-      // Total alive (no date of death)
-      prisma.person.count({
-        where: { 
-          isDeleted: false,
-          dateOfDeath: null
-        }
-      }),
-      
-      // Recent uploads (last 7 days)
+      // Confirmed by MoH
       prisma.person.count({
         where: {
           isDeleted: false,
-          createdAt: {
-            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-          }
+          confirmedByMoh: true
         }
       })
     ]);
@@ -57,16 +41,17 @@ export async function GET() {
       data: {
         totalPersons,
         totalDeceased,
-        totalAlive,
-        recentUploads
+        confirmedByMoh,
+        lastUpdated: new Date().toISOString()
       }
     });
 
   } catch (error) {
-    console.error('Error fetching stats:', error);
+    console.error('Error fetching public stats:', error);
     return NextResponse.json(
       { error: 'Failed to fetch statistics' },
       { status: 500 }
     );
   }
 }
+

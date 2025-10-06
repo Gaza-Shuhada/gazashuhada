@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireStaff } from '@/lib/auth-utils';
+import { requireModerator } from '@/lib/auth-utils';
 import { getRecentAuditLogs } from '@/lib/audit-log';
 
 export async function GET(request: NextRequest) {
   try {
     // Check authentication and staff role (admin or moderator)
-    await requireStaff();
+    await requireModerator();
     
     // Get limit from query params (default 50)
     const searchParams = request.nextUrl.searchParams;

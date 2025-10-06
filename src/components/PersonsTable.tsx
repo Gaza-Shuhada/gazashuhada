@@ -44,7 +44,7 @@ export function PersonsTable() {
   const fetchPersons = async (page: number = 1) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/persons?page=${page}&limit=10`);
+      const response = await fetch(`/api/moderator/persons?page=${page}&limit=10`);
       const result = await response.json();
 
       if (!response.ok) {

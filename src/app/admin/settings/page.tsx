@@ -55,7 +55,7 @@ export default function AdminSettingsPage() {
           message: data.error || 'Failed to clear database',
         });
       }
-    } catch (error) {
+    } catch {
       setResult({
         success: false,
         message: 'An error occurred while clearing the database',

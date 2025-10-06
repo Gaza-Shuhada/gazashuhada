@@ -201,12 +201,16 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ## Documentation
 
-- [API Documentation](docs/API_DOCUMENTATION.md) - Complete API reference
+### API Documentation (Choose Your Role)
+- 📘 **[Public & Community API](docs/PUBLIC_AND_COMMUNITY_API.md)** - For external developers building public apps
+- 🔐 **[Admin & Moderator API](docs/ADMIN_AND_MODERATOR_API.md)** - For internal admin/moderator staff
+- 📚 **[API Overview](docs/API_README.md)** - Quick start guide
+
+### Project Documentation
 - [Engineering](docs/ENGINEERING.md) - Technical architecture and workflows
 - [Product Overview](docs/PRODUCT.md) - Product context and features
 - [Contributing](docs/CONTRIBUTING.md) - How to contribute
 - [TODOs](docs/TODO.md) - Follow-up tasks
-- [Changelog](CHANGELOG.md) - Version history
 
 ---
 

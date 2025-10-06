@@ -54,7 +54,7 @@ export default function ModerationClient() {
   const fetchSubmissions = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/moderation/list');
+      const response = await fetch('/api/moderator/moderation/list');
       if (response.ok) {
         const text = await response.text();
         if (!text) return;
@@ -75,7 +75,7 @@ export default function ModerationClient() {
 
     try {
       setActionLoading(modalState.submission.id);
-      const response = await fetch(`/api/admin/moderation/${modalState.submission.id}/approve`, {
+      const response = await fetch(`/api/moderator/moderation/${modalState.submission.id}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ note: modalState.note || undefined }),
@@ -108,7 +108,7 @@ export default function ModerationClient() {
 
     try {
       setActionLoading(modalState.submission.id);
-      const response = await fetch(`/api/admin/moderation/${modalState.submission.id}/reject`, {
+      const response = await fetch(`/api/moderator/moderation/${modalState.submission.id}/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ note: modalState.note }),

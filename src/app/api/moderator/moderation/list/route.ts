@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireStaff } from '@/lib/auth-utils';
+import { requireModerator } from '@/lib/auth-utils';
 
 export async function GET() {
   try {
-    await requireStaff();
+    await requireModerator();
 
     // Fetch all pending submissions
     const submissions = await prisma.communitySubmission.findMany({

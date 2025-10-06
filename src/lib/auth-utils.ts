@@ -1,5 +1,9 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
 
+/**
+ * Require Admin role
+ * Only users with role='admin' can proceed
+ */
 export async function requireAdmin() {
   const { userId } = await auth();
   
@@ -14,9 +18,13 @@ export async function requireAdmin() {
     throw new Error('Unauthorized - requires admin role');
   }
 
-  return { userId };
+  return { userId, role };
 }
 
+/**
+ * Require Moderator role (or Admin)
+ * Users with role='moderator' or 'admin' can proceed
+ */
 export async function requireModerator() {
   const { userId } = await auth();
   
@@ -31,20 +39,43 @@ export async function requireModerator() {
     throw new Error('Unauthorized - requires moderator or admin role');
   }
 
-  return { userId };
+  return { userId, role };
 }
 
-// Alias for requireModerator - requires admin or moderator (staff)
-// Backwards-compatible alias (deprecated): use requireModerator instead
-export async function requireStaff() {
-  return requireModerator();
+/**
+ * Require any authenticated user
+ * Any logged-in user can proceed (admin, moderator, or community)
+ */
+export async function requireAuth() {
+  const { userId } = await auth();
+  
+  if (!userId) {
+    throw new Error('Unauthorized - not logged in');
+  }
+
+  const user = await currentUser();
+  const role = (user?.publicMetadata?.role as string) || 'community';
+
+  return { userId, role };
 }
 
+/**
+ * Get current user if logged in, null otherwise
+ * Does not throw errors
+ */
 export async function getCurrentUser() {
   const { userId } = await auth();
-  return userId ? { userId } : null;
+  if (!userId) return null;
+
+  const user = await currentUser();
+  const role = (user?.publicMetadata?.role as string) || 'community';
+  
+  return { userId, role };
 }
 
+/**
+ * Check if current user has a specific role
+ */
 export async function hasRole(requiredRole: string) {
   const user = await currentUser();
   const role = user?.publicMetadata?.role as string;

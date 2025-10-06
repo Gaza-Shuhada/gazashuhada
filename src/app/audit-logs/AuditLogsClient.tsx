@@ -28,7 +28,7 @@ export default function AuditLogsClient() {
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/audit-logs');
+      const response = await fetch('/api/moderator/audit-logs');
       const text = await response.text();
       if (!text) return;
       const data = JSON.parse(text);

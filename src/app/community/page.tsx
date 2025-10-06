@@ -139,7 +139,7 @@ export default function CommunitySubmitPage() {
     const formData = new FormData();
     formData.append('photo', file);
 
-    const response = await fetch('/api/upload-photo', {
+    const response = await fetch('/api/community/upload-photo', {
       method: 'POST',
       body: formData,
     });

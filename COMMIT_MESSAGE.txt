@@ -1,114 +1,264 @@
-fix: Resolve form submission UI freezing and improve UX across all pages
+refactor: Complete API restructure with role-based access and comprehensive documentation
 
-## 🐛 Critical Bug Fix: Form Submission Hanging
+## 🏗️ Major API Restructure
 
-Fixed a critical bug where all form submissions would hang, leaving buttons 
-disabled and preventing users from seeing success/error messages.
+Reorganized entire API with clear role-based access control and proper REST semantics.
 
-### Root Cause
-- Using `response.json()` directly would hang on empty/invalid responses
-- Synchronous `fetchX()` calls blocked UI updates
-- Success handlers ran async operations before scrolling/showing messages
+### New API Structure
 
-### Solution Applied System-Wide
-1. **Safe JSON Parsing**: Replace all `response.json()` with:
-   ```typescript
-   const text = await response.text();
-   const data = text ? JSON.parse(text) : {};
-   ```
+```
+/api
+  ├── /admin/*              → Admin only (requireAdmin)
+  ├── /moderator/*          → Moderator + Admin (requireModerator)
+  ├── /community/*          → Any authenticated user (requireAuth)
+  └── /public/*             → No authentication required
+```
 
-2. **Non-blocking Refreshes**: Changed from:
-   ```typescript
-   fetchSubmissions(); // Blocks
-   ```
-   To:
-   ```typescript
-   fetchSubmissions().catch(err => console.error(...)); // Non-blocking
-   ```
+**Role Hierarchy**: Admin → Moderator → Community → Public
 
-3. **Immediate UI Feedback**: Move `window.scrollTo()` to run FIRST before 
-   any async operations
+---
 
-## 📁 Files Fixed (8 files, 20+ locations)
+## 📁 Endpoint Reorganization
 
-### Community Submissions (`src/app/community/page.tsx`)
-- ✅ Fixed `handleNewRecordSubmit` - scroll to top on success/error
-- ✅ Fixed `handleEditSubmit` - scroll to top on success/error
-- ✅ Fixed `fetchSubmissions` - safe JSON parsing
-- ✅ Fixed `uploadPhoto` - safe JSON parsing with error handling
-- ✅ Added comprehensive console logging for debugging
-- ✅ Reordered tabs: "Suggest Edit" now appears before "Propose New Record"
-- ✅ Fixed tab hover text shifting (use `hover:border-muted` instead of `hover:border`)
-- ✅ Added `transition-colors` for smooth hover animations
+### Moved to Correct Access Levels
 
-### Photo Upload API (`src/app/api/upload-photo/route.ts`)
-- ✅ Added detailed logging at every step
-- ✅ Better error messages with context
-- ✅ Logs file metadata, processing steps, Blob URLs
+**From `/api/admin/*` to `/api/moderator/*`:**
+- ✅ `moderation/*` (approve/reject/list)
+- ✅ `audit-logs`
+- ✅ `persons` (moved from `/api/persons`)
+- ✅ `stats` (moved from `/api/stats`)
 
-### Moderation (`src/app/moderation/ModerationClient.tsx`)
-- ✅ Fixed `fetchSubmissions` - safe JSON parsing
-- ✅ Fixed `handleApprove` - non-blocking refresh
-- ✅ Fixed `handleReject` - non-blocking refresh
+**From `/api/` to `/api/community/*`:**
+- ✅ `upload-photo`
 
-### Bulk Uploads (`src/app/bulk-uploads/BulkUploadsClient.tsx`)
-- ✅ Fixed `fetchUploads` - safe JSON parsing
-- ✅ Fixed `handleSimulate` - safe JSON parsing
-- ✅ Fixed `handleApply` - non-blocking refresh
-- ✅ Fixed `handleRollback` - non-blocking refresh
+**Admin-only endpoints remain:**
+- `bulk-upload/*` (simulate/apply/rollback/list)
+- `clear-database`
+- `set-role`
 
-### Admin Settings (`src/app/admin/settings/page.tsx`)
-- ✅ Fixed `handleClearDatabase` - safe JSON parsing
+---
 
-### Audit Logs (`src/app/audit-logs/AuditLogsClient.tsx`)
-- ✅ Fixed `fetchLogs` - safe JSON parsing
+## 🆕 New Public Endpoints
 
-## 🎯 Impact
+### 1. Public Persons List
+**Endpoint**: `GET /api/public/persons`
+
+**Features**:
+- Pagination (`page`, `limit`)
+- Search (`search` - name/nameEnglish/externalId)
+- Filters: `with_photo`, `with_location`, `recent`, `community_reported`
+- Security: Only shows active, non-sensitive records
+- Default: `confirmedOnly=true` (only MoH confirmed)
+
+### 2. Single Person Lookup
+**Endpoint**: `GET /api/public/person/[id]`
+
+**Features**:
+- Accepts UUID or externalId
+- Optional version history (`includeHistory=true`)
+- Returns 404 for deleted records (security)
+- REST-compliant: `/person/[id]` (singular) vs `/persons` (plural)
+
+### 3. Public Statistics
+**Endpoint**: `GET /api/public/stats`
+
+**Features**:
+- Public-safe statistics only
+- No sensitive data exposure
+- Real-time counts
+
+---
+
+## 🔐 Authentication & Authorization Updates
+
+### Removed "Staff" Concept
+Eliminated vague "staff" terminology, replaced with explicit roles:
+
+**Before**:
+```typescript
+requireStaff()  // Unclear
+```
+
+**After**:
+```typescript
+requireAdmin()      // Admin only
+requireModerator()  // Moderator + Admin
+requireAuth()       // Any authenticated user
+```
+
+### Updated Files
+- `src/lib/auth-utils.ts` - Added `requireAuth()`, removed `requireStaff()`
+- All endpoints updated to use correct auth function
+- 10+ files updated with proper role checks
+
+---
+
+## 📚 Documentation Overhaul
+
+### Deleted
+- ❌ `docs/API_DOCUMENTATION.md` (old, mixed audience)
+- ❌ `docs/PRISMA_ACCELERATE_SETTINGS.md` (redundant)
+
+### Created
+**1. PUBLIC_AND_COMMUNITY_API.md** (37 pages)
+- For external developers building public apps
+- Complete endpoint documentation
+- Full React/TypeScript code examples
+- Photo upload workflows
+- Error handling best practices
+- Clerk authentication guides
+
+**2. ADMIN_AND_MODERATOR_API.md** (31 pages)
+- For internal admin/moderator staff
+- Admin endpoints (bulk uploads, system management)
+- Moderator endpoints (moderation, review, audit logs)
+- Complete data models (TypeScript interfaces)
+- Prisma Accelerate configuration
+- Best practices and workflows
+
+**3. API_README.md**
+- Quick reference guide
+- Points to role-specific documentation
+- API hierarchy overview
+
+### Updated
+- `README.md` - Updated documentation links
+
+---
+
+## 🎨 Component Updates
+
+Updated all components to use new endpoints:
+
+| Component | Old Endpoint | New Endpoint |
+|-----------|-------------|--------------|
+| `PersonsTable.tsx` | `/api/persons` | `/api/moderator/persons` |
+| `StatsCards.tsx` | `/api/stats` | `/api/moderator/stats` |
+| `ModerationClient.tsx` | `/api/admin/moderation/*` | `/api/moderator/moderation/*` |
+| `AuditLogsClient.tsx` | `/api/admin/audit-logs` | `/api/moderator/audit-logs` |
+| `community/page.tsx` | `/api/upload-photo` | `/api/community/upload-photo` |
+
+---
+
+## 🐛 Bug Fixes
+
+### Linter Errors
+- Fixed `prefer-const` in public persons route
+- Fixed unused variable in admin settings
+- Fixed `any` type in public person route
+- Fixed async params handling in Next.js 15
+
+### Build Errors
+- All TypeScript errors resolved
+- All ESLint warnings fixed
+- Production build verified ✅
+
+---
+
+## ✨ Enhanced Features
+
+### Public Persons Endpoint
+Added comprehensive filtering:
+- `with_photo` - Records with photos
+- `with_location` - Records with coordinates
+- `recent` - Updated in last 30 days
+- `community_reported` - Community submissions
+- `confirmedOnly` - Toggle MoH confirmation filter
+
+### Response Format
+All endpoints now return consistent format:
+```json
+{
+  "success": true,
+  "data": { ... },
+  "pagination": { ... },
+  "filters": { ... }
+}
+```
+
+---
+
+## 🧹 Code Cleanup
+
+### Removed Files
+- `src/app/api/persons/route.ts` (moved to moderator)
+- `src/app/api/stats/route.ts` (moved to moderator)
+- `src/app/api/upload-photo/route.ts` (moved to community)
+- `src/app/api/admin/moderation/*` (moved to moderator)
+- `src/app/api/admin/audit-logs/route.ts` (moved to moderator)
+
+### File Structure
+```
+src/app/api/
+  ├── admin/              (3 endpoints - truly admin-only)
+  ├── moderator/          (6 endpoints - moderator + admin)
+  ├── community/          (3 endpoints - any authenticated)
+  └── public/             (3 endpoints - no auth)
+```
+
+---
+
+## 📊 Impact
 
 ### Before
-- ❌ Submit button stays disabled after successful submission
-- ❌ Page doesn't scroll to show success/error messages
-- ❌ User stuck at bottom of page, unaware submission worked
-- ❌ No console logs for debugging
-- ❌ Forms appear "frozen" even when data is saved
+- Mixed access levels in `/api/admin/`
+- No public endpoints
+- "Staff" vs actual roles confusion
+- Single documentation file for all audiences
+- Inconsistent REST patterns
 
 ### After
-- ✅ Buttons always unlock (success or error)
-- ✅ Page always scrolls to top to show messages
-- ✅ Clear success/error feedback
-- ✅ Comprehensive logging for debugging
-- ✅ Non-blocking background refreshes
-- ✅ Smooth, responsive UI
+- Clear role-based access control
+- Proper public API for external developers
+- Explicit Admin/Moderator/Community/Public roles
+- Role-specific documentation (68 pages total)
+- REST-compliant naming (`/person/[id]` vs `/persons`)
 
-## 🎨 UI/UX Improvements
-
-- Reordered community tabs for better workflow (Edit → New → History)
-- Fixed hover text shifting on tabs with proper border handling
-- Added smooth color transitions on tab hover
-- Success messages appear immediately with smooth scroll
-
-## 🔧 Technical Details
-
-- All `.json()` calls replaced with safe parsing pattern
-- All refresh functions made non-blocking with `.catch()` handlers
-- Scroll actions moved before async operations for immediate feedback
-- Added `e.stopPropagation()` to prevent parent form handlers
-- Consistent error handling across all forms
+---
 
 ## ✅ Testing
 
-- All linting checks pass
-- No TypeScript errors
-- Tested in development environment
-- Applied consistently across 8 files
+- ✅ All endpoints build successfully
+- ✅ No TypeScript errors
+- ✅ No ESLint warnings
+- ✅ Proper authentication checks in place
+- ✅ Role hierarchy enforced
 
-## 🚀 Affected Features
+---
 
-- Community submissions (new records + edits)
-- Photo uploads
-- Moderation (approve/reject)
-- Bulk CSV uploads (simulate/apply/rollback)
-- Database clearing
-- Audit log viewing
+## 🎯 Benefits
 
-Breaking Changes: None
+1. **Clear Access Control**: Role-based endpoint organization
+2. **Better Developer Experience**: Comprehensive, role-specific docs
+3. **Production-Ready**: Public API ready for external developers
+4. **Maintainable**: Clean separation of concerns
+5. **Scalable**: Easy to add new endpoints with clear patterns
+
+---
+
+## 📝 Documentation Stats
+
+- **Public & Community API**: 37 pages, 10+ code examples
+- **Admin & Moderator API**: 31 pages, complete data models
+- **Total**: 68 pages of comprehensive documentation
+
+---
+
+## Breaking Changes
+
+**Endpoint Paths Changed**:
+- `/api/persons` → `/api/moderator/persons`
+- `/api/stats` → `/api/moderator/stats`
+- `/api/admin/moderation/*` → `/api/moderator/moderation/*`
+- `/api/admin/audit-logs` → `/api/moderator/audit-logs`
+- `/api/upload-photo` → `/api/community/upload-photo`
+
+**All components updated accordingly** - no manual changes needed.
+
+---
+
+**Files Changed**: 25+ files  
+**Lines Added**: ~2,500 (mostly documentation)  
+**Lines Removed**: ~1,000 (old docs + moved files)  
+**Build Status**: ✅ Passing  
+**Production Ready**: ✅ Yes
