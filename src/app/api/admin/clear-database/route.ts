@@ -9,16 +9,17 @@ export async function POST() {
     await requireAdmin();
 
     // Clear all data in the correct order (respecting foreign keys)
-    const [
-      communitySubmissions,
-      personVersions,
-      persons,
-      bulkUploads,
-      changeSources,
-    ] = await Promise.all([
-      prisma.communitySubmission.deleteMany(),
-      prisma.personVersion.deleteMany(),
-      prisma.person.deleteMany(),
+    // MUST delete children before parents to avoid FK constraint violations
+    
+    // Step 1: Delete records that reference Person
+    const communitySubmissions = await prisma.communitySubmission.deleteMany();
+    const personVersions = await prisma.personVersion.deleteMany();
+    
+    // Step 2: Delete Person records (now that children are gone)
+    const persons = await prisma.person.deleteMany();
+    
+    // Step 3: Delete independent tables (no FK dependencies)
+    const [bulkUploads, changeSources] = await Promise.all([
       prisma.bulkUpload.deleteMany(),
       prisma.changeSource.deleteMany(),
     ]);

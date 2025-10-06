@@ -105,20 +105,12 @@ export function Navbar() {
                   <>
                     {/* Admin Links - Only show if user has admin role */}
                     {isAdmin && (
-                      <>
-                        <Link
-                          href="/bulk-uploads"
-                          className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
-                        >
-                          Bulk Uploads
-                        </Link>
-                        <Link
-                          href="/admin/settings"
-                          className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
-                        >
-                          Settings
-                        </Link>
-                      </>
+                      <Link
+                        href="/bulk-uploads"
+                        className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
+                      >
+                        Bulk Uploads
+                      </Link>
                     )}
 
                     <Link
@@ -154,8 +146,18 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Right Side: Theme + User Menu */}
+          {/* Right Side: Settings + Theme + User Menu */}
           <div className="flex items-center space-x-2">
+            {/* Settings Link - Admin only, desktop only */}
+            {isAdmin && (
+              <Link
+                href="/admin/settings"
+                className="hidden md:block text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Settings
+              </Link>
+            )}
+
             {/* Theme Toggle */}
             <ThemeToggle />
 
