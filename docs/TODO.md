@@ -35,6 +35,37 @@ All files in `moh-updates/` directory (validated):
 
 ---
 
+## Community Submission Data Review
+
+### New Fields to Add
+- [ ] **Profession Field** — Add to Person schema and community submission forms
+  - Define category enum (e.g., journalist, medical worker, academic, civil defense, teacher, student, child, elderly, displaced person, etc.)
+  - Update Prisma schema to add `profession` field (nullable, enum or string)
+  - Update community submission form UI (dropdown/select)
+  - Update moderation UI to show profession
+  - Update API endpoints to accept profession field
+  - Document categories and definitions
+
+- [ ] **Cause of Death Field** — Add to Person schema and community submission forms
+  - Define category enum (e.g., gunshot, explosion, airstrike, artillery, drone strike, famine, medical collapse, building collapse, burned, torture, etc.)
+  - Update Prisma schema to add `causeOfDeath` field (nullable, enum or string)
+  - Update community submission form UI (dropdown/select)
+  - Update moderation UI to show cause of death
+  - Update API endpoints to accept cause of death field
+  - Document categories and definitions
+
+### Prerequisites
+- [ ] Agree on final list of profession categories
+- [ ] Agree on final list of cause of death categories
+- [ ] Decide: enum (strict) vs string (flexible) for each field
+- [ ] Consider: allow "other" option with free text?
+- [ ] Consider: allow multiple professions? (e.g., "student" + "journalist")
+- [ ] Consider: allow multiple causes? (e.g., "gunshot" + "explosion")
+
+**Note**: These fields are documented in PRODUCT.md but not yet implemented in the application.
+
+---
+
 ## Testing
 
 ### Unit Tests

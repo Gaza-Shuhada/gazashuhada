@@ -4,6 +4,270 @@
 
 ---
 
+## 🏗️ Tech Stack
+
+**Core Framework**:
+- **Next.js 15.5.4** — React framework with App Router
+- **TypeScript** — Strict mode enabled, no `any` types
+- **React 18+** — Server components by default
+
+**Database & ORM**:
+- **PostgreSQL** — Primary database (shared with public app)
+- **Prisma ORM** — Type-safe database client
+- **Prisma Accelerate** — Connection pooling and caching
+
+**Authentication & Authorization**:
+- **Clerk** — User authentication and management
+- Role-based access control via `publicMetadata.role`
+
+**UI & Styling**:
+- **shadcn/ui** — Component library (MANDATORY for all UI)
+- **Tailwind CSS 4** — Utility-first CSS
+- **Radix UI** — Unstyled accessible components (via shadcn)
+
+**Storage & Media**:
+- **Vercel Blob** — Photo storage with CDN
+- **sharp** — Image processing and resizing
+
+**Development Tools**:
+- **ESLint** — Code linting
+- **TypeScript Compiler** — Type checking
+- **Turbopack** — Fast build tool (Next.js 15)
+
+**Analytics**:
+- **Vercel Web Analytics** — Page view tracking
+
+---
+
+## 📁 Project Structure
+
+```
+/Users/jensmunch/Code/gazadeathtoll-admin/
+├── .cursorrules                    # AI agent rules (MANDATORY shadcn)
+├── .env.local                      # Environment variables (not in git)
+├── components.json                 # shadcn configuration
+├── package.json                    # Dependencies
+├── tsconfig.json                   # TypeScript config
+├── next.config.ts                  # Next.js config
+├── postcss.config.mjs              # PostCSS for Tailwind
+│
+├── prisma/
+│   ├── schema.prisma               # Database schema (SOURCE OF TRUTH)
+│   └── migrations/                 # Database migrations
+│
+├── src/
+│   ├── app/                        # Next.js App Router
+│   │   ├── layout.tsx              # Root layout
+│   │   ├── page.tsx                # Dashboard (/)
+│   │   ├── globals.css             # Global styles
+│   │   │
+│   │   ├── api/                    # API Routes
+│   │   │   ├── admin/*             # Admin endpoints (requireAdmin)
+│   │   │   ├── moderator/*         # Moderator endpoints (requireModerator)
+│   │   │   ├── community/*         # Community endpoints (requireAuth)
+│   │   │   └── public/*            # Public endpoints (no auth)
+│   │   │
+│   │   ├── bulk-uploads/           # Bulk upload UI
+│   │   ├── moderation/             # Moderation queue UI
+│   │   ├── records/                # Records browser UI
+│   │   ├── audit-logs/             # Audit logs UI
+│   │   ├── community/              # Community submission UI
+│   │   └── admin/settings/         # Admin settings UI
+│   │
+│   ├── components/
+│   │   ├── ui/                     # shadcn components (DO NOT EDIT)
+│   │   ├── Navbar.tsx              # App navigation
+│   │   ├── PersonsTable.tsx        # Records table
+│   │   ├── StatsCards.tsx          # Dashboard stats
+│   │   └── ProtectMetadata.tsx     # Role guard component
+│   │
+│   ├── lib/
+│   │   ├── prisma.ts               # Prisma client singleton
+│   │   ├── auth-utils.ts           # Auth guards (requireAdmin, etc)
+│   │   ├── audit-log.ts            # Audit logging utilities
+│   │   ├── bulk-upload-service-ultra-optimized.ts  # Bulk upload logic
+│   │   ├── blob-storage.ts         # Vercel Blob utilities
+│   │   ├── csv-utils.ts            # CSV parsing and validation
+│   │   └── utils.ts                # General utilities
+│   │
+│   ├── types/
+│   │   └── clerk.d.ts              # Clerk type extensions
+│   │
+│   └── middleware.ts               # Next.js middleware (Clerk)
+│
+├── docs/
+│   ├── PRODUCT.md                  # Product overview (non-technical)
+│   ├── ENGINEERING.md              # This file (technical docs)
+│   ├── API_README.md               # API documentation index
+│   ├── PUBLIC_AND_COMMUNITY_API.md # External API docs
+│   ├── ADMIN_AND_MODERATOR_API.md  # Internal API docs
+│   ├── CONTRIBUTING.md             # Contributing guidelines
+│   └── TODO.md                     # Pending tasks
+│
+├── moh-updates/                    # MoH CSV files for bulk upload
+│   └── *.csv
+│
+└── scripts/                        # Utility scripts
+```
+
+---
+
+## 🚀 Development Setup
+
+### Prerequisites
+- Node.js 18+
+- PostgreSQL database (local or remote)
+- Clerk account (for authentication)
+- Vercel account (for Blob storage)
+
+### Installation
+
+```bash
+# Clone repository
+git clone <repo-url>
+cd gazadeathtoll-admin
+
+# Install dependencies
+npm install
+
+# Copy environment template
+cp .env.example .env.local
+
+# Configure environment variables (see below)
+# Then generate Prisma client
+npx prisma generate
+
+# Run migrations
+npx prisma migrate dev
+
+# Start development server
+npm run dev
+# Open http://localhost:3000
+```
+
+### Environment Variables
+
+```bash
+# Database
+DATABASE_URL="postgresql://user:password@host:5432/dbname"
+
+# Clerk Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_..."
+CLERK_SECRET_KEY="sk_test_..."
+
+# Vercel Blob Storage
+BLOB_READ_WRITE_TOKEN="vercel_blob_rw_..."
+
+# Optional: Prisma Accelerate
+# DATABASE_URL="prisma://accelerate.prisma-data.net/?api_key=..."
+# DIRECT_URL="postgresql://..."  # For migrations
+```
+
+---
+
+## 💻 Development Commands
+
+```bash
+# Development
+npm run dev              # Start dev server (Turbopack)
+npm run build            # Production build
+npm run start            # Start production server
+npm run lint             # Run ESLint
+
+# Database
+npx prisma studio        # Open database GUI
+npx prisma generate      # Regenerate Prisma client
+npx prisma migrate dev   # Create & apply migration
+npx prisma migrate deploy  # Apply migrations (production)
+npx prisma db push       # Push schema without migration (dev only)
+
+# shadcn/ui
+npx shadcn@latest search [keyword]       # Search for component
+npx shadcn@latest add [component]        # Add component
+npx shadcn@latest view @shadcn/[demo]    # View component demo
+```
+
+---
+
+## 🎨 Code Standards
+
+### TypeScript
+- **Strict mode enabled** — No `any` types, explicit return types preferred
+- **Interfaces over types** — Use `interface` for object shapes
+- **Async/await** — Never use `.then()` chains
+- **Error handling** — Always wrap API calls in `try-catch-finally`
+
+### React & Next.js
+- **Server components by default** — Only use `'use client'` when necessary
+- **Never use `<img>`** — Always use `<Image>` from `next/image`
+- **Never use `<a>` for internal links** — Always use `<Link>` from `next/link`
+- **Parallel data fetching** — Use `Promise.all()` for independent queries
+
+### UI Components (MANDATORY)
+**ALWAYS use shadcn/ui. NEVER build custom UI components.**
+
+```bash
+# Before writing ANY UI code:
+npx shadcn@latest search [keyword]
+
+# If component exists:
+npx shadcn@latest add [component]
+
+# Then use it:
+import { Button } from '@/components/ui/button'
+```
+
+**Use shadcn color tokens, NOT raw Tailwind colors:**
+```typescript
+// ❌ WRONG
+<div className="text-gray-900 bg-white border-gray-200">
+
+// ✅ CORRECT
+<div className="text-foreground bg-background border">
+```
+
+**Common shadcn components:**
+- Buttons → `<Button>`
+- Forms → `<Form>` + `<FormField>`
+- Tables → `<Table>`
+- Cards → `<Card>`
+- Dialogs → `<Dialog>` / `<AlertDialog>`
+- Inputs → `<Input>` / `<Textarea>` / `<Select>`
+
+See `.cursorrules` for complete UI standards.
+
+### Database Changes
+
+**Schema is the source of truth** — Always edit `prisma/schema.prisma`
+
+```bash
+# 1. Edit schema
+vim prisma/schema.prisma
+
+# 2. Create migration
+npx prisma migrate dev --name descriptive_name
+
+# 3. Regenerate client
+npx prisma generate
+
+# 4. Update TypeScript code
+# (types are now auto-updated)
+```
+
+**Migration best practices:**
+- Descriptive names: `add_name_english_field` not `update1`
+- Test migrations locally before deploying
+- Never edit applied migrations
+- Use transactions for complex changes
+
+### File Naming
+- Components: `PascalCase.tsx` (e.g., `PersonsTable.tsx`)
+- Utilities: `kebab-case.ts` (e.g., `auth-utils.ts`)
+- API routes: `route.ts` (Next.js convention)
+- Pages: `page.tsx` (Next.js convention)
+
+---
+
 ## System Architecture (Consolidated)
 
 ### Two-Application Architecture
