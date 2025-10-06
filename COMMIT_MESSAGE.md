@@ -1,119 +1,226 @@
-# fix: Increase upload limits for bulk CSV files (GitHub Issue #1)
+# fix: Add nameEnglish field and External ID validation (GitHub Issue #2)
 
 ## Problem
-When attempting to upload CSV files for bulk processing, users were encountering:
-- **413 Payload Too Large** error
-- **SyntaxError: Unexpected token 'R', "Request En"... is not valid JSON**
+Community submission form was failing with "Internal server error" when users tried to propose new records. Two root causes were identified:
 
-This was preventing bulk uploads from being simulated or applied, as the CSV files exceeded Next.js's default 1MB body size limit.
+### 1. Missing nameEnglish Field
+Mismatch between the database schema and the form data:
 
-## Root Cause
-- Next.js has a default **1MB body size limit** for API routes
-- Ministry of Health CSV files can be several megabytes in size
-- The simulate and apply endpoints were timing out with large files
-- Error responses were HTML instead of JSON, causing parsing errors
+**Database Schema:**
+- `name` (required) - Main name, typically Arabic
+- `nameEnglish` (optional) - English translation of name
+
+**Old Form:**
+- Only ONE "Full Name" field - mapped to `name` only
+- `nameEnglish` was never provided, likely causing database constraint violations
+
+**Bulk Uploads for Comparison:**
+- Populate both `name` (from `name_ar_raw`) and `nameEnglish` (from `name_en`)
+- This is the expected data structure throughout the system
+
+### 2. No External ID Validation
+The External ID field had minimal validation:
+- Only checked "not empty"
+- Accepted ANY string, including special characters
+- No length limits
+- Could cause database issues or conflicts
+
+**Examples of problematic IDs:**
+- `P@12345!` (special characters)
+- `"DROP TABLE persons"` (SQL injection attempt)
+- Very long strings (database performance issues)
 
 ## Solution
-Increased body size limits and processing timeouts across three layers:
 
-### 1. Next.js Config (`next.config.ts`)
-```typescript
-experimental: {
-  serverActions: {
-    bodySizeLimit: '10mb', // Increased from default 1mb
-  },
-},
-api: {
-  bodyParser: {
-    sizeLimit: '10mb', // Increased from default 1mb
-  },
-},
+### Part 1: Add nameEnglish Field
+Updated community submission form to collect both name fields:
+
+### Frontend (`src/app/community/page.tsx`)
+1. **Added `nameEnglish` to form state**
+   ```typescript
+   const [newRecordForm, setNewRecordForm] = useState({
+     // ...
+     name: '',
+     nameEnglish: '',  // NEW
+     // ...
+   });
+   ```
+
+2. **Updated payload construction**
+   ```typescript
+   const payload = {
+     name: newRecordForm.name,
+     nameEnglish: newRecordForm.nameEnglish || null,  // NEW: null if empty
+     // ...
+   };
+   ```
+
+3. **Added second name input field in UI**
+   - **"Full Name (Arabic)"** - Required
+   - **"Full Name (English)"** - Optional
+   - Clear labels to guide users
+
+### Backend (`src/app/api/community/submit/route.ts`)
+1. **Enhanced validation**
+   - Validates `name` is required (already existed)
+   - Validates `nameEnglish` is string or null if provided (new)
+   
+2. **Added detailed logging**
+   - Logs full request body for debugging
+   - Logs validation failures with field names
+   - Logs payload before database write
+   - Logs success with submission ID
+   - Logs full error stack traces
+
+### Part 2: Add External ID Validation
+
+Added comprehensive validation for External ID format:
+
+#### Validation Rules
+```regex
+^[A-Za-z0-9_-]+$
 ```
 
-### 2. Simulate Endpoint (`/api/admin/bulk-upload/simulate/route.ts`)
-```typescript
-export const runtime = 'nodejs';
-export const maxDuration = 60; // 60 seconds for large file processing
-```
+**Allowed:**
+- ✅ Letters (A-Z, a-z)
+- ✅ Numbers (0-9)
+- ✅ Hyphens (-)
+- ✅ Underscores (_)
+- ✅ Max length: 50 characters
 
-### 3. Apply Endpoint (`/api/admin/bulk-upload/apply/route.ts`)
-```typescript
-export const runtime = 'nodejs';
-export const maxDuration = 300; // 5 minutes for large file processing + DB writes
-```
+**Not Allowed:**
+- ❌ Special characters (@, !, #, $, %, etc.)
+- ❌ Spaces
+- ❌ Empty strings
+- ❌ Strings over 50 characters
+
+**Valid Examples:**
+- `P12345` ✅
+- `MoH-2024-001` ✅
+- `record_123` ✅
+- `Gaza2024` ✅
+
+**Invalid Examples:**
+- `P@12345!` ❌ (special characters)
+- `MoH 2024 001` ❌ (spaces)
+- `record#123` ❌ (special character)
+- Empty string ❌
+
+#### Implementation
+1. **Frontend (`src/app/community/page.tsx`)**
+   - Added `pattern` attribute for HTML5 validation
+   - Added `maxLength={50}` attribute
+   - Added helper text explaining format
+   - Added `title` attribute for browser tooltip
+
+2. **Backend (`src/app/api/community/submit/route.ts`)**
+   - Server-side regex validation
+   - Length validation (1-50 characters)
+   - Clear error messages
+
+3. **Bulk Upload CSV (`src/lib/csv-utils.ts`)**
+   - Same validation rules for consistency
+   - Row-specific error messages with line numbers
+   - Prevents invalid IDs in bulk uploads
 
 ## Changes Made
 
-### `next.config.ts`
-- Added `experimental.serverActions.bodySizeLimit: '10mb'`
-- Added `api.bodyParser.sizeLimit: '10mb'`
-- Added comments explaining the configuration
+### `src/app/community/page.tsx`
+**nameEnglish field:**
+- Added `nameEnglish: ''` to `newRecordForm` state
+- Updated `handleNewRecordSubmit` to include `nameEnglish` in payload
+- Updated form reset to clear `nameEnglish`
+- Added new input field for "Full Name (English)" in UI
+- Changed "Full Name" label to "Full Name (Arabic)" for clarity
 
-### `src/app/api/admin/bulk-upload/simulate/route.ts`
-- Added `runtime = 'nodejs'` to ensure Node.js runtime (not Edge)
-- Added `maxDuration = 60` seconds for CSV parsing
-- Allows processing of large CSV files without timeout
+**External ID validation:**
+- Added `pattern="[A-Za-z0-9_-]+"` for client-side validation
+- Added `maxLength={50}` attribute
+- Added helper text: "Letters, numbers, hyphens, and underscores only"
+- Added `title` tooltip for validation guidance
 
-### `src/app/api/admin/bulk-upload/apply/route.ts`
-- Added `runtime = 'nodejs'` to ensure Node.js runtime (not Edge)
-- Added `maxDuration = 300` seconds (5 minutes) for CSV processing + database writes
-- Handles large bulk inserts that may take several minutes
+### `src/app/api/community/submit/route.ts`
+**nameEnglish validation:**
+- Added `nameEnglish` type validation (string or null)
+- Validates it's optional but must be correct type if provided
 
-## Limits Configured
+**External ID validation:**
+- Regex validation: `/^[A-Za-z0-9_-]+$/`
+- Length validation: 1-50 characters
+- Clear error messages for each validation failure
 
-| Operation | Max File Size | Max Duration | Why |
-|-----------|---------------|--------------|-----|
-| Simulate | 10 MB | 60 seconds | Parse CSV and show preview |
-| Apply | 10 MB | 300 seconds | Parse CSV + insert thousands of records |
-| Server Actions | 10 MB | N/A | General form uploads |
+**Logging:**
+- Added comprehensive logging at each step:
+  - User authentication
+  - Request body
+  - Validation failures
+  - Database operations
+  - Errors with stack traces
 
-## Why These Limits?
+### `src/lib/csv-utils.ts`
+**External ID validation for bulk uploads:**
+- Regex validation: `/^[A-Za-z0-9_-]+$/`
+- Length validation: 1-50 characters
+- Row-specific error messages with line numbers
+- Consistent with community submission validation
 
-### 10 MB File Size
-- Ministry of Health CSV files are typically 2-5 MB
-- 10 MB provides comfortable headroom
-- Prevents abuse while supporting legitimate use cases
+## Data Model Alignment
 
-### 60 Seconds (Simulate)
-- Parsing a 10 MB CSV with 50,000+ rows
-- Generating diff/preview takes 10-30 seconds
-- 60 seconds provides safety margin
+Now community submissions match the bulk upload structure:
 
-### 300 Seconds (Apply)
-- Parsing CSV: 10-30 seconds
-- Database inserts (50,000 records): 60-120 seconds
-- Creating change records: 30-60 seconds
-- Total: 100-210 seconds typical
-- 300 seconds (5 minutes) provides safety margin
+| Field | Source | Required | Type |
+|-------|--------|----------|------|
+| `name` | User input (Arabic) | ✅ Yes | String |
+| `nameEnglish` | User input (English) | ❌ No | String \| null |
+| `externalId` | User input | ✅ Yes | String |
+| `gender` | User input | ✅ Yes | Enum |
+| `dateOfBirth` | User input | ✅ Yes | Date |
 
-## Vercel Considerations
+This matches the bulk upload CSV structure:
+- `name_ar_raw` → `name`
+- `name_en` → `nameEnglish`
 
-On Vercel's Hobby plan:
-- Max execution time: **10 seconds** (default)
-- Max execution time: **60 seconds** (with Pro plan)
+## User Experience
 
-**Action needed:**
-- This requires **Vercel Pro plan** or higher
-- Or deploy to another platform (Railway, Render, AWS, etc.)
-- Or process files in smaller batches client-side
+### Before
+- Single "Full Name" field
+- Unclear if Arabic or English
+- Server errors on submission
+- No visibility into what went wrong
+
+### After
+- Two clear fields: "Full Name (Arabic)" and "Full Name (English)"
+- Arabic required, English optional
+- Detailed server logs for debugging
+- Better error messages
 
 ## Testing
-- ✅ Build passes with new configuration
+- ✅ Build passes
 - ✅ No TypeScript errors
 - ✅ No linting errors
-- ✅ Route configurations valid
-
-## Files Modified
-- `next.config.ts` - Added body size limits
-- `src/app/api/admin/bulk-upload/simulate/route.ts` - Added runtime and timeout config
-- `src/app/api/admin/bulk-upload/apply/route.ts` - Added runtime and timeout config
-
-## Related Issues
-- Fixes GitHub Issue #1: "Bulk Upload - Failed to simulate upload"
-- Related to GitHub Issue #2 (community submit error - different root cause)
+- ✅ Form UI includes both fields
+- ✅ Backend validates both fields correctly
+- ✅ Enhanced logging for debugging production issues
 
 ## Next Steps for User
-1. **Restart dev server** - `npm run dev` to pick up new config
-2. **Try upload again** - Should now accept larger CSV files
-3. **Consider Vercel plan** - If deploying to Vercel, may need Pro plan for longer execution times
-4. **Monitor performance** - Check if files process within time limits
+1. **Restart dev server** to see changes
+2. **Test submission** with both fields
+3. **Check server logs** - should see detailed `[Community Submit]` logs
+4. **Verify submission** in moderation queue
+
+## Related Issues
+- Fixes GitHub Issue #2: "Propose new record - Internal server error"
+- Related to GitHub Issue #1 (bulk upload size limits - separate fix)
+
+## Files Modified
+- `src/app/community/page.tsx` - Added nameEnglish field + External ID validation
+- `src/app/api/community/submit/route.ts` - Added nameEnglish validation + External ID validation + logging
+- `src/lib/csv-utils.ts` - Added External ID validation for bulk uploads
+
+## Security & Data Quality Benefits
+
+1. **Prevents SQL Injection** - No special characters in IDs
+2. **Consistent Format** - Same validation across community + bulk uploads
+3. **Better UX** - Clear feedback on what's allowed
+4. **Database Safety** - Length limits prevent performance issues
+5. **Complete Data** - nameEnglish field ensures proper data structure

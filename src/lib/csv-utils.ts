@@ -119,10 +119,23 @@ export function parseCSV(csvContent: string): BulkUploadRow[] {
     // Normalize date to YYYY-MM-DD format
     const normalizedDob = dobValue ? normalizeDate(dobValue) : null;
     
-    // Validate external_id is not just whitespace
-    if (row.external_id.trim().length === 0) {
+    // Validate external_id format
+    const externalId = row.external_id.trim();
+    if (externalId.length === 0) {
       throw new Error(
         `Row ${rowNumber}: external_id cannot be empty or contain only whitespace.`
+      );
+    }
+    if (externalId.length > 50) {
+      throw new Error(
+        `Row ${rowNumber}: external_id cannot exceed 50 characters. Got: ${externalId.length} characters.`
+      );
+    }
+    // Allow letters, numbers, hyphens, underscores (e.g., "P12345", "MoH-2024-001", "record_123")
+    if (!/^[A-Za-z0-9_-]+$/.test(externalId)) {
+      throw new Error(
+        `Row ${rowNumber}: external_id "${externalId}" contains invalid characters. ` +
+        `Only letters, numbers, hyphens, and underscores are allowed.`
       );
     }
     
@@ -137,7 +150,7 @@ export function parseCSV(csvContent: string): BulkUploadRow[] {
     const nameEnglish = row.name_english ? row.name_english.trim() : null;
     
     rows.push({
-      external_id: row.external_id.trim(),
+      external_id: externalId,
       name: row.name.trim(),
       name_english: nameEnglish || null,
       gender: normalizedGender as Gender,

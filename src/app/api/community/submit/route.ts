@@ -17,15 +17,18 @@ export async function POST(request: NextRequest) {
     // No role restriction needed
 
     const body = await request.json();
+    console.log('[Community Submit] Request body:', JSON.stringify(body, null, 2));
     const { type, proposedPayload, reason, externalId } = body;
 
     // Validate submission type
     if (!type || (type !== 'NEW_RECORD' && type !== 'EDIT')) {
+      console.log('[Community Submit] Invalid submission type:', type);
       return NextResponse.json({ error: 'Invalid submission type' }, { status: 400 });
     }
 
     // Validate proposed payload
     if (!proposedPayload || typeof proposedPayload !== 'object') {
+      console.log('[Community Submit] Invalid payload:', proposedPayload);
       return NextResponse.json({ error: 'Invalid proposed payload' }, { status: 400 });
     }
 
@@ -34,8 +37,32 @@ export async function POST(request: NextRequest) {
       const required = ['externalId', 'name', 'gender', 'dateOfBirth'];
       for (const field of required) {
         if (!proposedPayload[field]) {
+          console.log(`[Community Submit] Missing required field: ${field}`);
           return NextResponse.json({ error: `Missing required field: ${field}` }, { status: 400 });
         }
+      }
+      
+      // Validate External ID format
+      const externalId = proposedPayload.externalId.trim();
+      if (externalId.length === 0) {
+        return NextResponse.json({ error: 'External ID cannot be empty' }, { status: 400 });
+      }
+      if (externalId.length > 50) {
+        return NextResponse.json({ error: 'External ID cannot exceed 50 characters' }, { status: 400 });
+      }
+      // Allow letters, numbers, hyphens, underscores (e.g., "P12345", "MoH-2024-001", "record_123")
+      if (!/^[A-Za-z0-9_-]+$/.test(externalId)) {
+        return NextResponse.json({ 
+          error: 'External ID can only contain letters, numbers, hyphens, and underscores' 
+        }, { status: 400 });
+      }
+      
+      // nameEnglish is optional but must be string or null if provided
+      if (proposedPayload.nameEnglish !== undefined && 
+          proposedPayload.nameEnglish !== null && 
+          typeof proposedPayload.nameEnglish !== 'string') {
+        console.log('[Community Submit] Invalid nameEnglish type:', typeof proposedPayload.nameEnglish);
+        return NextResponse.json({ error: 'nameEnglish must be a string or null' }, { status: 400 });
       }
 
       // Validate gender enum
@@ -82,6 +109,8 @@ export async function POST(request: NextRequest) {
       }
 
       // Create NEW_RECORD submission
+      console.log('[Community Submit] Creating submission with payload:', JSON.stringify(proposedPayload, null, 2));
+      console.log('[Community Submit] User ID:', userId);
       const submission = await prisma.communitySubmission.create({
         data: {
           type: 'NEW_RECORD',
@@ -91,6 +120,7 @@ export async function POST(request: NextRequest) {
           status: 'PENDING',
         },
       });
+      console.log('[Community Submit] Submission created successfully:', submission.id);
 
       return NextResponse.json({
         success: true,

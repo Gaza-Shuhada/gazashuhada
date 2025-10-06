@@ -29,6 +29,7 @@ export default function CommunitySubmitPage() {
   const [newRecordForm, setNewRecordForm] = useState({
     externalId: '',
     name: '',
+    nameEnglish: '',
     gender: 'MALE',
     dateOfBirth: '',
     dateOfDeath: '',
@@ -184,6 +185,7 @@ export default function CommunitySubmitPage() {
       const payload = {
         externalId: newRecordForm.externalId,
         name: newRecordForm.name,
+        nameEnglish: newRecordForm.nameEnglish || null,
         gender: newRecordForm.gender,
         dateOfBirth: newRecordForm.dateOfBirth,
         ...(newRecordForm.dateOfDeath && { dateOfDeath: newRecordForm.dateOfDeath }),
@@ -226,6 +228,7 @@ export default function CommunitySubmitPage() {
         setNewRecordForm({
           externalId: '',
           name: '',
+          nameEnglish: '',
           gender: 'MALE',
           dateOfBirth: '',
           dateOfDeath: '',
@@ -446,12 +449,18 @@ export default function CommunitySubmitPage() {
                       onChange={(e) => setNewRecordForm({ ...newRecordForm, externalId: e.target.value })}
                       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
                       placeholder="e.g., P12345"
+                      pattern="[A-Za-z0-9_-]+"
+                      maxLength={50}
+                      title="Letters, numbers, hyphens, and underscores only (max 50 characters)"
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Letters, numbers, hyphens, and underscores only (e.g., P12345, MoH-2024-001)
+                    </p>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1">
-                      Full Name <span className="text-destructive">*</span>
+                      Full Name (Arabic) <span className="text-destructive">*</span>
                     </label>
                     <input
                       type="text"
@@ -459,7 +468,20 @@ export default function CommunitySubmitPage() {
                       value={newRecordForm.name}
                       onChange={(e) => setNewRecordForm({ ...newRecordForm, name: e.target.value })}
                       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
-                      placeholder="Full name"
+                      placeholder="Full name in Arabic"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">
+                      Full Name (English) <span className="text-muted-foreground">(Optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newRecordForm.nameEnglish}
+                      onChange={(e) => setNewRecordForm({ ...newRecordForm, nameEnglish: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
+                      placeholder="English translation of name"
                     />
                   </div>
 
