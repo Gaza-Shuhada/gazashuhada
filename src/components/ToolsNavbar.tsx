@@ -8,7 +8,7 @@ import { Menu } from 'lucide-react';
 import { useState } from 'react';
 import { ThemeToggle } from '@/components/theme-toggle';
 
-export function Navbar() {
+export function ToolsNavbar() {
   const { isSignedIn } = useAuth();
   const { user } = useUser();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -41,14 +41,14 @@ export function Navbar() {
                         {isAdmin && (
                           <>
                             <Link
-                              href="/bulk-uploads"
+                              href="/tools/bulk-uploads"
                               onClick={() => setMobileMenuOpen(false)}
                               className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors"
                             >
                               Bulk Uploads
                             </Link>
                             <Link
-                              href="/admin/settings"
+                              href="/tools/settings"
                               onClick={() => setMobileMenuOpen(false)}
                               className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors"
                             >
@@ -57,21 +57,14 @@ export function Navbar() {
                           </>
                         )}
                         <Link
-                          href="/moderation"
+                          href="/tools/moderation"
                           onClick={() => setMobileMenuOpen(false)}
                           className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors"
                         >
                           Moderation
                         </Link>
                         <Link
-                          href="/records"
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors"
-                        >
-                          Records
-                        </Link>
-                        <Link
-                          href="/audit-logs"
+                          href="/tools/audit-logs"
                           onClick={() => setMobileMenuOpen(false)}
                           className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors"
                         >
@@ -79,13 +72,13 @@ export function Navbar() {
                         </Link>
                       </>
                     )}
-                    {/* Community Link - Everyone */}
+                    {/* Back to Public Site */}
                     <Link
-                      href="/community"
+                      href="/"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors"
+                      className="text-primary hover:text-primary/80 px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors border-t pt-4 mt-4"
                     >
-                      Community
+                      ← Back to Site
                     </Link>
                   </nav>
                 </SheetContent>
@@ -93,7 +86,7 @@ export function Navbar() {
             )}
 
             {/* Logo/Home */}
-            <Link href="/" className="flex items-center">
+            <Link href="/tools" className="flex items-center">
               <span className="text-xl font-bold text-foreground">Admin Tools</span>
             </Link>
 
@@ -105,29 +98,31 @@ export function Navbar() {
                   <>
                     {/* Admin Links - Only show if user has admin role */}
                     {isAdmin && (
-                      <Link
-                        href="/bulk-uploads"
-                        className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
-                      >
-                        Bulk Uploads
-                      </Link>
+                      <>
+                        <Link
+                          href="/tools/bulk-uploads"
+                          className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
+                        >
+                          Bulk Uploads
+                        </Link>
+                        <Link
+                          href="/tools/settings"
+                          className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
+                        >
+                          Settings
+                        </Link>
+                      </>
                     )}
 
                     <Link
-                      href="/moderation"
+                      href="/tools/moderation"
                       className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
                     >
                       Moderation
                     </Link>
 
                     <Link
-                      href="/records"
-                      className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
-                    >
-                      Records
-                    </Link>
-                    <Link
-                      href="/audit-logs"
+                      href="/tools/audit-logs"
                       className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
                     >
                       Audit Logs
@@ -135,29 +130,19 @@ export function Navbar() {
                   </>
                 )}
 
-                {/* Community Links - Show for everyone */}
+                {/* Back to Public Site */}
                 <Link
-                  href="/community"
-                  className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
+                  href="/"
+                  className="text-primary hover:text-primary/80 px-3 py-2 rounded-md text-sm font-medium"
                 >
-                  Community
+                  ← Back to Site
                 </Link>
               </div>
             )}
           </div>
 
-          {/* Right Side: Settings + Theme + User Menu */}
+          {/* Right Side: Theme + User Menu */}
           <div className="flex items-center space-x-2">
-            {/* Settings Link - Admin only, desktop only */}
-            {isAdmin && (
-              <Link
-                href="/admin/settings"
-                className="hidden md:block text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Settings
-              </Link>
-            )}
-
             {/* Theme Toggle */}
             <ThemeToggle />
 

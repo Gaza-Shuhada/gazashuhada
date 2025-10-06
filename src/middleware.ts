@@ -7,19 +7,26 @@ const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/api/webhook",
-  "/api/trpc/example.hello"
+  "/api/public(.*)"
+]);
+
+// Define staff routes that require admin or moderator role
+const isStaffRoute = createRouteMatcher([
+  "/tools"
 ]);
 
 // Define admin routes that require admin role
 const isAdminRoute = createRouteMatcher([
-  "/admin(.*)",
+  "/tools/settings(.*)",
+  "/tools/bulk-uploads(.*)",
   "/api/admin(.*)"
 ]);
 
 // Define moderator routes that require moderator or admin role
 const isModeratorRoute = createRouteMatcher([
-  "/moderation(.*)",
-  "/api/moderation(.*)"
+  "/tools/moderation(.*)",
+  "/tools/audit-logs(.*)",
+  "/api/moderator(.*)"
 ]);
 
 // Note: Community routes (/community, /api/community) are accessible by all authenticated users
@@ -28,6 +35,7 @@ const isModeratorRoute = createRouteMatcher([
 export default clerkMiddleware(async (auth, req) => {
   const { userId, sessionClaims } = await auth();
   const isPublic = isPublicRoute(req);
+  const isStaff = isStaffRoute(req);
   const isAdmin = isAdminRoute(req);
   const isModerator = isModeratorRoute(req);
 
@@ -41,23 +49,44 @@ export default clerkMiddleware(async (auth, req) => {
   // Get user role from session claims
   const userRole = sessionClaims?.metadata?.role as string | undefined;
   
-  // Check admin routes - Only protect API routes in middleware, let layout handle page protection
-  if (isAdmin && userId && req.nextUrl.pathname.startsWith('/api/admin')) {
-    if (userRole !== 'admin') {
-      return NextResponse.json(
-        { error: 'Forbidden - Admin access required' },
-        { status: 403 }
-      );
+  // Check staff routes - Require admin or moderator
+  if (isStaff && userId) {
+    if (userRole !== 'admin' && userRole !== 'moderator') {
+      const homeUrl = new URL('/', req.url);
+      homeUrl.searchParams.set('error', 'staff_required');
+      return NextResponse.redirect(homeUrl);
     }
   }
   
-  // Check moderator routes - Only protect API routes in middleware, let layout handle page protection
-  if (isModerator && userId && req.nextUrl.pathname.startsWith('/api/moderation')) {
+  // Check admin routes - Protect both API and page routes
+  if (isAdmin && userId) {
+    if (userRole !== 'admin') {
+      if (req.nextUrl.pathname.startsWith('/api/admin')) {
+        return NextResponse.json(
+          { error: 'Forbidden - Admin access required' },
+          { status: 403 }
+        );
+      }
+      // Redirect to home for page routes
+      const homeUrl = new URL('/', req.url);
+      homeUrl.searchParams.set('error', 'admin_required');
+      return NextResponse.redirect(homeUrl);
+    }
+  }
+  
+  // Check moderator routes - Protect both API and page routes
+  if (isModerator && userId) {
     if (userRole !== 'moderator' && userRole !== 'admin') {
-      return NextResponse.json(
-        { error: 'Forbidden - Moderator access required' },
-        { status: 403 }
-      );
+      if (req.nextUrl.pathname.startsWith('/api/moderator')) {
+        return NextResponse.json(
+          { error: 'Forbidden - Moderator access required' },
+          { status: 403 }
+        );
+      }
+      // Redirect to home for page routes
+      const homeUrl = new URL('/', req.url);
+      homeUrl.searchParams.set('error', 'moderator_required');
+      return NextResponse.redirect(homeUrl);
     }
   }
 

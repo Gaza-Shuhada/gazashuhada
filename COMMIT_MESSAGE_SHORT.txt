@@ -1,0 +1,16 @@
+refactor: separate admin tools and public site with dedicated navigation
+
+Major restructure to isolate admin tools under /tools with separate navigation:
+
+- Move all admin pages to /tools/* (settings, bulk-uploads, moderation, audit-logs)
+- Create PublicNavbar for public pages (/, /community, /records)
+- Create ToolsNavbar for admin tools (/tools/*)
+- Update middleware with staff route protection
+- Fix optional chaining runtime error in admin dashboard stats
+- Rename navbar labels: Community→Submissions, Records→Database
+- Consolidate /tools/admin to /tools
+- Remove redundant Dashboard link (logo serves as home)
+
+Public pages stay at root, admin tools isolated under /tools.
+All 26 routes validated, production build passing.
+
