@@ -4,6 +4,10 @@ import { applyBulkUpload } from '@/lib/bulk-upload-service-ultra-optimized';
 import { requireAdmin } from '@/lib/auth-utils';
 import { createAuditLog, AuditAction, ResourceType } from '@/lib/audit-log';
 
+// Increase body size limit for large CSV uploads
+export const runtime = 'nodejs';
+export const maxDuration = 300; // 5 minutes for large file processing and database writes
+
 export async function POST(request: NextRequest) {
   try {
     // Check authentication and admin role

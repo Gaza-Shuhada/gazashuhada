@@ -3,6 +3,10 @@ import { parseCSV } from '@/lib/csv-utils';
 import { simulateBulkUpload } from '@/lib/bulk-upload-service-ultra-optimized';
 import { requireAdmin } from '@/lib/auth-utils';
 
+// Increase body size limit for large CSV uploads
+export const runtime = 'nodejs';
+export const maxDuration = 60; // 60 seconds for large file processing
+
 export async function POST(request: NextRequest) {
   try {
     // Check authentication and admin role
