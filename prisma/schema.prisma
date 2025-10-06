@@ -50,8 +50,9 @@ model Person {
   id                String            @id @default(uuid())
   externalId        String            @unique
   name              String
+  nameEnglish       String?           // English translation of name (from MOH name_en)
   gender            Gender
-  dateOfBirth       DateTime
+  dateOfBirth       DateTime?         // Nullable: some MOH records don't have DOB
   dateOfDeath       DateTime?
   locationOfDeathLat Float?           // Latitude coordinate
   locationOfDeathLng Float?           // Longitude coordinate
@@ -72,8 +73,9 @@ model PersonVersion {
   personId          String
   externalId        String
   name              String
+  nameEnglish       String?           // English translation of name (from MOH name_en)
   gender            Gender
-  dateOfBirth       DateTime
+  dateOfBirth       DateTime?         // Nullable: some MOH records don't have DOB
   dateOfDeath       DateTime?
   locationOfDeathLat Float?           // Latitude coordinate
   locationOfDeathLng Float?           // Longitude coordinate
@@ -117,7 +119,17 @@ model BulkUpload {
   filename          String
   label             String            // Required: manual description/label for the upload
   dateReleased      DateTime          // Required: when the source data was published/released
-  rawFile           Bytes
+  
+  // Legacy: Will be removed after migration to Blob storage
+  rawFile           Bytes?            // Deprecated: use fileUrl instead
+  
+  // Blob storage references (replaces rawFile Bytes)
+  fileUrl           String?           // Vercel Blob URL (will be required after migration)
+  fileSize          Int?              // File size in bytes (will be required after migration)
+  fileSha256        String?           // SHA-256 hash for integrity verification (will be required after migration)
+  contentType       String?           @default("text/csv") // MIME type
+  previewLines      String?           // Optional: gzipped first ~20 lines for quick preview (<10KB)
+  
   uploadedAt        DateTime          @default(now())
   
   changeSource      ChangeSource      @relation(fields: [changeSourceId], references: [id], onDelete: Cascade)

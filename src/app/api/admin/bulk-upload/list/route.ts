@@ -83,6 +83,8 @@ export async function GET() {
         label: upload.label,
         dateReleased: upload.dateReleased,
         uploadedAt: upload.uploadedAt,
+        fileUrl: upload.fileUrl, // Blob storage URL for downloading original CSV
+        fileSize: upload.fileSize, // File size in bytes
         canRollback,
         stats: {
           total: versions.length,

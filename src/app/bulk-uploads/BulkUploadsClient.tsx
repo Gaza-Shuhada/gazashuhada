@@ -8,6 +8,8 @@ interface BulkUpload {
   label: string;
   dateReleased: string;
   uploadedAt: string;
+  fileUrl: string | null;
+  fileSize: number | null;
   canRollback: boolean;
   stats: {
     total: number;
@@ -176,6 +178,13 @@ export default function BulkUploadsClient() {
 
   const formatDate = (dateString: string) => new Date(dateString).toLocaleString();
   const formatDateOfBirth = (date: Date | string) => new Date(date).toLocaleDateString();
+  
+  const formatFileSize = (bytes: number | null) => {
+    if (!bytes) return 'N/A';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  };
 
   return (
     <div className="min-h-screen bg-background pt-8 pb-8 px-8">
@@ -323,6 +332,7 @@ export default function BulkUploadsClient() {
                 <thead className="bg-muted">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Filename</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">File</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Label</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Date Released</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Uploaded At</th>
@@ -337,6 +347,24 @@ export default function BulkUploadsClient() {
                   {uploads.map((upload) => (
                     <tr key={upload.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{upload.filename}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {upload.fileUrl ? (
+                          <div className="flex flex-col gap-1">
+                            <a 
+                              href={upload.fileUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline text-xs font-medium"
+                              title="Download original CSV from Blob storage"
+                            >
+                              📥 Download
+                            </a>
+                            <span className="text-muted-foreground text-xs">{formatFileSize(upload.fileSize)}</span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-xs" title="Uploaded before Blob storage migration">Legacy</span>
+                        )}
+                      </td>
                       <td className="px-6 py-4 text-sm text-muted-foreground"><span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-primary/10 text-primary">{upload.label}</span></td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{formatDateOfBirth(upload.dateReleased)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{formatDate(upload.uploadedAt)}</td>

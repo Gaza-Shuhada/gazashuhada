@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseCSV } from '@/lib/csv-utils';
-import { applyBulkUpload } from '@/lib/bulk-upload-service';
+import { applyBulkUpload } from '@/lib/bulk-upload-service-ultra-optimized';
 import { requireAdmin } from '@/lib/auth-utils';
 import { createAuditLog, AuditAction, ResourceType } from '@/lib/audit-log';
 

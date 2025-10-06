@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseCSV } from '@/lib/csv-utils';
-import { simulateBulkUpload } from '@/lib/bulk-upload-service';
+import { simulateBulkUpload } from '@/lib/bulk-upload-service-ultra-optimized';
 import { requireAdmin } from '@/lib/auth-utils';
 
 export async function POST(request: NextRequest) {

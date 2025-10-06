@@ -8,12 +8,12 @@ export interface DiffItem {
   current?: {
     name: string;
     gender: Gender;
-    dateOfBirth: Date;
+    dateOfBirth: Date | null;
   };
   incoming: {
     name: string;
     gender: Gender;
-    dateOfBirth: Date;
+    dateOfBirth: Date | null;
   };
 }
 
@@ -60,7 +60,7 @@ export async function simulateBulkUpload(rows: BulkUploadRow[]): Promise<Simulat
   // Check for inserts and updates
   for (const row of rows) {
     const existing = existingMap.get(row.external_id);
-    const incomingDate = new Date(row.date_of_birth);
+    const incomingDate = row.date_of_birth ? new Date(row.date_of_birth) : null;
     
     if (!existing) {
       // INSERT
@@ -75,11 +75,11 @@ export async function simulateBulkUpload(rows: BulkUploadRow[]): Promise<Simulat
       });
     } else {
       // Check if different (UPDATE)
-      const existingDate = new Date(existing.dateOfBirth);
+      const existingDate = existing.dateOfBirth ? new Date(existing.dateOfBirth) : null;
       const isDifferent = 
         existing.name !== row.name ||
         existing.gender !== row.gender ||
-        existingDate.getTime() !== incomingDate.getTime();
+        (existingDate?.getTime() !== incomingDate?.getTime());
       
       if (isDifferent) {
         updateDiffs.push({
@@ -194,7 +194,7 @@ export async function applyBulkUpload(
     // Process inserts and updates
     for (const row of rows) {
       const existing = existingMap.get(row.external_id);
-      const incomingDate = new Date(row.date_of_birth);
+      const incomingDate = row.date_of_birth ? new Date(row.date_of_birth) : null;
       
       if (!existing) {
         // INSERT
@@ -217,16 +217,16 @@ export async function applyBulkUpload(
             dateOfBirth: incomingDate,
             versionNumber: 1,
             sourceId: changeSource.id,
-            changeType: 'INSERT',
+            changeType: ChangeType.INSERT,
           },
         });
       } else {
         // Check if different (UPDATE)
-        const existingDate = new Date(existing.dateOfBirth);
+        const existingDate = existing.dateOfBirth ? new Date(existing.dateOfBirth) : null;
         const isDifferent = 
           existing.name !== row.name ||
           existing.gender !== row.gender ||
-          existingDate.getTime() !== incomingDate.getTime();
+          (existingDate?.getTime() !== incomingDate?.getTime());
         
         if (isDifferent) {
           // Get current version number
@@ -261,7 +261,7 @@ export async function applyBulkUpload(
               obituary: existing.obituary,
               versionNumber: nextVersionNumber,
               sourceId: changeSource.id,
-              changeType: 'UPDATE',
+              changeType: ChangeType.UPDATE,
             },
           });
         }
@@ -299,7 +299,7 @@ export async function applyBulkUpload(
             obituary: existing.obituary,
             versionNumber: nextVersionNumber,
             sourceId: changeSource.id,
-            changeType: 'DELETE',
+            changeType: ChangeType.DELETE,
             isDeleted: true,
           },
         });
