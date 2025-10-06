@@ -66,7 +66,9 @@ export default function BulkUploadsClient() {
   const fetchUploads = async () => {
     try {
       const response = await fetch('/api/admin/bulk-upload/list');
-      const data = await response.json();
+      const text = await response.text();
+      if (!text) return;
+      const data = JSON.parse(text);
       if (data.success) {
         setUploads(data.uploads);
       }
@@ -97,7 +99,8 @@ export default function BulkUploadsClient() {
       const formData = new FormData();
       formData.append('file', selectedFile);
       const response = await fetch('/api/admin/bulk-upload/simulate', { method: 'POST', body: formData });
-      const data = await response.json();
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : {};
       if (!response.ok) {
         setError(data.error || 'Simulation failed');
         setSimulation(null);
@@ -125,7 +128,8 @@ export default function BulkUploadsClient() {
       formData.append('label', label.trim());
       formData.append('dateReleased', dateReleased);
       const response = await fetch('/api/admin/bulk-upload/apply', { method: 'POST', body: formData });
-      const data = await response.json();
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : {};
       if (!response.ok) {
         setError(data.error || 'Apply failed');
       } else {
@@ -133,7 +137,7 @@ export default function BulkUploadsClient() {
         setLabel('');
         setDateReleased('');
         setSimulation(null);
-        fetchUploads();
+        fetchUploads().catch(err => console.error('Failed to refresh uploads:', err));
         alert('Bulk upload applied successfully!');
       }
     } catch (err) {
@@ -161,10 +165,11 @@ export default function BulkUploadsClient() {
       setError(null);
       setSuccess(null);
       const response = await fetch(`/api/admin/bulk-upload/${uploadId}/rollback`, { method: 'POST' });
-      const data = await response.json();
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : {};
       if (data.success) {
         setSuccess(`Successfully rolled back and removed upload "${filename}". Removed ${data.stats.inserts} inserts, ${data.stats.updates} updates, and ${data.stats.deletes} deletions.`);
-        await fetchUploads();
+        fetchUploads().catch(err => console.error('Failed to refresh uploads:', err));
       } else {
         setError(data.error || 'Failed to rollback upload');
       }

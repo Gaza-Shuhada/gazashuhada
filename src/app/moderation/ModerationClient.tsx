@@ -56,7 +56,9 @@ export default function ModerationClient() {
       setLoading(true);
       const response = await fetch('/api/admin/moderation/list');
       if (response.ok) {
-        const data = await response.json();
+        const text = await response.text();
+        if (!text) return;
+        const data = JSON.parse(text);
         setSubmissions(data.submissions);
       } else {
         setMessage({ type: 'error', text: 'Failed to load submissions' });
@@ -79,12 +81,13 @@ export default function ModerationClient() {
         body: JSON.stringify({ note: modalState.note || undefined }),
       });
 
-      const data = await response.json();
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : {};
 
       if (response.ok) {
         setMessage({ type: 'success', text: data.message });
         setModalState(null);
-        void fetchSubmissions();
+        fetchSubmissions().catch(err => console.error('Failed to refresh submissions:', err));
       } else {
         setMessage({ type: 'error', text: data.error || 'Failed to approve submission' });
       }
@@ -111,12 +114,13 @@ export default function ModerationClient() {
         body: JSON.stringify({ note: modalState.note }),
       });
 
-      const data = await response.json();
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : {};
 
       if (response.ok) {
         setMessage({ type: 'success', text: data.message });
         setModalState(null);
-        void fetchSubmissions();
+        fetchSubmissions().catch(err => console.error('Failed to refresh submissions:', err));
       } else {
         setMessage({ type: 'error', text: data.error || 'Failed to reject submission' });
       }

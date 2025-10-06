@@ -29,7 +29,9 @@ export default function AuditLogsClient() {
     try {
       setLoading(true);
       const response = await fetch('/api/admin/audit-logs');
-      const data = await response.json();
+      const text = await response.text();
+      if (!text) return;
+      const data = JSON.parse(text);
 
       if (data.success) {
         setLogs(data.logs);

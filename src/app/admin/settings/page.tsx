@@ -40,7 +40,8 @@ export default function AdminSettingsPage() {
         method: 'POST',
       });
       
-      const data = await response.json();
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : {};
       
       if (response.ok) {
         setResult({

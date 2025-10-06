@@ -80,11 +80,15 @@ export default function CommunitySubmitPage() {
     try {
       const response = await fetch('/api/community/my-submissions');
       if (response.ok) {
-        const data = await response.json();
-        setSubmissions(data.submissions);
+        const text = await response.text();
+        if (text) {
+          const data = JSON.parse(text);
+          setSubmissions(data.submissions);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch submissions:', error);
+      // Don't throw - we don't want to break the submission flow
     }
   };
 
@@ -140,7 +144,18 @@ export default function CommunitySubmitPage() {
       body: formData,
     });
 
-    const data = await response.json();
+    // Handle empty or invalid JSON response
+    let data;
+    try {
+      const text = await response.text();
+      if (!text) {
+        throw new Error('Server returned empty response. Check server logs for details.');
+      }
+      data = JSON.parse(text);
+    } catch (parseError) {
+      console.error('Photo upload response error:', parseError);
+      throw new Error('Invalid response from photo upload service. Please check server logs.');
+    }
 
     if (!response.ok) {
       throw new Error(data.error || 'Failed to upload photo');
@@ -189,10 +204,25 @@ export default function CommunitySubmitPage() {
         }),
       });
 
-      const data = await response.json();
+      // Handle empty or invalid JSON response
+      let data;
+      try {
+        const text = await response.text();
+        if (!text) {
+          throw new Error('Server returned empty response. Check server logs for details.');
+        }
+        data = JSON.parse(text);
+      } catch (parseError) {
+        console.error('Submission response error:', parseError);
+        throw new Error('Invalid response from server. Please try again or check server logs.');
+      }
 
       if (response.ok) {
+        // IMMEDIATELY scroll and show message (before any async operations)
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         setMessage({ type: 'success', text: 'New record submitted successfully! It will be reviewed by moderators.' });
+        
+        // Clear form
         setNewRecordForm({
           externalId: '',
           name: '',
@@ -208,13 +238,17 @@ export default function CommunitySubmitPage() {
         });
         setPhotoFile(null);
         setPhotoPreview(null);
-        fetchSubmissions();
+        
+        // Fetch submissions in background (don't block)
+        fetchSubmissions().catch(err => console.error('Failed to refresh submissions:', err));
       } else {
         setMessage({ type: 'error', text: data.error || 'Failed to submit record' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An error occurred while submitting';
       setMessage({ type: 'error', text: errorMessage });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setLoading(false);
       setUploadingPhoto(false);
@@ -223,19 +257,25 @@ export default function CommunitySubmitPage() {
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevent any parent form handlers
+    
+    console.log('[handleEditSubmit] Handler started!');
     setLoading(true);
     setMessage(null);
 
     try {
+      console.log('[handleEditSubmit] Starting edit submission...');
       // Upload photo if provided
       let photoUrlThumb = editForm.photoUrlThumb;
       let photoUrlOriginal = editForm.photoUrlOriginal;
       if (editPhotoFile) {
+        console.log('[handleEditSubmit] Uploading photo...');
         setUploadingPhoto(true);
         const uploaded = await uploadPhoto(editPhotoFile);
         photoUrlThumb = uploaded.thumbUrl;
         photoUrlOriginal = uploaded.originalUrl;
         setUploadingPhoto(false);
+        console.log('[handleEditSubmit] Photo uploaded successfully');
       }
 
       const payload: {
@@ -253,6 +293,7 @@ export default function CommunitySubmitPage() {
       if (photoUrlThumb) payload.photoUrlThumb = photoUrlThumb;
       if (photoUrlOriginal) payload.photoUrlOriginal = photoUrlOriginal;
 
+      console.log('[handleEditSubmit] Submitting edit payload:', payload);
       const response = await fetch('/api/community/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -264,10 +305,31 @@ export default function CommunitySubmitPage() {
         }),
       });
 
-      const data = await response.json();
+      console.log('[handleEditSubmit] Response status:', response.status);
+      
+      // Handle empty or invalid JSON response
+      let data;
+      try {
+        const text = await response.text();
+        console.log('[handleEditSubmit] Response text length:', text.length);
+        if (!text) {
+          throw new Error('Server returned empty response. Check server logs for details.');
+        }
+        data = JSON.parse(text);
+        console.log('[handleEditSubmit] Parsed response data:', data);
+      } catch (parseError) {
+        console.error('[handleEditSubmit] Response parse error:', parseError);
+        throw new Error('Invalid response from server. Please try again or check server logs.');
+      }
 
       if (response.ok) {
+        console.log('[handleEditSubmit] Success! Clearing form and scrolling...');
+        
+        // IMMEDIATELY scroll and show message (before any async operations)
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         setMessage({ type: 'success', text: 'Edit proposal submitted successfully! It will be reviewed by moderators.' });
+        
+        // Clear form
         setEditForm({
           externalId: '',
           dateOfDeath: '',
@@ -280,14 +342,22 @@ export default function CommunitySubmitPage() {
         });
         setEditPhotoFile(null);
         setEditPhotoPreview(null);
-        fetchSubmissions();
+        
+        // Fetch submissions in background (don't block)
+        fetchSubmissions().catch(err => console.error('Failed to refresh submissions:', err));
+        
+        console.log('[handleEditSubmit] Success handler complete');
       } else {
         setMessage({ type: 'error', text: data.error || 'Failed to submit edit' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } catch (error) {
+      console.error('[handleEditSubmit] Error:', error);
       const errorMessage = error instanceof Error ? error.message : 'An error occurred while submitting';
       setMessage({ type: 'error', text: errorMessage });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
+      console.log('[handleEditSubmit] Finally block - re-enabling button');
       setLoading(false);
       setUploadingPhoto(false);
     }
@@ -320,31 +390,31 @@ export default function CommunitySubmitPage() {
           <div className="border-b">
             <nav className="flex -mb-px">
               <button
-                onClick={() => setActiveTab('new')}
-                className={`px-6 py-3 font-medium text-sm border-b-2 ${
-                  activeTab === 'new'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border'
-                }`}
-              >
-                Propose New Record
-              </button>
-              <button
                 onClick={() => setActiveTab('edit')}
-                className={`px-6 py-3 font-medium text-sm border-b-2 ${
+                className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
                   activeTab === 'edit'
                     ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted'
                 }`}
               >
                 Suggest Edit
               </button>
               <button
+                onClick={() => setActiveTab('new')}
+                className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
+                  activeTab === 'new'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted'
+                }`}
+              >
+                Propose New Record
+              </button>
+              <button
                 onClick={() => setActiveTab('history')}
-                className={`px-6 py-3 font-medium text-sm border-b-2 ${
+                className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
                   activeTab === 'history'
                     ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted'
                 }`}
               >
                 My Submissions ({submissions.length})
