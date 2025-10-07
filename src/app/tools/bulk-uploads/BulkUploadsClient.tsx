@@ -105,6 +105,15 @@ export default function BulkUploadsClient() {
       return; 
     }
 
+    console.log('[CLIENT] 🚀 Starting bulk upload simulation');
+    console.log('[CLIENT] 📄 File details:', {
+      name: selectedFile.name,
+      size: selectedFile.size,
+      sizeMB: (selectedFile.size / 1024 / 1024).toFixed(2),
+      type: selectedFile.type,
+    });
+    console.log('[CLIENT] 📋 Metadata:', { label, dateReleased });
+
     setSimulating(true);
     
     const simulateToast = toast.loading('Uploading file to blob storage...', {
@@ -113,9 +122,21 @@ export default function BulkUploadsClient() {
     });
     
     try {
+      console.log('[CLIENT] ⬆️ Starting direct blob upload via @vercel/blob/client');
+      console.log('[CLIENT] 🔗 Upload URL:', '/api/admin/bulk-upload/upload-csv');
+      
       const newBlob = await upload(selectedFile.name, selectedFile, {
         access: 'public',
         handleUploadUrl: '/api/admin/bulk-upload/upload-csv',
+      });
+      
+      console.log('[CLIENT] ✅ Blob upload complete!');
+      console.log('[CLIENT] 🔗 Blob URL:', newBlob.url);
+      console.log('[CLIENT] 📦 Blob details:', {
+        url: newBlob.url,
+        pathname: newBlob.pathname,
+        contentType: newBlob.contentType,
+        contentDisposition: newBlob.contentDisposition,
       });
       
       const uploadedBlobUrl = newBlob.url;
@@ -127,22 +148,28 @@ export default function BulkUploadsClient() {
         duration: Infinity,
       });
       
+      console.log('[CLIENT] 🔄 Starting simulation with blob URL');
       const simulateResponse = await fetch('/api/admin/bulk-upload/simulate', { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ blobUrl: uploadedBlobUrl })
       });
       
+      console.log('[CLIENT] 📨 Simulation response status:', simulateResponse.status);
       const text = await simulateResponse.text();
+      console.log('[CLIENT] 📨 Simulation response body length:', text.length);
       const data = text ? JSON.parse(text) : {};
       
       if (!simulateResponse.ok) {
+        console.error('[CLIENT] ❌ Simulation failed:', data.error);
         toast.error(data.error || 'Simulation failed', { 
           id: simulateToast,
           duration: Infinity,
         });
         setSimulation(null);
       } else {
+        console.log('[CLIENT] ✅ Simulation successful!');
+        console.log('[CLIENT] 📊 Summary:', data.simulation.summary);
         setSimulation(data.simulation);
         const { summary } = data.simulation;
         toast.success('Simulation complete!', { 
@@ -152,7 +179,12 @@ export default function BulkUploadsClient() {
         });
       }
     } catch (err) {
-      console.error('[Bulk Upload] Simulation error:', err);
+      console.error('[CLIENT] ❌ Simulation error:', err);
+      console.error('[CLIENT] 📋 Error details:', {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined,
+        name: err instanceof Error ? err.name : undefined,
+      });
       
       toast.error('Failed to simulate upload', { 
         id: simulateToast,
@@ -161,6 +193,7 @@ export default function BulkUploadsClient() {
       });
     } finally {
       setSimulating(false);
+      console.log('[CLIENT] 🏁 Simulation process complete');
     }
   };
 
@@ -179,6 +212,14 @@ export default function BulkUploadsClient() {
       return; 
     }
 
+    console.log('[CLIENT] 🚀 Starting bulk upload apply');
+    console.log('[CLIENT] 🔗 Blob URL:', blobUrl);
+    console.log('[CLIENT] 📋 Metadata:', { 
+      label: label.trim(), 
+      dateReleased, 
+      filename: selectedFile.name 
+    });
+
     setApplying(true);
     const applyToast = toast.loading('Applying bulk upload...', {
       description: 'This may take several minutes for large files',
@@ -186,6 +227,7 @@ export default function BulkUploadsClient() {
     });
     
     try {
+      console.log('[CLIENT] 📤 Sending apply request to API');
       const response = await fetch('/api/admin/bulk-upload/apply', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -196,14 +238,23 @@ export default function BulkUploadsClient() {
           filename: selectedFile.name
         })
       });
+      
+      console.log('[CLIENT] 📨 Apply response status:', response.status);
       const text = await response.text();
+      console.log('[CLIENT] 📨 Apply response body length:', text.length);
       const data = text ? JSON.parse(text) : {};
+      
       if (!response.ok) {
+        console.error('[CLIENT] ❌ Apply failed:', data.error);
         toast.error(data.error || 'Apply failed', { 
           id: applyToast,
           duration: Infinity,
         });
       } else {
+        console.log('[CLIENT] ✅ Apply successful!');
+        console.log('[CLIENT] 📋 Upload ID:', data.uploadId);
+        console.log('[CLIENT] 📊 Stats:', data.stats);
+        
         setSelectedFile(null);
         setLabel('');
         setDateReleased('');
@@ -219,6 +270,13 @@ export default function BulkUploadsClient() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } catch (err) {
+      console.error('[CLIENT] ❌ Apply error:', err);
+      console.error('[CLIENT] 📋 Error details:', {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined,
+        name: err instanceof Error ? err.name : undefined,
+      });
+      
       toast.error('Failed to apply upload', { 
         id: applyToast,
         duration: Infinity,
@@ -226,6 +284,7 @@ export default function BulkUploadsClient() {
       console.error(err);
     } finally {
       setApplying(false);
+      console.log('[CLIENT] 🏁 Apply process complete');
     }
   };
 
