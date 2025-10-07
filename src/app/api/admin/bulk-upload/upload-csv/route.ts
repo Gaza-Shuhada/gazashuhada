@@ -34,7 +34,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // This bypasses the body size limit entirely
     const jsonResponse = await handleUpload({
       request,
-      body: request.body as HandleUploadBody,
+      body: request.body as unknown as HandleUploadBody,
       onBeforeGenerateToken: async () => {
         // Security check - ensure user is admin (already checked above, but double-check)
         await requireAdmin();
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       },
     });
     
-    const { blob } = await jsonResponse.json();
+    const { blob } = jsonResponse;
     
     if (!blob || !blob.url) {
       throw new Error('Upload failed - no blob URL returned');
