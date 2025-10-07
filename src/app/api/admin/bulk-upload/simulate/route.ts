@@ -115,8 +115,14 @@ export async function POST(request: NextRequest) {
       simulation,
     });
   } catch (error) {
-    console.error('[Bulk Upload Simulate] Error:', error);
-    console.error('[Bulk Upload Simulate] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('[SERVER] ❌ Simulate error:', error);
+    console.error('[SERVER] 📋 Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined,
+      type: typeof error,
+      stringified: JSON.stringify(error, Object.getOwnPropertyNames(error)),
+    });
     
     if (error instanceof Error && error.message.includes('Unauthorized')) {
       return NextResponse.json(
@@ -127,8 +133,9 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json(
       { 
-        error: 'Failed to simulate bulk upload',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Failed to simulate bulk upload',
+        details: error instanceof Error ? error.message : 'Unknown error',
+        stack: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined,
       },
       { status: 500 }
     );

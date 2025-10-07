@@ -124,8 +124,14 @@ export default function BulkUploadsClient() {
     try {
       console.log('[CLIENT] ⬆️ Starting direct blob upload via @vercel/blob/client');
       console.log('[CLIENT] 🔗 Upload URL:', '/api/admin/bulk-upload/upload-csv');
+      console.log('[CLIENT] 📋 Original filename:', selectedFile.name);
       
-      const newBlob = await upload(selectedFile.name, selectedFile, {
+      // Upload to bulk-uploads folder with original filename
+      // Server will add random suffix automatically
+      const pathname = `bulk-uploads/${selectedFile.name}`;
+      console.log('[CLIENT] 📝 Upload pathname:', pathname);
+      
+      const newBlob = await upload(pathname, selectedFile, {
         access: 'public',
         handleUploadUrl: '/api/admin/bulk-upload/upload-csv',
       });

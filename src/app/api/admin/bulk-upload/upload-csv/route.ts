@@ -31,41 +31,31 @@ export async function POST(request: Request): Promise<NextResponse> {
         const { userId } = await requireAdmin();
         console.log('[SERVER] ✅ User authenticated:', userId);
         
-        // Validate CSV file
-        console.log('[SERVER] 📄 Original pathname:', pathname);
+        // Validate pathname structure and file type
+        console.log('[SERVER] 📄 Upload pathname:', pathname);
+        
         if (!pathname.endsWith('.csv')) {
           console.error('[SERVER] ❌ Invalid file type:', pathname);
           throw new Error('Only CSV files are allowed');
         }
         
-        // Generate unique filename in folder structure
-        const timestamp = Date.now();
-        const randomString = Math.random().toString(36).substring(2, 15);
-        const originalName = pathname.split('/').pop() || 'upload.csv';
-        const sanitizedName = originalName.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const uniqueFilename = `bulk-uploads/${timestamp}-${randomString}-${sanitizedName}`;
+        if (!pathname.startsWith('bulk-uploads/')) {
+          console.error('[SERVER] ❌ Invalid pathname - must be in bulk-uploads folder:', pathname);
+          throw new Error('Invalid upload path');
+        }
         
-        console.log('[SERVER] 📝 Generated unique filename:', uniqueFilename);
-        console.log('[SERVER] 📋 File info:', {
-          originalName,
-          sanitizedName,
-          timestamp,
-          randomString,
-        });
+        console.log('[SERVER] ✅ Pathname validation passed');
         
         const tokenConfig = {
           allowedContentTypes: ['text/csv', 'application/vnd.ms-excel', 'text/plain'],
           tokenPayload: JSON.stringify({
             uploadedAt: new Date().toISOString(),
             uploadedBy: userId,
-            originalName: originalName,
           }),
-          // Override pathname with unique filename
-          addRandomSuffix: false,
-          pathname: uniqueFilename,
+          addRandomSuffix: true, // Vercel automatically adds random suffix to prevent collisions
         };
         
-        console.log('[SERVER] 🎫 Token config:', tokenConfig);
+        console.log('[SERVER] 🎫 Generating upload token with addRandomSuffix');
         return tokenConfig;
       },
       onUploadCompleted: async ({ blob, tokenPayload }) => {
