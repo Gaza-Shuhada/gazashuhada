@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
+import { put } from '@vercel/blob';
 import { requireAdmin } from '@/lib/auth-utils';
 
 /**
  * Route Configuration for CSV Upload to Blob Storage
  * 
- * This endpoint handles large CSV file uploads using Vercel's handleUpload API,
- * which bypasses the 4.5MB request body limit by streaming directly to Blob storage.
+ * This endpoint handles large CSV file uploads by streaming directly to Vercel Blob.
+ * Uses ReadableStream to avoid buffering the entire file in memory.
  */
 
 export const runtime = 'nodejs';
@@ -30,37 +30,26 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     
     console.log(`[Upload CSV] Starting upload for: ${filename}`);
     
-    // Use Vercel's handleUpload which streams the file directly to Blob storage
-    // This bypasses the body size limit entirely
-    const jsonResponse = await handleUpload({
-      request,
-      body: request.body as unknown as HandleUploadBody,
-      onBeforeGenerateToken: async () => {
-        // Security check - ensure user is admin (already checked above, but double-check)
-        await requireAdmin();
-        
-        return {
-          allowedContentTypes: ['text/csv', 'application/vnd.ms-excel'],
-          tokenPayload: JSON.stringify({}),
-        };
-      },
-      onUploadCompleted: async ({ blob }) => {
-        console.log(`[Upload CSV] File uploaded successfully: ${blob.url}`);
-      },
-    });
+    // Get the request body as a stream
+    const body = request.body;
     
-    const { blob } = jsonResponse;
-    
-    if (!blob || !blob.url) {
-      throw new Error('Upload failed - no blob URL returned');
+    if (!body) {
+      return NextResponse.json({ error: 'No file data provided' }, { status: 400 });
     }
     
-    console.log(`[Upload CSV] Upload complete: ${blob.url} (${(blob.size / 1024 / 1024).toFixed(2)} MB)`);
+    // Upload to Vercel Blob with streaming
+    // The put() function accepts a ReadableStream directly
+    const blob = await put(`bulk-uploads/temp/${Date.now()}-${filename}`, body, {
+      access: 'public',
+      addRandomSuffix: true,
+      contentType: 'text/csv',
+    });
+    
+    console.log(`[Upload CSV] Upload complete: ${blob.url}`);
     
     return NextResponse.json({ 
       blobUrl: blob.url,
       filename: blob.pathname,
-      size: blob.size,
     });
     
   } catch (error) {
