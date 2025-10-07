@@ -54,6 +54,7 @@ export default function BulkUploadsClient() {
   const [label, setLabel] = useState<string>('');
   const [dateReleased, setDateReleased] = useState<string>('');
   const [simulation, setSimulation] = useState<SimulationResult | null>(null);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null); // Store blob URL for reuse between simulate and apply
   const [simulating, setSimulating] = useState(false);
   const [applying, setApplying] = useState(false);
   const [rollingBack, setRollingBack] = useState<string | null>(null);
@@ -88,6 +89,7 @@ export default function BulkUploadsClient() {
     if (file) {
       setSelectedFile(file);
       setSimulation(null);
+      setBlobUrl(null); // Reset blob URL when new file is selected
     }
   };
 
@@ -103,15 +105,46 @@ export default function BulkUploadsClient() {
     }
 
     setSimulating(true);
-    const simulateToast = toast.loading('Simulating upload...', {
-      description: 'Analyzing CSV and comparing with database',
+    const simulateToast = toast.loading('Uploading file...', {
+      description: 'Preparing CSV for analysis',
       duration: Infinity,
     });
     
     try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      const response = await fetch('/api/admin/bulk-upload/simulate', { method: 'POST', body: formData });
+      // Step 1: Upload file to Vercel Blob (bypasses 4.5MB request limit)
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', selectedFile);
+      
+      const uploadResponse = await fetch('/api/admin/bulk-upload/upload-csv', { 
+        method: 'POST', 
+        body: uploadFormData 
+      });
+      
+      if (!uploadResponse.ok) {
+        const uploadError = await uploadResponse.json();
+        toast.error(uploadError.error || 'Failed to upload file', { 
+          id: simulateToast,
+          duration: Infinity,
+        });
+        return;
+      }
+      
+      const { blobUrl: uploadedBlobUrl } = await uploadResponse.json();
+      setBlobUrl(uploadedBlobUrl); // Store for later use in apply
+      
+      // Step 2: Simulate using the blob URL
+      toast.loading('Simulating upload...', {
+        id: simulateToast,
+        description: 'Analyzing CSV and comparing with database',
+        duration: Infinity,
+      });
+      
+      const response = await fetch('/api/admin/bulk-upload/simulate', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blobUrl: uploadedBlobUrl })
+      });
+      
       const text = await response.text();
       const data = text ? JSON.parse(text) : {};
       if (!response.ok) {
@@ -142,6 +175,10 @@ export default function BulkUploadsClient() {
 
   const handleApply = async () => {
     if (!selectedFile) return;
+    if (!blobUrl) {
+      toast.error('Please simulate the upload first', { duration: Infinity });
+      return;
+    }
     if (!label.trim()) { 
       toast.error('Please provide a label for this upload', { duration: Infinity });
       return; 
@@ -158,11 +195,16 @@ export default function BulkUploadsClient() {
     });
     
     try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('label', label.trim());
-      formData.append('dateReleased', dateReleased);
-      const response = await fetch('/api/admin/bulk-upload/apply', { method: 'POST', body: formData });
+      const response = await fetch('/api/admin/bulk-upload/apply', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          blobUrl,
+          label: label.trim(),
+          dateReleased,
+          filename: selectedFile.name
+        })
+      });
       const text = await response.text();
       const data = text ? JSON.parse(text) : {};
       if (!response.ok) {
@@ -175,6 +217,7 @@ export default function BulkUploadsClient() {
         setLabel('');
         setDateReleased('');
         setSimulation(null);
+        setBlobUrl(null);
         fetchUploads().catch(err => console.error('Failed to refresh uploads:', err));
         toast.success('Bulk upload applied successfully!', { 
           id: applyToast,
@@ -200,6 +243,7 @@ export default function BulkUploadsClient() {
     setLabel('');
     setDateReleased('');
     setSimulation(null);
+    setBlobUrl(null);
   };
 
   const handleRollback = async (uploadId: string, filename: string) => {

@@ -43,13 +43,15 @@ export async function POST(request: NextRequest) {
     // Check authentication and admin role
     await requireAdmin();
     
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const label = formData.get('label') as string | null;
-    const dateReleased = formData.get('dateReleased') as string | null;
+    const body = await request.json();
+    const { blobUrl, label, dateReleased, filename } = body;
     
-    if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    if (!blobUrl) {
+      return NextResponse.json({ error: 'No blobUrl provided' }, { status: 400 });
+    }
+    
+    if (!filename) {
+      return NextResponse.json({ error: 'No filename provided' }, { status: 400 });
     }
     
     if (!label || !label.trim()) {
@@ -66,13 +68,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid date format for date released' }, { status: 400 });
     }
     
-    const csvContent = await file.text();
-    const rawFile = Buffer.from(await file.arrayBuffer());
+    console.log(`[Bulk Upload Apply] Downloading CSV from: ${blobUrl}`);
+    
+    // Download CSV from Vercel Blob
+    const response = await fetch(blobUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to download file from blob storage: ${response.statusText}`);
+    }
+    
+    const csvContent = await response.text();
+    const rawFile = Buffer.from(csvContent, 'utf-8');
+    
+    console.log(`[Bulk Upload Apply] Downloaded ${(rawFile.length / 1024 / 1024).toFixed(2)} MB`);
     
     // Parse and validate CSV
     let rows;
     try {
       rows = parseCSV(csvContent);
+      console.log(`[Bulk Upload Apply] Parsed ${rows.length} rows from CSV`);
     } catch (error) {
       return NextResponse.json(
         { error: error instanceof Error ? error.message : 'Invalid CSV format' },
@@ -81,16 +94,16 @@ export async function POST(request: NextRequest) {
     }
     
     // Apply the upload
-    const result = await applyBulkUpload(rows, file.name, rawFile, label.trim(), dateReleasedObj);
+    const result = await applyBulkUpload(rows, filename, rawFile, label.trim(), dateReleasedObj);
     
     // Create audit log
     await createAuditLog({
       action: AuditAction.BULK_UPLOAD_APPLIED,
       resourceType: ResourceType.BULK_UPLOAD,
       resourceId: result.uploadId,
-      description: `Applied bulk upload: ${file.name} (${rows.length} records)`,
+      description: `Applied bulk upload: ${filename} (${rows.length} records)`,
       metadata: {
-        filename: file.name,
+        filename,
         totalRecords: rows.length,
         uploadId: result.uploadId,
         changeSourceId: result.changeSourceId,

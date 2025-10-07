@@ -484,11 +484,14 @@ External Sources (CSV) → Admin Tools → PostgreSQL → Public App → Communi
 ### Page Routes
 | Page | Route | Protection | Access |
 |------|-------|------------|--------|
-| Dashboard | `/` | Server check | All logged-in |
-| Bulk Uploads | `/bulk-uploads` | Client layout guard | Admin only |
-| Audit Logs | `/audit-logs` | Client layout guard | Staff (admin+moderator) |
-| Records | `/records` | Server check | Staff |
-| Moderation | `/moderation` | Client layout guard | Staff |
+| Landing Page | `/` | Public | All visitors |
+| Admin Dashboard | `/tools` | Middleware + layout | Staff (admin+moderator) |
+| Bulk Uploads | `/tools/bulk-uploads` | Middleware + layout | Admin only |
+| Moderation Queue | `/tools/moderation` | Middleware + layout | Staff (admin+moderator) |
+| Audit Logs | `/tools/audit-logs` | Middleware + layout | Staff (admin+moderator) |
+| Admin Settings | `/tools/admin` | Middleware + layout | Admin only |
+| Database Browser | `/database` | Public | All visitors |
+| Submit Record | `/submission` | Server check | All logged-in users |
 
 ### Access Control Implementation
 1. Client layout guards (`useUser()`)

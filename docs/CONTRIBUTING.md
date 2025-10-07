@@ -60,10 +60,11 @@ See `.cursorrules` for anti-patterns and examples.
 
 ## 📚 Documentation
 
-- **Development standards**: `.cursorrules` ⭐
+- **Development standards**: `.cursorrules` ⭐ (read this first!)
+- **Database schema**: `./DATABASE.md`
+- **Technical architecture**: `./ENGINEERING.md`
 - **Product overview**: `./PRODUCT.md`
-- **API reference**: `./API_DOCUMENTATION.md`
-- **Engineering**: `./ENGINEERING.md`
+- **API reference**: `./ADMIN_AND_MODERATOR_API.md` + `./PUBLIC_AND_COMMUNITY_API.md`
 
 ---
 

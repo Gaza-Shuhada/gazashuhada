@@ -17,17 +17,19 @@ Admin control panel for managing the Gaza Death Toll database. Handles bulk uplo
 - LIFO rollback protection (prevents conflicts)
 - Audit logging for all operations
 - Label and date tracking for uploads
+- **Performance**: Handles 30K+ records with PostgreSQL batching
 
 #### 2. Community Submissions
 - **New Record Proposals**: Community members can propose new person records
 - **Edit Suggestions**: Propose changes to death-related information
 - **Photo Upload**: Integrated Vercel Blob storage with automatic resizing
   - Automatic resize to 2048x2048px max
-  - Converts to optimized JPEG
+  - Converts to optimized WebP/JPEG
   - 10MB file size limit
 - **Location Coordinates**: Lat/lng coordinates for death locations
   - Validation: -90 to 90 (latitude), -180 to 180 (longitude)
 - **Submission History**: Track your own submissions and their status
+- **Toast Notifications**: Real-time feedback via persistent toast messages
 
 #### 3. Moderation Queue
 - Review pending community submissions (FIFO queue)
@@ -37,8 +39,9 @@ Admin control panel for managing the Gaza Death Toll database. Handles bulk uplo
 - Transaction-safe operations
 - Audit logging
 
-#### 4. Records Management
+#### 4. Database Browser
 - Browse all person records with pagination
+- **Search as you type**: Find records by name or external ID
 - Version tracking for each record
 - Deletion status indicators
 - Photo thumbnails with click-to-enlarge
@@ -49,20 +52,26 @@ Admin control panel for managing the Gaza Death Toll database. Handles bulk uplo
 - User, timestamp, and metadata tracking
 - Filterable by action type and resource
 
+#### 6. Dashboard
+- Real-time statistics (total records, photos, pending submissions)
+- **Data source breakdown**: MoH-confirmed vs Community contributions
+- Quick access to all admin tools
+
 ---
 
 ## Tech Stack
 
 - **Framework**: Next.js 15.5.4 (App Router, Turbopack)
 - **Database**: PostgreSQL (Prisma ORM)
-- **Authentication**: Clerk
+- **Authentication**: Clerk (session-based, role-based access control)
 - **UI Components**: shadcn/ui ⭐ **Required for all UI development**
+- **Notifications**: Sonner (toast notifications via shadcn/ui)
 - **Storage**: Vercel Blob (photo uploads)
-- **Image Processing**: Sharp
+- **Image Processing**: Sharp (AVIF/PNG conversion, WebP optimization, resizing)
 - **Styling**: Tailwind CSS 4
 - **Deployment**: Vercel
 
-> **🎨 UI Development Rule**: This project uses [shadcn/ui](https://ui.shadcn.com) for ALL UI components. Never build custom buttons, forms, tables, etc. Always check shadcn first! See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+> **🎨 UI Development Rule**: This project uses [shadcn/ui](https://ui.shadcn.com) for ALL UI components. Never build custom buttons, forms, tables, etc. Always check shadcn first! See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for details.
 
 ---
 
@@ -131,18 +140,27 @@ Open [http://localhost:3000](http://localhost:3000)
 ├── src/
 │   ├── app/
 │   │   ├── api/                # API routes
-│   │   │   ├── admin/          # Admin endpoints
-│   │   │   └── community/      # Community endpoints
-│   │   ├── audit-logs/         # Audit log page
-│   │   ├── bulk-uploads/       # Bulk upload page
-│   │   ├── community/submit/   # Community submission form
-│   │   ├── dashboard/          # Main dashboard
-│   │   ├── moderation/         # Moderation queue
-│   │   └── records/            # Records browser
-│   ├── components/             # React components
+│   │   │   ├── admin/          # Admin-only endpoints
+│   │   │   ├── moderator/      # Moderator + Admin endpoints
+│   │   │   ├── community/      # Community + Staff endpoints
+│   │   │   └── public/         # Public read-only endpoints
+│   │   ├── tools/              # Admin tool pages
+│   │   │   ├── bulk-uploads/   # Bulk upload page
+│   │   │   ├── moderation/     # Moderation queue
+│   │   │   ├── audit-logs/     # Audit log page
+│   │   │   └── admin/          # Admin settings
+│   │   ├── database/           # Database browser (formerly /records)
+│   │   ├── submission/         # Community submission form (formerly /community)
+│   │   └── page.tsx            # Public landing page
+│   ├── components/             # React components (shadcn/ui + custom)
 │   ├── lib/                    # Utilities and services
-│   └── middleware.ts           # Auth middleware
+│   └── middleware.ts           # Auth middleware (role-based access)
 └── docs/                       # Documentation
+    ├── DATABASE.md             # Database schema and design
+    ├── ENGINEERING.md          # Technical architecture
+    ├── PRODUCT.md              # Product overview
+    ├── CONTRIBUTING.md         # Contribution guidelines
+    └── API docs/               # API endpoint documentation
 ```
 
 ---
@@ -201,16 +219,19 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ## Documentation
 
-### API Documentation (Choose Your Role)
-- 📘 **[Public & Community API](docs/PUBLIC_AND_COMMUNITY_API.md)** - For external developers building public apps
-- 🔐 **[Admin & Moderator API](docs/ADMIN_AND_MODERATOR_API.md)** - For internal admin/moderator staff
+### Essential Reading
+- 🗄️ **[DATABASE.md](docs/DATABASE.md)** - Database schema, design patterns, event sourcing
+- 🏗️ **[ENGINEERING.md](docs/ENGINEERING.md)** - Technical architecture, configuration, performance
+- 📦 **[PRODUCT.md](docs/PRODUCT.md)** - Product overview, features, workflows
+- 🤝 **[CONTRIBUTING.md](docs/CONTRIBUTING.md)** - Development standards (read .cursorrules!)
+
+### API Documentation
+- 📘 **[Public & Community API](docs/PUBLIC_AND_COMMUNITY_API.md)** - For external developers
+- 🔐 **[Admin & Moderator API](docs/ADMIN_AND_MODERATOR_API.md)** - For internal staff
 - 📚 **[API Overview](docs/API_README.md)** - Quick start guide
 
-### Project Documentation
-- [Engineering](docs/ENGINEERING.md) - Technical architecture and workflows
-- [Product Overview](docs/PRODUCT.md) - Product context and features
-- [Contributing](docs/CONTRIBUTING.md) - How to contribute
-- [TODOs](docs/TODO.md) - Follow-up tasks
+### Additional
+- [TODOs](docs/TODO.md) - Follow-up tasks and planned features
 
 ---
 
