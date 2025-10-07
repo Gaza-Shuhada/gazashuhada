@@ -112,29 +112,13 @@ export default function BulkUploadsClient() {
     });
     
     try {
-      // Step 1: Get upload token from server
-      const tokenResponse = await fetch('/api/admin/bulk-upload/upload-csv', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: selectedFile.name }),
-      });
+      // Upload file DIRECTLY to Blob storage using Vercel's client upload API
+      // This bypasses the 4.5MB serverless function limit entirely
+      const pathname = `bulk-uploads/temp/${Date.now()}-${selectedFile.name}`;
       
-      if (!tokenResponse.ok) {
-        const errorData = await tokenResponse.json().catch(() => ({ error: 'Failed to get upload token' }));
-        toast.error(errorData.error || 'Failed to prepare upload', { 
-          id: simulateToast,
-          duration: Infinity,
-        });
-        return;
-      }
-      
-      const { pathname, token } = await tokenResponse.json();
-      
-      // Step 2: Upload file DIRECTLY to Blob storage (bypasses 4.5MB limit entirely)
       const blob = await upload(pathname, selectedFile, {
         access: 'public',
         handleUploadUrl: '/api/admin/bulk-upload/upload-csv',
-        clientPayload: JSON.stringify({ filename: selectedFile.name }),
       });
       
       const uploadedBlobUrl = blob.url;
@@ -142,7 +126,7 @@ export default function BulkUploadsClient() {
       
       console.log('[Client] File uploaded to:', uploadedBlobUrl);
       
-      // Step 3: Simulate using the blob URL
+      // Step 2: Simulate using the blob URL
       toast.loading('Simulating upload...', {
         id: simulateToast,
         description: 'Analyzing CSV and comparing with database',
