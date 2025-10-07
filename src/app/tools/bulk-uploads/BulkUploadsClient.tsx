@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { upload } from '@vercel/blob/client';
 
 interface BulkUpload {
   id: string;
@@ -106,34 +107,42 @@ export default function BulkUploadsClient() {
 
     setSimulating(true);
     const simulateToast = toast.loading('Uploading file to blob storage...', {
-      description: `Uploading ${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`,
+      description: `Uploading ${(selectedFile.size / 1024 / 1024).toFixed(2)} MB directly to storage`,
       duration: Infinity,
     });
     
     try {
-      // Step 1: Upload file directly to Vercel Blob (client-side, no API route)
-      // Use the @vercel/blob put API with client-side upload
-      const response = await fetch(
-        `/api/admin/bulk-upload/upload-csv?filename=${encodeURIComponent(selectedFile.name)}`,
-        {
-          method: 'POST',
-          body: selectedFile,
-        }
-      );
+      // Step 1: Get upload token from server
+      const tokenResponse = await fetch('/api/admin/bulk-upload/upload-csv', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: selectedFile.name }),
+      });
       
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
-        toast.error(errorData.error || 'Failed to upload file', { 
+      if (!tokenResponse.ok) {
+        const errorData = await tokenResponse.json().catch(() => ({ error: 'Failed to get upload token' }));
+        toast.error(errorData.error || 'Failed to prepare upload', { 
           id: simulateToast,
           duration: Infinity,
         });
         return;
       }
       
-      const { blobUrl: uploadedBlobUrl } = await response.json();
+      const { pathname, token } = await tokenResponse.json();
+      
+      // Step 2: Upload file DIRECTLY to Blob storage (bypasses 4.5MB limit entirely)
+      const blob = await upload(pathname, selectedFile, {
+        access: 'public',
+        handleUploadUrl: '/api/admin/bulk-upload/upload-csv',
+        clientPayload: JSON.stringify({ filename: selectedFile.name }),
+      });
+      
+      const uploadedBlobUrl = blob.url;
       setBlobUrl(uploadedBlobUrl); // Store for later use in apply
       
-      // Step 2: Simulate using the blob URL
+      console.log('[Client] File uploaded to:', uploadedBlobUrl);
+      
+      // Step 3: Simulate using the blob URL
       toast.loading('Simulating upload...', {
         id: simulateToast,
         description: 'Analyzing CSV and comparing with database',
