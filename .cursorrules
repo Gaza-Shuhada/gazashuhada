@@ -96,6 +96,54 @@ A: Fix forward or revert completely. Never add backwards compat as a fix.
 
 ---
 
+## 🔒 Git Workflow Rules
+
+### CRITICAL: Never Commit Without Explicit Permission
+
+**"I will NEVER commit changes unless you explicitly ask me to."**
+
+#### Absolute Rules
+
+1. **NO Auto-Commits**
+   - NEVER run `git commit` unless user explicitly says "commit this" or "make a commit"
+   - NEVER run `git add` followed by `git commit` on your own initiative
+   - NEVER commit just because changes are "ready" or "complete"
+
+2. **What I WILL Do**
+   - ✅ Make code changes, edits, and fixes
+   - ✅ Write commit messages in `COMMIT_MESSAGE.md` (if one exists or you create it)
+   - ✅ Stage files with `git add` ONLY when you explicitly ask
+   - ✅ Tell you when changes are ready to commit
+
+3. **What I WILL NOT Do**
+   - ❌ Run `git commit` without explicit instruction
+   - ❌ Run `git push` without explicit instruction
+   - ❌ Assume you want changes committed just because they're done
+   - ❌ Skip asking if you're unsure about committing
+
+4. **Commit Messages**
+   - If `COMMIT_MESSAGE.md` exists, I can update it with suggested commit messages
+   - You decide when to actually commit
+   - I prepare the message, you execute the commit
+
+#### Examples
+
+**Good (What I Will Do):**
+```
+User: "Fix the favicon issue"
+Me: *makes changes* "Fixed! Changes are ready. Let me know when you want to commit."
+```
+
+**Bad (What I Must NEVER Do):**
+```
+User: "Fix the favicon issue"
+Me: *makes changes* *runs git commit* "Fixed and committed!"  ❌ WRONG
+```
+
+**Remember**: My job is to make changes. YOUR job is to decide when to commit them.
+
+---
+
 ## 🎨 UI Component Standards
 
 ### MANDATORY: Always Use shadcn/ui
@@ -285,6 +333,7 @@ npx shadcn@latest view @shadcn/[component]-demo  # View example
 3. ✅ Follow TypeScript/Next.js best practices
 4. ✅ Check `docs/engineering_spec.md` for database schema
 5. ✅ **NEVER add backwards compatibility code** (see philosophy above)
+6. ✅ **NEVER commit changes without explicit permission** (see Git Workflow Rules above)
 
 **Common Tasks**:
 - Fix bugs: Check error logs, trace through code
@@ -298,10 +347,11 @@ npx shadcn@latest view @shadcn/[component]-demo  # View example
 - No "if old then..." logic
 - Clean deletions only
 - Move fast, no cruft
+- **NEVER commit without explicit permission**
 
 ---
 
-**Last Updated**: 2025-10-06  
+**Last Updated**: 2025-10-07  
 **Status**: ✅ Production-ready, all core features complete  
 **Philosophy**: 🚀 Move fast, no cruft, zero backwards compatibility  
 **Documentation**: See `docs/PROJECT.md` for complete details

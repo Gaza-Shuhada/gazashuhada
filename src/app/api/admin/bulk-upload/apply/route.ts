@@ -4,9 +4,39 @@ import { applyBulkUpload } from '@/lib/bulk-upload-service-ultra-optimized';
 import { requireAdmin } from '@/lib/auth-utils';
 import { createAuditLog, AuditAction, ResourceType } from '@/lib/audit-log';
 
-// Increase body size limit for large CSV uploads
+/**
+ * Route Configuration for Bulk Upload Application
+ * 
+ * These exports configure Next.js App Router behavior for handling large CSV files.
+ * See docs/ENGINEERING.md for complete configuration documentation.
+ */
+
+/**
+ * Runtime: nodejs
+ * Reason: Required for processing large files, database transactions, and Vercel Blob uploads.
+ * Alternative would be 'edge' but that has memory/time constraints unsuitable for bulk processing.
+ */
 export const runtime = 'nodejs';
-export const maxDuration = 300; // 5 minutes for large file processing and database writes
+
+/**
+ * Max Duration: 300 seconds (5 minutes)
+ * Reason: Applying 30K+ records involves:
+ *   - Parsing CSV (5-10s)
+ *   - Fetching existing data in batches (20-30s)
+ *   - Uploading to Vercel Blob (10-20s)
+ *   - Bulk inserts/updates/deletes in batches (60-120s)
+ *   - Creating audit logs (5-10s)
+ * Total: ~2-3 minutes for large files, 5min gives comfortable buffer.
+ * Default timeout is 10s on Vercel Hobby, 60s on Pro (increase if needed).
+ */
+export const maxDuration = 300;
+
+/**
+ * Dynamic Rendering: force-dynamic
+ * Reason: Each upload is unique (different files, writes to database, creates new records).
+ * Prevents Next.js from caching or prerendering this route.
+ */
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {

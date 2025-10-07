@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Spinner } from '@/components/ui/spinner';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
 
 interface Person {
   id: string;
@@ -38,13 +40,35 @@ interface PersonsData {
 export function PersonsTable() {
   const [data, setData] = useState<PersonsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
-  const fetchPersons = async (page: number = 1) => {
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1); // Reset to page 1 when search changes
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const fetchPersons = useCallback(async (page: number = 1, search: string = '') => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/moderator/persons?page=${page}&limit=10`);
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '10',
+      });
+      
+      if (search.trim()) {
+        params.append('search', search.trim());
+      }
+      
+      const response = await fetch(`/api/moderator/persons?${params.toString()}`);
       const result = await response.json();
 
       if (!response.ok) {
@@ -57,12 +81,19 @@ export function PersonsTable() {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
+      setInitialLoad(false);
     }
-  };
-
-  useEffect(() => {
-    fetchPersons();
   }, []);
+
+  // Fetch on mount
+  useEffect(() => {
+    fetchPersons(1, '');
+  }, [fetchPersons]);
+
+  // Fetch when debounced search changes
+  useEffect(() => {
+    fetchPersons(1, debouncedSearch);
+  }, [debouncedSearch, fetchPersons]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
@@ -72,7 +103,7 @@ export function PersonsTable() {
     return new Date(dateString).toLocaleString();
   };
 
-  if (loading) {
+  if (initialLoad && loading) {
     return (
       <Card>
         <CardHeader>
@@ -102,7 +133,7 @@ export function PersonsTable() {
     );
   }
 
-  if (!data || data.persons.length === 0) {
+  if (!data) {
     return (
       <Card>
         <CardHeader>
@@ -128,6 +159,25 @@ export function PersonsTable() {
         </div>
       </CardHeader>
       <CardContent>
+        {/* Search Input */}
+        <div className="mb-4">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              type="text"
+              placeholder="Search by name, external ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          {searchQuery && (
+            <p className="text-sm text-muted-foreground mt-2">
+              {loading ? 'Searching...' : `Found ${data?.pagination.total || 0} result${data?.pagination.total === 1 ? '' : 's'}`}
+            </p>
+          )}
+        </div>
+
         <div className="rounded-md border">
           <Table>
             <TableHeader>
@@ -145,7 +195,20 @@ export function PersonsTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.persons.map((person) => (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={10} className="h-32 text-center">
+                    <Spinner className="mx-auto" />
+                  </TableCell>
+                </TableRow>
+              ) : data.persons.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={10} className="h-32 text-center text-muted-foreground">
+                    No records found {searchQuery ? 'matching your search' : ''}.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                data.persons.map((person) => (
                 <TableRow key={person.id}>
                   <TableCell className="font-medium">{person.externalId}</TableCell>
                   <TableCell>{person.name}</TableCell>
@@ -211,7 +274,8 @@ export function PersonsTable() {
                     {formatDateTime(person.updatedAt)}
                   </TableCell>
                 </TableRow>
-              ))}
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
@@ -226,7 +290,7 @@ export function PersonsTable() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => fetchPersons(currentPage - 1)}
+                onClick={() => fetchPersons(currentPage - 1, debouncedSearch)}
                 disabled={currentPage === 1}
               >
                 Previous
@@ -234,7 +298,7 @@ export function PersonsTable() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => fetchPersons(currentPage + 1)}
+                onClick={() => fetchPersons(currentPage + 1, debouncedSearch)}
                 disabled={currentPage === data.pagination.pages}
               >
                 Next

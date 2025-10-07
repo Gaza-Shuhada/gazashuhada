@@ -3,9 +3,33 @@ import { parseCSV } from '@/lib/csv-utils';
 import { simulateBulkUpload } from '@/lib/bulk-upload-service-ultra-optimized';
 import { requireAdmin } from '@/lib/auth-utils';
 
-// Increase body size limit for large CSV uploads
+/**
+ * Route Configuration for Bulk Upload Simulation
+ * 
+ * These exports configure Next.js App Router behavior for handling large CSV files.
+ * See docs/ENGINEERING.md for complete configuration documentation.
+ */
+
+/**
+ * Runtime: nodejs
+ * Reason: Required for processing large files and database operations.
+ * Alternative would be 'edge' but that has memory/time constraints unsuitable for bulk processing.
+ */
 export const runtime = 'nodejs';
-export const maxDuration = 60; // 60 seconds for large file processing
+
+/**
+ * Max Duration: 60 seconds
+ * Reason: Simulation reads ~30K+ records from CSV and queries database to compare.
+ * Default timeout is 10s on Vercel Hobby, 60s on Pro (increase if needed).
+ */
+export const maxDuration = 60;
+
+/**
+ * Dynamic Rendering: force-dynamic
+ * Reason: Each simulation is unique (different files, different DB state at time of request).
+ * Prevents Next.js from caching or prerendering this route.
+ */
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {

@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth-utils';
 
+// PostgreSQL bind variable limit - batch queries to avoid hitting 32,767 limit
+const MAX_BATCH_SIZE = 10000;
+
 export async function GET() {
   try {
     // Check authentication and admin role
@@ -58,16 +61,23 @@ export async function GET() {
         });
         
         // Check if any person has a higher version from a different source
-        const conflictingVersions = await prisma.personVersion.findMany({
-          where: {
-            personId: { in: personIds },
-            sourceId: { not: upload.changeSource.id },
-          },
-          select: {
-            personId: true,
-            versionNumber: true,
-          },
-        });
+        // Batch the query to avoid PostgreSQL bind variable limit (32,767)
+        const conflictingVersions = [];
+        
+        for (let i = 0; i < personIds.length; i += MAX_BATCH_SIZE) {
+          const batch = personIds.slice(i, i + MAX_BATCH_SIZE);
+          const batchResults = await prisma.personVersion.findMany({
+            where: {
+              personId: { in: batch },
+              sourceId: { not: upload.changeSource.id },
+            },
+            select: {
+              personId: true,
+              versionNumber: true,
+            },
+          });
+          conflictingVersions.push(...batchResults);
+        }
         
         const conflicts = conflictingVersions.filter(cv => {
           const uploadMaxVersion = maxVersionNumbers.get(cv.personId);

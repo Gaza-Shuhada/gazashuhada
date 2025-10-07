@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { toast } from 'sonner';
 
 interface Person {
   id: string;
@@ -40,7 +41,6 @@ export default function ModerationClient() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [modalState, setModalState] = useState<{
     type: 'approve' | 'reject';
     submission: Submission | null;
@@ -61,10 +61,10 @@ export default function ModerationClient() {
         const data = JSON.parse(text);
         setSubmissions(data.submissions);
       } else {
-        setMessage({ type: 'error', text: 'Failed to load submissions' });
+        toast.error('Failed to load submissions');
       }
     } catch {
-      setMessage({ type: 'error', text: 'Error loading submissions' });
+      toast.error('Error loading submissions');
     } finally {
       setLoading(false);
     }
@@ -85,14 +85,14 @@ export default function ModerationClient() {
       const data = text ? JSON.parse(text) : {};
 
       if (response.ok) {
-        setMessage({ type: 'success', text: data.message });
+        toast.success(data.message || 'Submission approved successfully');
         setModalState(null);
         fetchSubmissions().catch(err => console.error('Failed to refresh submissions:', err));
       } else {
-        setMessage({ type: 'error', text: data.error || 'Failed to approve submission' });
+        toast.error(data.error || 'Failed to approve submission');
       }
     } catch {
-      setMessage({ type: 'error', text: 'Error approving submission' });
+      toast.error('Error approving submission');
     } finally {
       setActionLoading(null);
     }
@@ -102,7 +102,7 @@ export default function ModerationClient() {
     if (!modalState || modalState.type !== 'reject' || !modalState.submission) return;
 
     if (!modalState.note.trim()) {
-      setMessage({ type: 'error', text: 'Rejection note is required' });
+      toast.error('Rejection note is required');
       return;
     }
 
@@ -118,45 +118,40 @@ export default function ModerationClient() {
       const data = text ? JSON.parse(text) : {};
 
       if (response.ok) {
-        setMessage({ type: 'success', text: data.message });
+        toast.success(data.message || 'Submission rejected successfully');
         setModalState(null);
         fetchSubmissions().catch(err => console.error('Failed to refresh submissions:', err));
       } else {
-        setMessage({ type: 'error', text: data.error || 'Failed to reject submission' });
+        toast.error(data.error || 'Failed to reject submission');
       }
     } catch {
-      setMessage({ type: 'error', text: 'Error rejecting submission' });
+      toast.error('Error rejecting submission');
     } finally {
       setActionLoading(null);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="text-center py-12">
-        <div className="text-muted-foreground">Loading submissions...</div>
-      </div>
-    );
-  }
-
   return (
-    <>
-      <div className="flex justify-end items-center mb-8">
+    <div className="space-y-6">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold">Pending Moderation</h1>
+          <p className="text-muted-foreground mt-2">Review and approve community submissions</p>
+        </div>
         <button
           onClick={fetchSubmissions}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+          disabled={loading}
+          className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary disabled:opacity-50"
         >
-          Refresh
+          {loading ? 'Refreshing...' : 'Refresh'}
         </button>
       </div>
 
-      {message && (
-        <div className={`mb-6 p-4 rounded-lg ${message.type === 'success' ? 'bg-accent text-accent-foreground' : 'bg-destructive/5 text-destructive'}`}>
-          {message.text}
+      {loading ? (
+        <div className="bg-card rounded-lg border p-8 text-center">
+          <div className="text-muted-foreground">Loading submissions...</div>
         </div>
-      )}
-
-      {submissions.length === 0 ? (
+      ) : submissions.length === 0 ? (
         <div className="bg-card rounded-lg border p-12 text-center">
           <div className="text-muted-foreground">
             <p className="text-lg font-medium mb-2">No pending submissions</p>
@@ -413,7 +408,7 @@ export default function ModerationClient() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
 

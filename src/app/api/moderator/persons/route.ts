@@ -14,6 +14,14 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const skip = (page - 1) * limit;
     const filter = searchParams.get('filter'); // Filter type
+    const search = searchParams.get('search'); // Search query
+
+    // Build search condition
+    const searchCondition: Prisma.PersonWhereInput['OR'] = search && search.trim() ? [
+      { name: { contains: search.trim(), mode: 'insensitive' } },
+      { nameEnglish: { contains: search.trim(), mode: 'insensitive' } },
+      { externalId: { contains: search.trim(), mode: 'insensitive' } },
+    ] : undefined;
 
     // Build where clause based on filter
     let whereClause: Prisma.PersonWhereInput = {};
@@ -23,14 +31,16 @@ export async function GET(request: NextRequest) {
         // Records created by community (not confirmed by MoH)
         whereClause = {
           confirmedByMoh: false,
-          isDeleted: false
+          isDeleted: false,
+          ...(searchCondition ? { OR: searchCondition } : {})
         };
         break;
 
       case 'deleted_by_moh':
         // Records marked as deleted
         whereClause = {
-          isDeleted: true
+          isDeleted: true,
+          ...(searchCondition ? { OR: searchCondition } : {})
         };
         break;
 
@@ -50,7 +60,8 @@ export async function GET(request: NextRequest) {
         }).then(versions => versions.map(v => v.personId));
 
         whereClause = {
-          id: { in: personIds.length > 0 ? personIds : ['no-match'] }
+          id: { in: personIds.length > 0 ? personIds : ['no-match'] },
+          ...(searchCondition ? { OR: searchCondition } : {})
         };
         break;
       }
@@ -71,14 +82,18 @@ export async function GET(request: NextRequest) {
         }).then(versions => versions.map(v => v.personId));
 
         whereClause = {
-          id: { in: personIds.length > 0 ? personIds : ['no-match'] }
+          id: { in: personIds.length > 0 ? personIds : ['no-match'] },
+          ...(searchCondition ? { OR: searchCondition } : {})
         };
         break;
       }
 
       default:
-        // No filter - return all persons (including deleted)
-        whereClause = {};
+        // No filter - return all non-deleted persons
+        whereClause = {
+          isDeleted: false,
+          ...(searchCondition ? { OR: searchCondition } : {})
+        };
     }
 
     // Fetch persons with pagination and filtering

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Prisma } from '@prisma/client';
+import { toast } from 'sonner';
 
 interface AuditLog {
   id: string;
@@ -19,7 +20,6 @@ interface AuditLog {
 export default function AuditLogsClient() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     void fetchLogs();
@@ -36,10 +36,10 @@ export default function AuditLogsClient() {
       if (data.success) {
         setLogs(data.logs);
       } else {
-        setError(data.error || 'Failed to fetch audit logs');
+        toast.error(data.error || 'Failed to fetch audit logs');
       }
     } catch (err) {
-      setError('An error occurred while fetching audit logs');
+      toast.error('An error occurred while fetching audit logs');
       console.error('Fetch error:', err);
     } finally {
       setLoading(false);
@@ -97,12 +97,6 @@ export default function AuditLogsClient() {
           {loading ? 'Refreshing...' : 'Refresh'}
         </button>
       </div>
-
-      {error && (
-        <div className="bg-destructive/5 border border-destructive/20 text-destructive px-4 py-3 rounded">
-          {error}
-        </div>
-      )}
 
       {loading ? (
         <div className="bg-card rounded-lg border p-8 text-center">

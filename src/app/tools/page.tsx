@@ -3,12 +3,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { 
   Upload, 
-  Settings, 
   FileText, 
   Users, 
   Database,
@@ -38,14 +36,14 @@ export default function AdminDashboard() {
   const fetchStats = async () => {
     try {
       const response = await fetch('/api/moderator/stats');
-      const text = await response.text();
-      const data = text ? JSON.parse(text) : {};
       
-      if (response.ok) {
-        setStats(data);
-      } else {
-        setError(data.error || 'Failed to fetch stats');
+      if (!response.ok) {
+        setError('Failed to fetch stats');
+        return;
       }
+      
+      const data = await response.json();
+      setStats(data);
     } catch {
       setError('An error occurred while fetching statistics');
     } finally {
@@ -58,7 +56,7 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground mt-2">
             System overview and quick access to administrative functions
           </p>
@@ -107,7 +105,7 @@ export default function AdminDashboard() {
           </Card>
 
           <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
-            <Link href="/records">
+            <Link href="/database">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -210,66 +208,6 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </div>
-
-        {/* Admin Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
-              Administrative Actions
-            </CardTitle>
-            <CardDescription>
-              Manage system settings and perform administrative tasks
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2">
-              <Button asChild variant="outline" className="justify-start h-auto py-4">
-                <Link href="/tools/bulk-uploads">
-                  <div className="text-left">
-                    <div className="font-semibold mb-1">Upload CSV Data</div>
-                    <div className="text-sm text-muted-foreground">
-                      Import bulk data from Ministry of Health updates
-                    </div>
-                  </div>
-                </Link>
-              </Button>
-
-              <Button asChild variant="outline" className="justify-start h-auto py-4">
-                <Link href="/tools/settings">
-                  <div className="text-left">
-                    <div className="font-semibold mb-1">System Settings</div>
-                    <div className="text-sm text-muted-foreground">
-                      Configure system settings and manage database
-                    </div>
-                  </div>
-                </Link>
-              </Button>
-
-              <Button asChild variant="outline" className="justify-start h-auto py-4">
-                <Link href="/tools/moderation">
-                  <div className="text-left">
-                    <div className="font-semibold mb-1">Review Submissions</div>
-                    <div className="text-sm text-muted-foreground">
-                      Approve or reject community submissions
-                    </div>
-                  </div>
-                </Link>
-              </Button>
-
-              <Button asChild variant="outline" className="justify-start h-auto py-4">
-                <Link href="/tools/audit-logs">
-                  <div className="text-left">
-                    <div className="font-semibold mb-1">Audit Logs</div>
-                    <div className="text-sm text-muted-foreground">
-                      View complete history of all system actions
-                    </div>
-                  </div>
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

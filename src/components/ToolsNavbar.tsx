@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { UserButton, useAuth, useUser } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -12,6 +13,7 @@ export function ToolsNavbar() {
   const { isSignedIn } = useAuth();
   const { user } = useUser();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   const isStaff = user?.publicMetadata?.role === 'admin' || user?.publicMetadata?.role === 'moderator';
   const isAdmin = user?.publicMetadata?.role === 'admin';
@@ -39,44 +41,60 @@ export function ToolsNavbar() {
                     {isStaff && (
                       <>
                         {isAdmin && (
-                          <>
-                            <Link
-                              href="/tools/bulk-uploads"
-                              onClick={() => setMobileMenuOpen(false)}
-                              className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors"
-                            >
-                              Bulk Uploads
-                            </Link>
-                            <Link
-                              href="/tools/settings"
-                              onClick={() => setMobileMenuOpen(false)}
-                              className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors"
-                            >
-                              Settings
-                            </Link>
-                          </>
+                          <Link
+                            href="/tools/bulk-uploads"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                              pathname === '/tools/bulk-uploads'
+                                ? 'text-foreground font-semibold'
+                                : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                          >
+                            Bulk Uploads
+                          </Link>
                         )}
                         <Link
                           href="/tools/moderation"
                           onClick={() => setMobileMenuOpen(false)}
-                          className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors"
+                          className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                            pathname === '/tools/moderation'
+                              ? 'text-foreground font-semibold'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
                         >
                           Moderation
                         </Link>
                         <Link
                           href="/tools/audit-logs"
                           onClick={() => setMobileMenuOpen(false)}
-                          className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors"
+                          className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                            pathname === '/tools/audit-logs'
+                              ? 'text-foreground font-semibold'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
                         >
                           Audit Logs
                         </Link>
+                        {isAdmin && (
+                          <Link
+                            href="/tools/admin"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                              pathname === '/tools/admin'
+                                ? 'text-foreground font-semibold'
+                                : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                          >
+                            Admin
+                          </Link>
+                        )}
                       </>
                     )}
                     {/* Back to Public Site */}
                     <Link
                       href="/"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="text-primary hover:text-primary/80 px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors border-t pt-4 mt-4"
+                      className="text-primary hover:text-primary/80 px-3 py-2 rounded-md text-sm font-medium transition-colors border-t pt-4 mt-4"
                     >
                       ← Back to Site
                     </Link>
@@ -98,35 +116,52 @@ export function ToolsNavbar() {
                   <>
                     {/* Admin Links - Only show if user has admin role */}
                     {isAdmin && (
-                      <>
-                        <Link
-                          href="/tools/bulk-uploads"
-                          className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
-                        >
-                          Bulk Uploads
-                        </Link>
-                        <Link
-                          href="/tools/settings"
-                          className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
-                        >
-                          Settings
-                        </Link>
-                      </>
+                      <Link
+                        href="/tools/bulk-uploads"
+                        className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          pathname === '/tools/bulk-uploads'
+                            ? 'text-foreground font-semibold'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        Bulk Uploads
+                      </Link>
                     )}
 
                     <Link
                       href="/tools/moderation"
-                      className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        pathname === '/tools/moderation'
+                          ? 'text-foreground font-semibold'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
                     >
                       Moderation
                     </Link>
 
                     <Link
                       href="/tools/audit-logs"
-                      className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        pathname === '/tools/audit-logs'
+                          ? 'text-foreground font-semibold'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
                     >
                       Audit Logs
                     </Link>
+
+                    {isAdmin && (
+                      <Link
+                        href="/tools/admin"
+                        className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          pathname === '/tools/admin'
+                            ? 'text-foreground font-semibold'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        Admin
+                      </Link>
+                    )}
                   </>
                 )}
 

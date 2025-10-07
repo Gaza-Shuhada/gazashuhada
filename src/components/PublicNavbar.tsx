@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { UserButton, useAuth, useUser } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -12,6 +13,7 @@ export function PublicNavbar() {
   const { isSignedIn } = useAuth();
   const { user } = useUser();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   const isStaff = user?.publicMetadata?.role === 'admin' || user?.publicMetadata?.role === 'moderator';
 
@@ -36,16 +38,24 @@ export function PublicNavbar() {
                   <nav className="flex flex-col space-y-4 mt-6">
                     {/* Submissions & Database - Everyone */}
                     <Link
-                      href="/community"
+                      href="/submission"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors"
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        pathname === '/submission'
+                          ? 'text-foreground font-semibold'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
                     >
                       Submissions
                     </Link>
                     <Link
-                      href="/records"
+                      href="/database"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors"
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        pathname === '/database'
+                          ? 'text-foreground font-semibold'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
                     >
                       Database
                     </Link>
@@ -55,7 +65,7 @@ export function PublicNavbar() {
                       <Link
                         href="/tools"
                         onClick={() => setMobileMenuOpen(false)}
-                        className="text-primary hover:text-primary/80 px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors border-t pt-4 mt-4"
+                        className="text-primary hover:text-primary/80 px-3 py-2 rounded-md text-sm font-medium transition-colors border-t pt-4 mt-4"
                       >
                         Admin Tools →
                       </Link>
@@ -74,14 +84,22 @@ export function PublicNavbar() {
             {isSignedIn && (
               <div className="hidden md:flex items-center space-x-6">
                 <Link
-                  href="/community"
-                  className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
+                  href="/submission"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    pathname === '/submission'
+                      ? 'text-foreground font-semibold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
                 >
                   Submissions
                 </Link>
                 <Link
-                  href="/records"
-                  className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
+                  href="/database"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    pathname === '/database'
+                      ? 'text-foreground font-semibold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
                 >
                   Database
                 </Link>

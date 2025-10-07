@@ -17,7 +17,7 @@ const isStaffRoute = createRouteMatcher([
 
 // Define admin routes that require admin role
 const isAdminRoute = createRouteMatcher([
-  "/tools/settings(.*)",
+  "/tools/admin(.*)",
   "/tools/bulk-uploads(.*)",
   "/api/admin(.*)"
 ]);
@@ -29,7 +29,7 @@ const isModeratorRoute = createRouteMatcher([
   "/api/moderator(.*)"
 ]);
 
-// Note: Community routes (/community, /api/community) are accessible by all authenticated users
+// Note: Submission and database routes (/submission, /database) are accessible by all authenticated users
 // No special matcher needed since everyone (admin, moderator, community) can access them
 
 export default clerkMiddleware(async (auth, req) => {

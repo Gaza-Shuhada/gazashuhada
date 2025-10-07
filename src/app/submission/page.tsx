@@ -4,6 +4,7 @@ import { useUser } from '@clerk/nextjs';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { toast } from 'sonner';
 
 interface Submission {
   id: string;
@@ -20,10 +21,11 @@ interface Submission {
 export default function CommunitySubmitPage() {
   const { isLoaded, isSignedIn } = useUser();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'new' | 'edit' | 'history'>('new');
+  const [activeTab, setActiveTab] = useState<'new' | 'edit' | 'history'>('edit');
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  // OLD: Inline error/success messages (replaced with toast notifications)
+  // const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Form states for NEW_RECORD
   const [newRecordForm, setNewRecordForm] = useState({
@@ -100,13 +102,19 @@ export default function CommunitySubmitPage() {
     // Validate file type
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
     if (!validTypes.includes(file.type)) {
-      setMessage({ type: 'error', text: 'Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.' });
+      toast.error('Invalid file type', {
+        description: 'Only JPEG, PNG, WebP, and GIF are allowed.',
+        duration: Infinity,
+      });
       return;
     }
 
     // Validate file size (10MB)
     if (file.size > 10 * 1024 * 1024) {
-      setMessage({ type: 'error', text: 'File too large. Maximum size is 10MB.' });
+      toast.error('File too large', {
+        description: 'Maximum size is 10MB.',
+        duration: Infinity,
+      });
       return;
     }
 
@@ -168,7 +176,10 @@ export default function CommunitySubmitPage() {
   const handleNewRecordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setMessage(null);
+
+    const submitToast = toast.loading('Submitting new record...', {
+      description: 'Please wait while we process your submission',
+    });
 
     try {
       // Upload photo if provided
@@ -220,9 +231,14 @@ export default function CommunitySubmitPage() {
       }
 
       if (response.ok) {
-        // IMMEDIATELY scroll and show message (before any async operations)
+        toast.success('New record submitted!', {
+          id: submitToast,
+          description: 'Your submission will be reviewed by moderators.',
+          duration: Infinity,
+        });
+        
+        // Scroll to top
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        setMessage({ type: 'success', text: 'New record submitted successfully! It will be reviewed by moderators.' });
         
         // Clear form
         setNewRecordForm({
@@ -245,13 +261,19 @@ export default function CommunitySubmitPage() {
         // Fetch submissions in background (don't block)
         fetchSubmissions().catch(err => console.error('Failed to refresh submissions:', err));
       } else {
-        setMessage({ type: 'error', text: data.error || 'Failed to submit record' });
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        toast.error(data.error || 'Failed to submit record', {
+          id: submitToast,
+          description: 'Please try again or contact support if the issue persists.',
+          duration: Infinity,
+        });
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An error occurred while submitting';
-      setMessage({ type: 'error', text: errorMessage });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      toast.error('Submission failed', {
+        id: submitToast,
+        description: errorMessage,
+        duration: Infinity,
+      });
     } finally {
       setLoading(false);
       setUploadingPhoto(false);
@@ -264,7 +286,10 @@ export default function CommunitySubmitPage() {
     
     console.log('[handleEditSubmit] Handler started!');
     setLoading(true);
-    setMessage(null);
+
+    const submitToast = toast.loading('Submitting edit proposal...', {
+      description: 'Please wait while we process your submission',
+    });
 
     try {
       console.log('[handleEditSubmit] Starting edit submission...');
@@ -326,11 +351,16 @@ export default function CommunitySubmitPage() {
       }
 
       if (response.ok) {
-        console.log('[handleEditSubmit] Success! Clearing form and scrolling...');
+        console.log('[handleEditSubmit] Success! Clearing form...');
         
-        // IMMEDIATELY scroll and show message (before any async operations)
+        toast.success('Edit proposal submitted!', {
+          id: submitToast,
+          description: 'Your proposal will be reviewed by moderators.',
+          duration: Infinity,
+        });
+        
+        // Scroll to top
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        setMessage({ type: 'success', text: 'Edit proposal submitted successfully! It will be reviewed by moderators.' });
         
         // Clear form
         setEditForm({
@@ -351,14 +381,20 @@ export default function CommunitySubmitPage() {
         
         console.log('[handleEditSubmit] Success handler complete');
       } else {
-        setMessage({ type: 'error', text: data.error || 'Failed to submit edit' });
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        toast.error(data.error || 'Failed to submit edit', {
+          id: submitToast,
+          description: 'Please try again or contact support if the issue persists.',
+          duration: Infinity,
+        });
       }
     } catch (error) {
       console.error('[handleEditSubmit] Error:', error);
       const errorMessage = error instanceof Error ? error.message : 'An error occurred while submitting';
-      setMessage({ type: 'error', text: errorMessage });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      toast.error('Submission failed', {
+        id: submitToast,
+        description: errorMessage,
+        duration: Infinity,
+      });
     } finally {
       console.log('[handleEditSubmit] Finally block - re-enabling button');
       setLoading(false);
@@ -382,11 +418,13 @@ export default function CommunitySubmitPage() {
           <p className="text-muted-foreground mt-2">Propose new records or suggest edits to existing death-related information</p>
         </div>
 
+        {/* OLD: Inline message display (replaced with toast notifications)
         {message && (
           <div className={`mb-6 p-4 rounded-lg ${message.type === 'success' ? 'bg-accent text-accent-foreground' : 'bg-destructive/5 text-destructive'}`}>
             {message.text}
           </div>
         )}
+        */}
 
         {/* Tabs */}
         <div className="bg-card border rounded-lg mb-6">
@@ -526,36 +564,36 @@ export default function CommunitySubmitPage() {
                     />
                   </div>
 
-                  <div>
+                  <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-foreground mb-1">
-                      Location Latitude <span className="text-muted-foreground">(Optional)</span>
+                      Location Coordinates <span className="text-muted-foreground">(Optional)</span>
                     </label>
-                    <input
-                      type="number"
-                      step="any"
-                      value={newRecordForm.locationOfDeathLat}
-                      onChange={(e) => setNewRecordForm({ ...newRecordForm, locationOfDeathLat: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
-                      placeholder="e.g., 31.5"
-                      min="-90"
-                      max="90"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">
-                      Location Longitude <span className="text-muted-foreground">(Optional)</span>
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      value={newRecordForm.locationOfDeathLng}
-                      onChange={(e) => setNewRecordForm({ ...newRecordForm, locationOfDeathLng: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
-                      placeholder="e.g., 34.5"
-                      min="-180"
-                      max="180"
-                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <input
+                          type="number"
+                          step="any"
+                          value={newRecordForm.locationOfDeathLat}
+                          onChange={(e) => setNewRecordForm({ ...newRecordForm, locationOfDeathLat: e.target.value })}
+                          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
+                          placeholder="Latitude (e.g., 31.5)"
+                          min="-90"
+                          max="90"
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="number"
+                          step="any"
+                          value={newRecordForm.locationOfDeathLng}
+                          onChange={(e) => setNewRecordForm({ ...newRecordForm, locationOfDeathLng: e.target.value })}
+                          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
+                          placeholder="Longitude (e.g., 34.5)"
+                          min="-180"
+                          max="180"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -665,7 +703,7 @@ export default function CommunitySubmitPage() {
                 <div className="border-t pt-4">
                   <p className="text-sm font-medium text-foreground mb-4">Proposed Changes (at least one required):</p>
 
-                  <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-1">
                         Date of Death
@@ -678,91 +716,91 @@ export default function CommunitySubmitPage() {
                       />
                     </div>
 
-                    <div>
+                    <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-foreground mb-1">
-                        Location Latitude
+                        Location Coordinates <span className="text-muted-foreground">(Both required if updating location)</span>
                       </label>
-                      <input
-                        type="number"
-                        step="any"
-                        value={editForm.locationOfDeathLat}
-                        onChange={(e) => setEditForm({ ...editForm, locationOfDeathLat: e.target.value })}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
-                        placeholder="e.g., 31.5"
-                        min="-90"
-                        max="90"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1">
-                        Location Longitude
-                      </label>
-                      <input
-                        type="number"
-                        step="any"
-                        value={editForm.locationOfDeathLng}
-                        onChange={(e) => setEditForm({ ...editForm, locationOfDeathLng: e.target.value })}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
-                        placeholder="e.g., 34.5"
-                        min="-180"
-                        max="180"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1">
-                        Obituary
-                      </label>
-                      <textarea
-                        rows={4}
-                        value={editForm.obituary}
-                        onChange={(e) => setEditForm({ ...editForm, obituary: e.target.value })}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
-                        placeholder="Additional information or obituary text"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        Photo
-                      </label>
-                      <div className="space-y-3">
-                        {editPhotoPreview ? (
-                          <div className="relative inline-block">
-                            <Image 
-                              src={editPhotoPreview} 
-                              alt="Preview" 
-                              width={192}
-                              height={192}
-                              className="w-48 h-48 object-cover rounded-lg border-2 border"
-                              unoptimized
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleRemovePhoto(true)}
-                              className="absolute -top-2 -right-2 bg-destructive/50 text-white rounded-full p-1 hover:bg-destructive"
-                            >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </div>
-                        ) : (
-                          <div>
-                            <input
-                              type="file"
-                              accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
-                              onChange={(e) => handlePhotoChange(e, true)}
-                              className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary/5 file:text-primary hover:file:bg-primary/10"
-                            />
-                            <p className="text-xs text-muted-foreground mt-1">
-                              JPEG, PNG, WebP, or GIF. Max 10MB. Will replace existing photo if approved.
-                            </p>
-                          </div>
-                        )}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <input
+                            type="number"
+                            step="any"
+                            value={editForm.locationOfDeathLat}
+                            onChange={(e) => setEditForm({ ...editForm, locationOfDeathLat: e.target.value })}
+                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
+                            placeholder="Latitude (e.g., 31.5)"
+                            min="-90"
+                            max="90"
+                          />
+                        </div>
+                        <div>
+                          <input
+                            type="number"
+                            step="any"
+                            value={editForm.locationOfDeathLng}
+                            onChange={(e) => setEditForm({ ...editForm, locationOfDeathLng: e.target.value })}
+                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
+                            placeholder="Longitude (e.g., 34.5)"
+                            min="-180"
+                            max="180"
+                          />
+                        </div>
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Obituary
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={editForm.obituary}
+                    onChange={(e) => setEditForm({ ...editForm, obituary: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
+                    placeholder="Additional information or obituary text"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Photo
+                  </label>
+                  <div className="space-y-3">
+                    {editPhotoPreview ? (
+                      <div className="relative inline-block">
+                        <Image 
+                          src={editPhotoPreview} 
+                          alt="Preview" 
+                          width={192}
+                          height={192}
+                          className="w-48 h-48 object-cover rounded-lg border-2 border"
+                          unoptimized
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePhoto(true)}
+                          className="absolute -top-2 -right-2 bg-destructive/50 text-white rounded-full p-1 hover:bg-destructive"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                          onChange={(e) => handlePhotoChange(e, true)}
+                          className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary/5 file:text-primary hover:file:bg-primary/10"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          JPEG, PNG, WebP, or GIF. Max 10MB. Will replace existing photo if approved.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 

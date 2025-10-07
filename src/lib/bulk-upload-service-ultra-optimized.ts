@@ -3,6 +3,137 @@ import { BulkUploadRow } from './csv-utils';
 import { ChangeType, Gender } from '@prisma/client';
 import { uploadToBlob } from './blob-storage';
 
+/**
+ * ==================================================================================
+ * CONFIGURATION - Batch Sizes for Large Dataset Operations
+ * ==================================================================================
+ * 
+ * These constants control how large CSV uploads are processed in batches to avoid
+ * hitting PostgreSQL and Prisma limits.
+ * 
+ * IMPORTANT LIMITS:
+ * - PostgreSQL: Max 32,767 bind variables per query (e.g., WHERE id IN (...))
+ * - Prisma: Recommended max ~10,000 records per createMany/updateMany operation
+ * - Next.js: API route timeout (see next.config.js maxDuration settings)
+ * 
+ * Adjust these values based on your database performance and record complexity.
+ */
+
+/**
+ * SELECT Query Batch Size
+ * Used for: Fetching existing persons by external IDs
+ * Limit reason: PostgreSQL bind variable limit (32,767)
+ */
+const MAX_BATCH_SIZE = 10000;
+
+/**
+ * INSERT Operation Batch Size
+ * Used for: createMany() and createManyAndReturn() operations
+ * Limit reason: Balance between performance and memory usage
+ */
+const INSERT_BATCH_SIZE = 5000;
+
+/**
+ * UPDATE Operation Batch Size
+ * Used for: Updating existing person records in transactions
+ * Limit reason: Smaller batches to avoid transaction timeouts
+ */
+const UPDATE_BATCH_SIZE = 100;
+
+/**
+ * DELETE Operation Batch Size
+ * Used for: Soft-deleting persons (isDeleted = true) in transactions
+ * Limit reason: Smaller batches to avoid transaction timeouts
+ */
+const DELETE_BATCH_SIZE = 100;
+
+/**
+ * Helper function to batch large arrays and query in chunks
+ * This prevents hitting PostgreSQL's 32767 bind variable limit
+ */
+async function fetchPersonsInBatches(externalIds: string[]) {
+  if (externalIds.length <= MAX_BATCH_SIZE) {
+    // No batching needed
+    return await prisma.person.findMany({
+      where: { 
+        externalId: { in: externalIds },
+        isDeleted: false 
+      },
+      select: { externalId: true, name: true, nameEnglish: true, gender: true, dateOfBirth: true },
+    });
+  }
+
+  // Batch the query
+  const results = [];
+  for (let i = 0; i < externalIds.length; i += MAX_BATCH_SIZE) {
+    const batch = externalIds.slice(i, i + MAX_BATCH_SIZE);
+    const batchResults = await prisma.person.findMany({
+      where: { 
+        externalId: { in: batch },
+        isDeleted: false 
+      },
+      select: { externalId: true, name: true, nameEnglish: true, gender: true, dateOfBirth: true },
+    });
+    results.push(...batchResults);
+    console.log(`  Fetched batch ${Math.floor(i / MAX_BATCH_SIZE) + 1} (${batchResults.length} records)`);
+  }
+  return results;
+}
+
+/**
+ * Helper function to batch large arrays and query in chunks (for full person data)
+ */
+async function fetchFullPersonsInBatches(externalIds: string[]) {
+  if (externalIds.length <= MAX_BATCH_SIZE) {
+    // No batching needed
+    return await prisma.person.findMany({
+      where: { 
+        externalId: { in: externalIds },
+        isDeleted: false 
+      },
+      select: {
+        id: true,
+        externalId: true,
+        name: true,
+        nameEnglish: true,
+        gender: true,
+        dateOfBirth: true,
+        dateOfDeath: true,
+        locationOfDeathLat: true,
+        locationOfDeathLng: true,
+        obituary: true,
+      },
+    });
+  }
+
+  // Batch the query
+  const results = [];
+  for (let i = 0; i < externalIds.length; i += MAX_BATCH_SIZE) {
+    const batch = externalIds.slice(i, i + MAX_BATCH_SIZE);
+    const batchResults = await prisma.person.findMany({
+      where: { 
+        externalId: { in: batch },
+        isDeleted: false 
+      },
+      select: {
+        id: true,
+        externalId: true,
+        name: true,
+        nameEnglish: true,
+        gender: true,
+        dateOfBirth: true,
+        dateOfDeath: true,
+        locationOfDeathLat: true,
+        locationOfDeathLng: true,
+        obituary: true,
+      },
+    });
+    results.push(...batchResults);
+    console.log(`  Fetched batch ${Math.floor(i / MAX_BATCH_SIZE) + 1} (${batchResults.length} records)`);
+  }
+  return results;
+}
+
 // Type for existing Person records fetched from database
 interface ExistingPerson {
   id: string;
@@ -51,13 +182,10 @@ export async function simulateBulkUpload(rows: BulkUploadRow[]): Promise<Simulat
   const incomingIds = rows.map(r => r.external_id);
   const incomingIdsSet = new Set(incomingIds);
   
-  const matchingPersons = await prisma.person.findMany({
-    where: { 
-      externalId: { in: incomingIds },
-      isDeleted: false 
-    },
-    select: { externalId: true, name: true, nameEnglish: true, gender: true, dateOfBirth: true },
-  });
+  console.log(`  Simulating bulk upload with ${rows.length} rows...`);
+  
+  // Use batched query to avoid PostgreSQL bind variable limit (32767)
+  const matchingPersons = await fetchPersonsInBatches(incomingIds);
   
   const existingMap = new Map(matchingPersons.map(p => [p.externalId, p]));
   
@@ -162,25 +290,10 @@ export async function applyBulkUpload(
   const incomingIds = rows.map(r => r.external_id);
   const incomingIdsSet = new Set(incomingIds);
   
-  // Fetch existing data
-  const matchingPersons = await prisma.person.findMany({
-    where: { 
-      externalId: { in: incomingIds },
-      isDeleted: false 
-    },
-    select: {
-      id: true,
-      externalId: true,
-      name: true,
-      nameEnglish: true,
-      gender: true,
-      dateOfBirth: true,
-      dateOfDeath: true,
-      locationOfDeathLat: true,
-      locationOfDeathLng: true,
-      obituary: true,
-    },
-  });
+  console.log(`  Applying bulk upload with ${rows.length} rows...`);
+  
+  // Fetch existing data - use batched query to avoid PostgreSQL bind variable limit (32767)
+  const matchingPersons = await fetchFullPersonsInBatches(incomingIds);
   
   const existingMap = new Map(matchingPersons.map(p => [p.externalId, p]));
   
@@ -245,55 +358,72 @@ export async function applyBulkUpload(
   
   console.log(`  Bulk operations: ${toInsert.length} inserts, ${toUpdate.length} updates`);
   
-  // BULK INSERT - This is MUCH faster!
+  // BULK INSERT - Batched to handle large datasets
   if (toInsert.length > 0) {
-    // Insert persons in bulk
-    const insertedPersons = await prisma.person.createManyAndReturn({
-      data: toInsert.map(row => ({
-        externalId: row.external_id,
-        name: row.name,
-        nameEnglish: row.name_english,
-        gender: row.gender,
-        dateOfBirth: row.date_of_birth ? new Date(row.date_of_birth) : null,
-      })),
-    });
+    const allInsertedPersons = [];
     
-    // Create versions in bulk
-    await prisma.personVersion.createMany({
-      data: insertedPersons.map(person => ({
-        personId: person.id,
-        externalId: person.externalId,
-        name: person.name,
-        nameEnglish: person.nameEnglish,
-        gender: person.gender,
-        dateOfBirth: person.dateOfBirth,
-        versionNumber: 1,
-        sourceId: changeSource.id,
-        changeType: ChangeType.INSERT,
-      })),
-    });
+    for (let i = 0; i < toInsert.length; i += INSERT_BATCH_SIZE) {
+      const batch = toInsert.slice(i, Math.min(i + INSERT_BATCH_SIZE, toInsert.length));
+      
+      // Insert persons in bulk (batch)
+      const insertedPersons = await prisma.person.createManyAndReturn({
+        data: batch.map(row => ({
+          externalId: row.external_id,
+          name: row.name,
+          nameEnglish: row.name_english,
+          gender: row.gender,
+          dateOfBirth: row.date_of_birth ? new Date(row.date_of_birth) : null,
+          confirmedByMoh: true, // Bulk uploads are from MoH
+        })),
+      });
+      
+      allInsertedPersons.push(...insertedPersons);
+      
+      // Create versions in bulk (batch)
+      await prisma.personVersion.createMany({
+        data: insertedPersons.map(person => ({
+          personId: person.id,
+          externalId: person.externalId,
+          name: person.name,
+          nameEnglish: person.nameEnglish,
+          gender: person.gender,
+          dateOfBirth: person.dateOfBirth,
+          confirmedByMoh: true, // Bulk uploads are from MoH
+          versionNumber: 1,
+          sourceId: changeSource.id,
+          changeType: ChangeType.INSERT,
+        })),
+      });
+      
+      console.log(`  ✓ Inserted batch ${Math.floor(i / INSERT_BATCH_SIZE) + 1}: ${insertedPersons.length} persons (total: ${allInsertedPersons.length}/${toInsert.length})`);
+    }
     
-    console.log(`  ✓ Bulk inserted ${toInsert.length} persons`);
+    console.log(`  ✓ Bulk inserted ${toInsert.length} persons in ${Math.ceil(toInsert.length / INSERT_BATCH_SIZE)} batches`);
   }
   
   // OPTIMIZED BATCH UPDATES - Fetch all latest versions first, then batch operations
   if (toUpdate.length > 0) {
-    // Step 1: Get all latest version numbers in ONE query (much faster!)
+    // Step 1: Get all latest version numbers - batched to avoid bind variable limit
     const personIds = toUpdate.map(u => u.existing.id);
-    const latestVersions = await prisma.personVersion.groupBy({
-      by: ['personId'],
-      where: { personId: { in: personIds } },
-      _max: { versionNumber: true },
-    });
+    const versionMap = new Map<string, number>();
     
-    const versionMap = new Map(
-      latestVersions.map(v => [v.personId, v._max.versionNumber || 0])
-    );
+    // Fetch version numbers in batches
+    for (let i = 0; i < personIds.length; i += MAX_BATCH_SIZE) {
+      const batch = personIds.slice(i, i + MAX_BATCH_SIZE);
+      const latestVersions = await prisma.personVersion.groupBy({
+        by: ['personId'],
+        where: { personId: { in: batch } },
+        _max: { versionNumber: true },
+      });
+      
+      latestVersions.forEach(v => {
+        versionMap.set(v.personId, v._max.versionNumber || 0);
+      });
+    }
     
     console.log(`  Fetched latest versions for ${toUpdate.length} persons`);
     
     // Step 2: Process updates in batches
-    const UPDATE_BATCH_SIZE = 100; // Larger batches since we have version numbers
     for (let i = 0; i < toUpdate.length; i += UPDATE_BATCH_SIZE) {
       const batch = toUpdate.slice(i, Math.min(i + UPDATE_BATCH_SIZE, toUpdate.length));
       
@@ -315,6 +445,7 @@ export async function applyBulkUpload(
                 nameEnglish: row.name_english,
                 gender: row.gender,
                 dateOfBirth: incomingDate,
+                confirmedByMoh: true, // Bulk uploads are from MoH
               },
             })
           );
@@ -331,6 +462,7 @@ export async function applyBulkUpload(
             locationOfDeathLat: existing.locationOfDeathLat,
             locationOfDeathLng: existing.locationOfDeathLng,
             obituary: existing.obituary,
+            confirmedByMoh: true, // Bulk uploads are from MoH
             versionNumber: nextVersionNumber,
             sourceId: changeSource.id,
             changeType: ChangeType.UPDATE,
@@ -360,22 +492,27 @@ export async function applyBulkUpload(
   const toDelete = allExistingPersons.filter(existing => !incomingIdsSet.has(existing.externalId));
   
   if (toDelete.length > 0) {
-    // Step 1: Get all latest version numbers in ONE query
+    // Step 1: Get all latest version numbers - batched to avoid bind variable limit
     const deleteIds = toDelete.map(d => d.id);
-    const latestDeleteVersions = await prisma.personVersion.groupBy({
-      by: ['personId'],
-      where: { personId: { in: deleteIds } },
-      _max: { versionNumber: true },
-    });
+    const deleteVersionMap = new Map<string, number>();
     
-    const deleteVersionMap = new Map(
-      latestDeleteVersions.map(v => [v.personId, v._max.versionNumber || 0])
-    );
+    // Fetch version numbers in batches
+    for (let i = 0; i < deleteIds.length; i += MAX_BATCH_SIZE) {
+      const batch = deleteIds.slice(i, i + MAX_BATCH_SIZE);
+      const latestDeleteVersions = await prisma.personVersion.groupBy({
+        by: ['personId'],
+        where: { personId: { in: batch } },
+        _max: { versionNumber: true },
+      });
+      
+      latestDeleteVersions.forEach(v => {
+        deleteVersionMap.set(v.personId, v._max.versionNumber || 0);
+      });
+    }
     
     console.log(`  Fetched latest versions for ${toDelete.length} persons to delete`);
     
     // Step 2: Process deletes in batches
-    const DELETE_BATCH_SIZE = 100;
     for (let i = 0; i < toDelete.length; i += DELETE_BATCH_SIZE) {
       const batch = toDelete.slice(i, Math.min(i + DELETE_BATCH_SIZE, toDelete.length));
       
@@ -407,6 +544,7 @@ export async function applyBulkUpload(
             locationOfDeathLat: existing.locationOfDeathLat,
             locationOfDeathLng: existing.locationOfDeathLng,
             obituary: existing.obituary,
+            confirmedByMoh: true, // Bulk uploads are from MoH
             versionNumber: nextVersionNumber,
             sourceId: changeSource.id,
             changeType: ChangeType.DELETE,

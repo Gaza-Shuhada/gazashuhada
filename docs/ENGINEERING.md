@@ -4,6 +4,17 @@
 
 ---
 
+## 📚 Documentation
+
+**Essential Reading:**
+- **[DATABASE.md](./DATABASE.md)** - Complete database schema, design patterns, and lifecycle explanations
+- **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)** - API endpoint reference
+- **[PROJECT.md](./PROJECT.md)** - Project overview, features, and setup
+
+**This document:** High-level architecture, tech stack, and configuration.
+
+---
+
 ## 🏗️ Tech Stack
 
 **Core Framework**:
@@ -165,6 +176,131 @@ BLOB_READ_WRITE_TOKEN="vercel_blob_rw_..."
 
 ---
 
+## ⚙️ Configuration Limits & Performance Settings
+
+### Next.js Configuration
+
+**File**: `next.config.js`
+
+```javascript
+{
+  // API route body size limits (for large CSV uploads)
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb'  // Increased from default 1mb
+    }
+  }
+}
+```
+
+### API Route Configuration (Route Segment Config)
+
+Next.js App Router allows per-route configuration via exports. We use these for bulk upload routes to handle large files.
+
+**Files**:
+- `src/app/api/admin/bulk-upload/simulate/route.ts`
+- `src/app/api/admin/bulk-upload/apply/route.ts`
+
+#### Route Exports (Non-Vanilla Next.js)
+
+**1. `export const runtime = 'nodejs'`**
+- **Why**: Required for processing large files and database operations
+- **Alternative**: `'edge'` runtime has memory/time constraints unsuitable for bulk processing
+- **Default**: Next.js defaults to `'nodejs'` but we make it explicit
+
+**2. `export const maxDuration`**
+- **Simulate route**: `60` seconds
+  - Reads 30K+ records from CSV
+  - Queries database in batches to compare data
+  - Default Vercel timeout: 10s (Hobby), 60s (Pro)
+- **Apply route**: `300` seconds (5 minutes)
+  - Parses CSV (5-10s)
+  - Fetches existing data in batches (20-30s)
+  - Uploads to Vercel Blob (10-20s)
+  - Bulk inserts/updates/deletes in batches (60-120s)
+  - Creates audit logs (5-10s)
+  - Total: ~2-3 min for large files, 5min buffer for safety
+
+**3. `export const dynamic = 'force-dynamic'`**
+- **Why**: Each request is unique (different files, different DB state)
+- **Prevents**: Next.js from caching or prerendering this route
+- **Alternative**: `'auto'` (default) might cache responses inappropriately
+- **Use case**: Essential for routes that modify data or depend on real-time state
+
+**Example**:
+
+```typescript
+// src/app/api/admin/bulk-upload/apply/route.ts
+export const runtime = 'nodejs';      // Use Node.js runtime
+export const maxDuration = 300;       // 5 minute timeout
+export const dynamic = 'force-dynamic'; // No caching
+
+export async function POST(request: NextRequest) {
+  // ... handle large CSV upload
+}
+```
+
+See route files for detailed inline documentation of each setting.
+
+### Database & Prisma Limits
+
+**PostgreSQL Constraints**:
+- **Max bind variables per query**: 32,767 (hard limit)
+- **Recommended batch size**: 10,000 for `WHERE id IN (...)` queries
+
+**Prisma Transaction Settings**:
+```typescript
+prisma.$transaction(async (tx) => {
+  // ... operations
+}, {
+  maxWait: 90000,   // 90 seconds max wait to acquire connection
+  timeout: 90000,   // 90 seconds max transaction time
+});
+```
+
+### Bulk Upload Batch Sizes
+
+**File**: `src/lib/bulk-upload-service-ultra-optimized.ts`
+
+All batch size constants are defined at the top of this file:
+
+```typescript
+// SELECT queries (fetching data)
+const MAX_BATCH_SIZE = 10000;     // PostgreSQL bind variable limit
+
+// INSERT operations
+const INSERT_BATCH_SIZE = 5000;   // Balance performance & memory
+
+// UPDATE operations
+const UPDATE_BATCH_SIZE = 100;    // Smaller for transaction safety
+
+// DELETE operations
+const DELETE_BATCH_SIZE = 100;    // Smaller for transaction safety
+```
+
+**Why different sizes?**
+- **SELECT (10K)**: Fast reads, only 1 bind variable per ID
+- **INSERT (5K)**: Bulk inserts use multiple fields per record
+- **UPDATE/DELETE (100)**: Run in transactions with multiple ops per record
+
+**Example**: A 32,768 record CSV file would be processed as:
+- 4 fetch batches (10K each)
+- 7 insert batches (5K each)
+- ~328 update batches (100 each, if all records need updating)
+
+### File Upload Limits
+
+**Vercel Blob Storage**:
+- **Max file size**: 500MB per file
+- **Files are stored with SHA-256 hash** for deduplication
+- **Preview generation**: First 20 lines for CSV files
+
+**Supported file types**:
+- CSV uploads: `text/csv` (bulk uploads)
+- Image uploads: `image/jpeg`, `image/png`, `image/webp` (community submissions)
+
+---
+
 ## 💻 Development Commands
 
 ```bash
@@ -289,79 +425,25 @@ External Sources (CSV) → Admin Tools → PostgreSQL → Public App → Communi
 
 ---
 
-## Database Schema (Key Tables)
+## Database Schema
 
-Source of truth: `prisma/schema.prisma`
+**📖 See [DATABASE.md](./DATABASE.md) for complete schema documentation.**
 
-### person
-- id (UUID, PK)
-- external_id (string, unique, not null)
-- name, gender, date_of_birth
-- date_of_death (date, nullable)
-- location_of_death_lat (float, nullable) — Latitude (-90..90)
-- location_of_death_lng (float, nullable) — Longitude (-180..180)
-- obituary (text, nullable)
-- photo_url (string, nullable) — Vercel Blob URL (max 2048x2048px)
-- confirmed_by_moh (boolean, default false)
-- is_deleted (boolean, default false)
-- created_at, updated_at
+**Source of truth:** `prisma/schema.prisma`
 
-### person_version
-- id (UUID, PK), person_id (FK)
-- external_id, name, gender, date_of_birth
-- date_of_death (date, nullable)
-- location_of_death_lat (float, nullable)
-- location_of_death_lng (float, nullable)
-- obituary (text, nullable)
-- photo_url (string, nullable)
-- confirmed_by_moh (boolean, default false)
-- version_number (int)
-- source_id (FK → change_source.id)
-- change_type (enum: INSERT, UPDATE, DELETE)
-- is_deleted (boolean, default false)
-- created_at
-- Unique: (person_id, version_number)
-- Indexes: person_id, source_id, (source_id, change_type), created_at
+**Key tables:**
+- `Person` - Current state snapshot
+- `PersonVersion` - Immutable version history
+- `ChangeSource` - Provenance tracking
+- `BulkUpload` - MoH CSV import metadata
+- `CommunitySubmission` - Two-phase moderation queue
+- `AuditLog` - High-level audit trail
 
-### change_source
-- id (UUID, PK)
-- type (enum: BULK_UPLOAD, COMMUNITY_SUBMISSION, MANUAL_EDIT)
-- description (text)
-- created_at
-
-Note: change_type is per version record, not at source.
-
-### bulk_upload
-- id (UUID, PK)
-- change_source_id (FK, UNIQUE)
-- filename (string)
-- label (string, max 200)
-- date_released (timestamp)
-- raw_file (bytes)
-- uploaded_at (timestamp)
-
-### community_submission
-- id (UUID, PK)
-- type (enum: NEW_RECORD, EDIT)
-- base_version_id (FK → person_version.id, nullable)
-- person_id (FK → person.id, nullable)
-- proposed_payload (JSONB)
-- reason (text, nullable)
-- submitted_by (string, Clerk user ID)
-- status (enum: PENDING, APPROVED, REJECTED, SUPERSEDED)
-- created_at
-- approved_by, approved_at, decision_action, decision_note
-- approved_change_source_id (FK → change_source.id, nullable)
-- applied_version_id (FK → person_version.id, nullable)
-
-### audit_log
-- id (UUID, PK)
-- user_id, user_email (nullable)
-- action, resource_type, resource_id (nullable)
-- description, metadata (JSONB, nullable)
-- ip_address (nullable)
-- created_at
-- Indexes: (user_id, created_at), (resource_type, resource_id), created_at, action
+**Core design patterns:**
+- Event sourcing with version history
+- Two-phase moderation (JSON → approval → Person/Version)
+- Conflict detection via `baseVersionId`
+- Soft deletes for audit preservation
 
 ---
 
@@ -373,18 +455,27 @@ Note: change_type is per version record, not at source.
 3. Simulation shows all deletions, all updates (diff), sample inserts
 4. Apply creates change_source, bulk_upload, person_version rows; updates person snapshot
 
-Safety:
+**Safety:**
 - CSV is the full state; missing IDs are soft-deleted
-- Add an operator confirmation when deletions exceed a threshold (e.g., require typing the label)
+- Operator confirmation required for large deletion counts
 
-Rollback:
+**Rollback:**
 - LIFO constraint when later versions exist
-- Re-verify conflicts at execution time and run in a single DB transaction
+- Re-verify conflicts at execution time
+- Single DB transaction for atomicity
 
 ### Community Submissions
-- NEW_RECORD: full payload of required fields (+ optional death/photo), `confirmed_by_moh=false`
-- EDIT: only `date_of_death`, `location_of_death_lat`, `location_of_death_lng`, `obituary`, `photo_url` (and when photos are updated, both `photo_url_original` and `photo_url_thumb` are derived from the upload API response)
-- Moderation: approve (create version), reject, or supersede
+**NEW_RECORD flow:**
+- Phase 1 (submission): Data stored as JSON in `CommunitySubmission` table
+- Phase 2 (approval): Creates `Person` + `PersonVersion` (v1) + `ChangeSource`
+- `confirmedByMoh = false` (community-sourced, not official)
+
+**EDIT flow:**
+- User edits based on specific version (`baseVersionId`)
+- System checks for staleness (has someone else edited since?)
+- If approved: Updates `Person`, creates new `PersonVersion` (v N+1)
+
+**📖 See [DATABASE.md](./DATABASE.md#community-submission-lifecycle) for detailed flow diagrams.**
 
 ---
 

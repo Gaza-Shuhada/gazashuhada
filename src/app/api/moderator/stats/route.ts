@@ -9,47 +9,37 @@ export async function GET() {
 
     // Get statistics
     const [
-      totalPersons,
-      totalDeceased,
-      totalAlive,
-      recentUploads,
-      recordsReportedByCommunity,
-      recordsDeletedByMoH,
-      recordsUpdatedByCommunity,
-      recordsUpdatedByMoH
+      totalRecords,
+      recordsWithPhoto,
+      totalBulkUploads,
+      pendingSubmissions,
+      communityContributions,
+      mohUpdates
     ] = await Promise.all([
-      // Total persons (not deleted)
+      // Total records (not deleted)
       prisma.person.count({
         where: { isDeleted: false }
       }),
       
-      // Total deceased (have date of death)
+      // Records with photos
       prisma.person.count({
         where: { 
           isDeleted: false,
-          dateOfDeath: { not: null }
+          photoUrlThumb: { not: null }
         }
       }),
       
-      // Total alive (no date of death)
-      prisma.person.count({
+      // Total bulk uploads
+      prisma.bulkUpload.count(),
+
+      // Pending community submissions
+      prisma.communitySubmission.count({
         where: { 
-          isDeleted: false,
-          dateOfDeath: null
-        }
-      }),
-      
-      // Recent uploads (last 7 days)
-      prisma.person.count({
-        where: {
-          isDeleted: false,
-          createdAt: {
-            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-          }
+          status: 'PENDING'
         }
       }),
 
-      // Records reported by community (not confirmed by MoH)
+      // Community contributions (records not confirmed by MoH)
       prisma.person.count({
         where: {
           confirmedByMoh: false,
@@ -57,60 +47,22 @@ export async function GET() {
         }
       }),
 
-      // Records deleted by MoH (soft deleted)
+      // MoH updates (records confirmed by MoH)
       prisma.person.count({
         where: {
-          isDeleted: true
+          confirmedByMoh: true,
+          isDeleted: false
         }
-      }),
-
-      // Count persons that have at least one UPDATE version from COMMUNITY_SUBMISSION
-      (async () => {
-        const communityUpdateVersions = await prisma.personVersion.findMany({
-          where: {
-            changeType: 'UPDATE',
-            source: {
-              type: 'COMMUNITY_SUBMISSION'
-            }
-          },
-          select: {
-            personId: true
-          },
-          distinct: ['personId']
-        });
-        return communityUpdateVersions.length;
-      })(),
-
-      // Count persons that have at least one UPDATE version from BULK_UPLOAD
-      (async () => {
-        const mohUpdateVersions = await prisma.personVersion.findMany({
-          where: {
-            changeType: 'UPDATE',
-            source: {
-              type: 'BULK_UPLOAD'
-            }
-          },
-          select: {
-            personId: true
-          },
-          distinct: ['personId']
-        });
-        return mohUpdateVersions.length;
-      })()
+      })
     ]);
 
     return NextResponse.json({
-      success: true,
-      data: {
-        totalPersons,
-        totalDeceased,
-        totalAlive,
-        recentUploads,
-        recordsReportedByCommunity,
-        recordsDeletedByMoH,
-        recordsUpdatedByCommunity,
-        recordsUpdatedByMoH
-      }
+      totalRecords,
+      recordsWithPhoto,
+      totalBulkUploads,
+      pendingSubmissions,
+      communityContributions,
+      mohUpdates
     });
 
   } catch (error) {

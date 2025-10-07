@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 
 interface BulkUpload {
   id: string;
@@ -56,8 +57,11 @@ export default function BulkUploadsClient() {
   const [simulating, setSimulating] = useState(false);
   const [applying, setApplying] = useState(false);
   const [rollingBack, setRollingBack] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  
+  // INLINE ERROR/SUCCESS STATE (Legacy - kept for easy revert)
+  // Uncomment these and the render code below to return to inline error/success messages
+  // const [error, setError] = useState<string | null>(null);
+  // const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUploads();
@@ -84,17 +88,26 @@ export default function BulkUploadsClient() {
     if (file) {
       setSelectedFile(file);
       setSimulation(null);
-      setError(null);
     }
   };
 
   const handleSimulate = async () => {
     if (!selectedFile) return;
-    if (!label.trim()) { setError('Please provide a label for this upload'); return; }
-    if (!dateReleased.trim()) { setError('Please provide the date when this data was released'); return; }
+    if (!label.trim()) { 
+      toast.error('Please provide a label for this upload', { duration: Infinity });
+      return; 
+    }
+    if (!dateReleased.trim()) { 
+      toast.error('Please provide the date when this data was released', { duration: Infinity });
+      return; 
+    }
 
     setSimulating(true);
-    setError(null);
+    const simulateToast = toast.loading('Simulating upload...', {
+      description: 'Analyzing CSV and comparing with database',
+      duration: Infinity,
+    });
+    
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
@@ -102,13 +115,25 @@ export default function BulkUploadsClient() {
       const text = await response.text();
       const data = text ? JSON.parse(text) : {};
       if (!response.ok) {
-        setError(data.error || 'Simulation failed');
+        toast.error(data.error || 'Simulation failed', { 
+          id: simulateToast,
+          duration: Infinity,
+        });
         setSimulation(null);
       } else {
         setSimulation(data.simulation);
+        const { summary } = data.simulation;
+        toast.success('Simulation complete!', { 
+          id: simulateToast,
+          description: `${summary.inserts} inserts, ${summary.updates} updates, ${summary.deletes} deletes`,
+          duration: Infinity,
+        });
       }
     } catch (err) {
-      setError('Failed to simulate upload');
+      toast.error('Failed to simulate upload', { 
+        id: simulateToast,
+        duration: Infinity,
+      });
       console.error(err);
     } finally {
       setSimulating(false);
@@ -117,11 +142,21 @@ export default function BulkUploadsClient() {
 
   const handleApply = async () => {
     if (!selectedFile) return;
-    if (!label.trim()) { setError('Please provide a label for this upload'); return; }
-    if (!dateReleased.trim()) { setError('Please provide the date when this data was released'); return; }
+    if (!label.trim()) { 
+      toast.error('Please provide a label for this upload', { duration: Infinity });
+      return; 
+    }
+    if (!dateReleased.trim()) { 
+      toast.error('Please provide the date when this data was released', { duration: Infinity });
+      return; 
+    }
 
     setApplying(true);
-    setError(null);
+    const applyToast = toast.loading('Applying bulk upload...', {
+      description: 'This may take several minutes for large files',
+      duration: Infinity,
+    });
+    
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
@@ -131,17 +166,29 @@ export default function BulkUploadsClient() {
       const text = await response.text();
       const data = text ? JSON.parse(text) : {};
       if (!response.ok) {
-        setError(data.error || 'Apply failed');
+        toast.error(data.error || 'Apply failed', { 
+          id: applyToast,
+          duration: Infinity,
+        });
       } else {
         setSelectedFile(null);
         setLabel('');
         setDateReleased('');
         setSimulation(null);
         fetchUploads().catch(err => console.error('Failed to refresh uploads:', err));
-        alert('Bulk upload applied successfully!');
+        toast.success('Bulk upload applied successfully!', { 
+          id: applyToast,
+          description: `${data.uploadId ? 'Upload ID: ' + data.uploadId : ''}`,
+          duration: Infinity,
+        });
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } catch (err) {
-      setError('Failed to apply upload');
+      toast.error('Failed to apply upload', { 
+        id: applyToast,
+        duration: Infinity,
+      });
       console.error(err);
     } finally {
       setApplying(false);
@@ -153,28 +200,42 @@ export default function BulkUploadsClient() {
     setLabel('');
     setDateReleased('');
     setSimulation(null);
-    setError(null);
   };
 
   const handleRollback = async (uploadId: string, filename: string) => {
     if (!confirm(`Are you sure you want to rollback the upload "${filename}"?\n\nThis will permanently delete all versions created by this upload and remove it from the history.`)) {
       return;
     }
+    
+    setRollingBack(uploadId);
+    const rollbackToast = toast.loading(`Rolling back "${filename}"...`, {
+      duration: Infinity,
+    });
+    
     try {
-      setRollingBack(uploadId);
-      setError(null);
-      setSuccess(null);
       const response = await fetch(`/api/admin/bulk-upload/${uploadId}/rollback`, { method: 'POST' });
       const text = await response.text();
       const data = text ? JSON.parse(text) : {};
       if (data.success) {
-        setSuccess(`Successfully rolled back and removed upload "${filename}". Removed ${data.stats.inserts} inserts, ${data.stats.updates} updates, and ${data.stats.deletes} deletions.`);
+        toast.success(`Successfully rolled back "${filename}"`, {
+          id: rollbackToast,
+          description: `Removed ${data.stats.inserts} inserts, ${data.stats.updates} updates, ${data.stats.deletes} deletions`,
+          duration: Infinity,
+        });
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         fetchUploads().catch(err => console.error('Failed to refresh uploads:', err));
       } else {
-        setError(data.error || 'Failed to rollback upload');
+        toast.error(data.error || 'Failed to rollback upload', { 
+          id: rollbackToast,
+          duration: Infinity,
+        });
       }
     } catch (err) {
-      setError('An error occurred while rolling back the upload');
+      toast.error('An error occurred while rolling back the upload', { 
+        id: rollbackToast,
+        duration: Infinity,
+      });
       console.error('Rollback error:', err);
     } finally {
       setRollingBack(null);
@@ -198,34 +259,44 @@ export default function BulkUploadsClient() {
           <p className="text-muted-foreground mt-2">Upload and manage Ministry of Health CSV files</p>
         </div>
 
-        {success && (
+        {/* LEGACY: Inline success banner - replaced with toast notifications */}
+        {/* Uncomment to revert to inline success messages */}
+        {/* {success && (
           <div className="mb-4 bg-accent border text-accent-foreground px-4 py-3 rounded relative">
             {success}
             <button onClick={() => setSuccess(null)} className="absolute top-0 right-0 px-4 py-3">
               <span className="text-2xl">&times;</span>
             </button>
           </div>
-        )}
+        )} */}
 
         <div className="bg-card rounded-lg border p-6 mb-8">
           <h2 className="text-xl font-semibold mb-4">New Bulk Upload</h2>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">Upload CSV File</label>
-              <input type="file" accept=".csv" onChange={handleFileChange} className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary/5 file:text-primary hover:file:bg-primary/10"/>
+              <input type="file" accept=".csv" onChange={handleFileChange} className="w-full md:w-1/2 text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary/5 file:text-primary hover:file:bg-primary/10"/>
               <p className="mt-2 text-sm text-muted-foreground">CSV must contain only: external_id, name, gender, date_of_birth</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">Label <span className="text-destructive">*</span></label>
-              <input type="text" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g., Q4 2024 Update, January Corrections, etc." className="block w-full px-3 py-2 border rounded-md shadow-sm focus:ring-ring focus:border-primary sm:text-sm text-foreground placeholder-muted-foreground" maxLength={200} required/>
+              <input type="text" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g., Q4 2024 Update, January Corrections, etc." className="w-full md:w-1/2 px-3 py-2 border rounded-md shadow-sm focus:ring-ring focus:border-primary sm:text-sm text-foreground placeholder-muted-foreground" maxLength={200} required/>
               <p className="mt-1 text-sm text-muted-foreground">Provide a description to identify this upload (required)</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">Date Released <span className="text-destructive">*</span></label>
-              <input type="date" value={dateReleased} onChange={(e) => setDateReleased(e.target.value)} className="block w-full px-3 py-2 border rounded-md shadow-sm focus:ring-ring focus:border-primary sm:text-sm text-foreground" required/>
+              <input type="date" value={dateReleased} onChange={(e) => setDateReleased(e.target.value)} className="w-full md:w-1/2 px-3 py-2 border rounded-md shadow-sm focus:ring-ring focus:border-primary sm:text-sm text-foreground" required/>
               <p className="mt-1 text-sm text-muted-foreground">When was this source data published/released? (required)</p>
             </div>
-            {error && (<div className="bg-destructive/5 border border-destructive/20 text-destructive px-4 py-3 rounded">{error}</div>)}
+            {/* LEGACY: Inline error box - replaced with toast notifications */}
+            {/* Uncomment to revert to inline error messages: */}
+            {/* 
+            {error && (
+              <div className="bg-destructive/5 border border-destructive/20 text-destructive px-4 py-3 rounded">
+                {error}
+              </div>
+            )}
+            */}
             {selectedFile && !simulation && (
               <button onClick={handleSimulate} disabled={simulating} className="bg-primary text-white px-6 py-2 rounded-md hover:bg-primary disabled:opacity-50">
                 {simulating ? 'Simulating...' : 'Simulate Upload'}
