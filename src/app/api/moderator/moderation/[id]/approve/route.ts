@@ -7,6 +7,7 @@ import { createAuditLogWithUser } from '@/lib/audit-log';
 type ProposedNewRecordPayload = {
   externalId: string;
   name: string;
+  nameEnglish?: string;
   gender: 'MALE' | 'FEMALE' | 'OTHER';
   dateOfBirth: string;
   dateOfDeath?: string;
@@ -75,47 +76,88 @@ export async function POST(
       // Check if person with this external ID already exists
       const existingPerson = await prisma.person.findUnique({
         where: { externalId: payload.externalId },
+        include: {
+          versions: {
+            orderBy: { versionNumber: 'desc' },
+            take: 1,
+          },
+        },
       });
 
-      if (existingPerson) {
+      // If active person exists, reject
+      if (existingPerson && !existingPerson.isDeleted) {
         return NextResponse.json({ 
           error: 'Person with this External ID already exists. Mark as SUPERSEDED instead.' 
         }, { status: 400 });
       }
+
+      // Determine if this is an undelete operation
+      const isUndeleteOperation = existingPerson && existingPerson.isDeleted;
 
       await prisma.$transaction(async (tx) => {
         // Create change source
         const changeSource = await tx.changeSource.create({
           data: {
             type: 'COMMUNITY_SUBMISSION',
-            description: `Community-submitted new record: ${payload.name} (${payload.externalId})`,
+            description: isUndeleteOperation 
+              ? `Community-submitted undelete: ${payload.name} (${payload.externalId})`
+              : `Community-submitted new record: ${payload.name} (${payload.externalId})`,
           },
         });
 
-        // Create person
-        const person = await tx.person.create({
-          data: {
-            externalId: payload.externalId,
-            name: payload.name,
-            gender: payload.gender as 'MALE' | 'FEMALE' | 'OTHER',
-            dateOfBirth: new Date(payload.dateOfBirth),
-            dateOfDeath: payload.dateOfDeath ? new Date(payload.dateOfDeath) : null,
-            locationOfDeathLat: typeof payload.locationOfDeathLat === 'number' ? payload.locationOfDeathLat : null,
-            locationOfDeathLng: typeof payload.locationOfDeathLng === 'number' ? payload.locationOfDeathLng : null,
-            obituary: payload.obituary || null,
-            photoUrlThumb: payload.photoUrlThumb || null,
-            photoUrlOriginal: payload.photoUrlOriginal || null,
-            confirmedByMoh: false, // Community submissions are not MoH confirmed
-            isDeleted: false,
-          },
-        });
+        let person;
+        let nextVersionNumber = 1;
 
-        // Create first version
+        if (isUndeleteOperation) {
+          // Undelete operation: Update existing deleted person
+          const latestVersion = existingPerson.versions[0];
+          nextVersionNumber = latestVersion ? latestVersion.versionNumber + 1 : 1;
+
+          person = await tx.person.update({
+            where: { id: existingPerson.id },
+            data: {
+              name: payload.name,
+              nameEnglish: payload.nameEnglish || null,
+              gender: payload.gender as 'MALE' | 'FEMALE' | 'OTHER',
+              dateOfBirth: new Date(payload.dateOfBirth),
+              dateOfDeath: payload.dateOfDeath ? new Date(payload.dateOfDeath) : null,
+              locationOfDeathLat: typeof payload.locationOfDeathLat === 'number' ? payload.locationOfDeathLat : null,
+              locationOfDeathLng: typeof payload.locationOfDeathLng === 'number' ? payload.locationOfDeathLng : null,
+              obituary: payload.obituary || null,
+              photoUrlThumb: payload.photoUrlThumb || null,
+              photoUrlOriginal: payload.photoUrlOriginal || null,
+              confirmedByMoh: false, // Community submissions are not MoH confirmed
+              isDeleted: false, // Undelete the record
+            },
+          });
+        } else {
+          // New record: Create person
+          person = await tx.person.create({
+            data: {
+              externalId: payload.externalId,
+              name: payload.name,
+              nameEnglish: payload.nameEnglish || null,
+              gender: payload.gender as 'MALE' | 'FEMALE' | 'OTHER',
+              dateOfBirth: new Date(payload.dateOfBirth),
+              dateOfDeath: payload.dateOfDeath ? new Date(payload.dateOfDeath) : null,
+              locationOfDeathLat: typeof payload.locationOfDeathLat === 'number' ? payload.locationOfDeathLat : null,
+              locationOfDeathLng: typeof payload.locationOfDeathLng === 'number' ? payload.locationOfDeathLng : null,
+              obituary: payload.obituary || null,
+              photoUrlThumb: payload.photoUrlThumb || null,
+              photoUrlOriginal: payload.photoUrlOriginal || null,
+              confirmedByMoh: false, // Community submissions are not MoH confirmed
+              isDeleted: false,
+            },
+          });
+        }
+
+        // Create version (INSERT for new, UPDATE for undelete)
         const version = await tx.personVersion.create({
           data: {
             personId: person.id,
             externalId: person.externalId,
             name: person.name,
+            nameEnglish: person.nameEnglish,
             gender: person.gender as 'MALE' | 'FEMALE' | 'OTHER',
             dateOfBirth: person.dateOfBirth,
             dateOfDeath: person.dateOfDeath,
@@ -125,9 +167,9 @@ export async function POST(
             photoUrlThumb: person.photoUrlThumb,
             photoUrlOriginal: person.photoUrlOriginal,
             confirmedByMoh: false,
-            versionNumber: 1,
+            versionNumber: nextVersionNumber,
             sourceId: changeSource.id,
-            changeType: 'INSERT',
+            changeType: isUndeleteOperation ? 'UPDATE' : 'INSERT', // UPDATE for undelete, INSERT for new
             isDeleted: false,
           },
         });

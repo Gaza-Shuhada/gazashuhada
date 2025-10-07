@@ -44,8 +44,9 @@ const UPDATE_BATCH_SIZE = 100;
  * DELETE Operation Batch Size
  * Used for: Soft-deleting persons (isDeleted = true) in transactions
  * Limit reason: Smaller batches to avoid transaction timeouts
+ * Note: Currently not used as we now mark records as unconfirmed instead of deleting
  */
-const DELETE_BATCH_SIZE = 100;
+// const DELETE_BATCH_SIZE = 100;
 
 /**
  * Helper function to batch large arrays and query in chunks
@@ -191,12 +192,12 @@ export async function simulateBulkUpload(rows: BulkUploadRow[]): Promise<Simulat
   
   const allExistingIds = await prisma.person.findMany({
     where: { isDeleted: false },
-    select: { externalId: true, name: true, nameEnglish: true, gender: true, dateOfBirth: true },
+    select: { externalId: true, name: true, nameEnglish: true, gender: true, dateOfBirth: true, confirmedByMoh: true },
   });
   
   const insertDiffs: DiffItem[] = [];
   const updateDiffs: DiffItem[] = [];
-  const deleteDiffs: DiffItem[] = [];
+  const deleteDiffs: DiffItem[] = []; // Actually "unconfirmed" - records marked as no longer MoH-confirmed
   
   for (const row of rows) {
     const existing = existingMap.get(row.external_id);
@@ -242,11 +243,13 @@ export async function simulateBulkUpload(rows: BulkUploadRow[]): Promise<Simulat
     }
   }
   
+  // Only mark MoH-confirmed records as "deleted" (actually unconfirmed)
+  // Community records (confirmedByMoh = false) are left alone
   for (const existing of allExistingIds) {
-    if (!incomingIdsSet.has(existing.externalId)) {
+    if (!incomingIdsSet.has(existing.externalId) && existing.confirmedByMoh) {
       deleteDiffs.push({
         externalId: existing.externalId,
-        changeType: ChangeType.DELETE,
+        changeType: ChangeType.DELETE, // UI still calls this "delete" but it's really "unconfirm"
         current: {
           name: existing.name,
           nameEnglish: existing.nameEnglish,
@@ -299,7 +302,7 @@ export async function applyBulkUpload(
   
   const allExistingPersons = await prisma.person.findMany({
     where: { isDeleted: false },
-    select: { id: true, externalId: true, name: true, nameEnglish: true, gender: true, dateOfBirth: true, dateOfDeath: true, locationOfDeathLat: true, locationOfDeathLng: true, obituary: true },
+    select: { id: true, externalId: true, name: true, nameEnglish: true, gender: true, dateOfBirth: true, dateOfDeath: true, locationOfDeathLat: true, locationOfDeathLng: true, obituary: true, confirmedByMoh: true },
   });
   
   // Upload file to Blob storage
@@ -488,47 +491,51 @@ export async function applyBulkUpload(
     }
   }
   
-  // OPTIMIZED BATCH DELETES
-  const toDelete = allExistingPersons.filter(existing => !incomingIdsSet.has(existing.externalId));
+  // MARK AS UNCONFIRMED (Previously: DELETE)
+  // Records not in the new MoH upload should have confirmedByMoh set to false
+  // (not deleted, as they may be community submissions or no longer confirmed by MoH)
+  const toUnconfirm = allExistingPersons.filter(existing => 
+    !incomingIdsSet.has(existing.externalId) && existing.confirmedByMoh === true
+  );
   
-  if (toDelete.length > 0) {
+  if (toUnconfirm.length > 0) {
     // Step 1: Get all latest version numbers - batched to avoid bind variable limit
-    const deleteIds = toDelete.map(d => d.id);
-    const deleteVersionMap = new Map<string, number>();
+    const unconfirmIds = toUnconfirm.map(d => d.id);
+    const unconfirmVersionMap = new Map<string, number>();
     
     // Fetch version numbers in batches
-    for (let i = 0; i < deleteIds.length; i += MAX_BATCH_SIZE) {
-      const batch = deleteIds.slice(i, i + MAX_BATCH_SIZE);
-      const latestDeleteVersions = await prisma.personVersion.groupBy({
+    for (let i = 0; i < unconfirmIds.length; i += MAX_BATCH_SIZE) {
+      const batch = unconfirmIds.slice(i, i + MAX_BATCH_SIZE);
+      const latestUnconfirmVersions = await prisma.personVersion.groupBy({
         by: ['personId'],
         where: { personId: { in: batch } },
         _max: { versionNumber: true },
       });
       
-      latestDeleteVersions.forEach(v => {
-        deleteVersionMap.set(v.personId, v._max.versionNumber || 0);
+      latestUnconfirmVersions.forEach(v => {
+        unconfirmVersionMap.set(v.personId, v._max.versionNumber || 0);
       });
     }
     
-    console.log(`  Fetched latest versions for ${toDelete.length} persons to delete`);
+    console.log(`  Fetched latest versions for ${toUnconfirm.length} persons to mark as unconfirmed`);
     
-    // Step 2: Process deletes in batches
-    for (let i = 0; i < toDelete.length; i += DELETE_BATCH_SIZE) {
-      const batch = toDelete.slice(i, Math.min(i + DELETE_BATCH_SIZE, toDelete.length));
+    // Step 2: Process unconfirm operations in batches
+    for (let i = 0; i < toUnconfirm.length; i += UPDATE_BATCH_SIZE) {
+      const batch = toUnconfirm.slice(i, Math.min(i + UPDATE_BATCH_SIZE, toUnconfirm.length));
       
       await prisma.$transaction(async (tx) => {
-        const personDeletes = [];
+        const personUpdates = [];
         const versionCreates = [];
         
         for (const existing of batch) {
-          const currentVersion = deleteVersionMap.get(existing.id) || 0;
+          const currentVersion = unconfirmVersionMap.get(existing.id) || 0;
           const nextVersionNumber = currentVersion + 1;
           
-          // Prepare batch deletes
-          personDeletes.push(
+          // Prepare batch updates: Mark as no longer confirmed by MoH
+          personUpdates.push(
             tx.person.update({
               where: { id: existing.id },
-              data: { isDeleted: true },
+              data: { confirmedByMoh: false },
             })
           );
           
@@ -544,16 +551,16 @@ export async function applyBulkUpload(
             locationOfDeathLat: existing.locationOfDeathLat,
             locationOfDeathLng: existing.locationOfDeathLng,
             obituary: existing.obituary,
-            confirmedByMoh: true, // Bulk uploads are from MoH
+            confirmedByMoh: false, // No longer confirmed by MoH
             versionNumber: nextVersionNumber,
             sourceId: changeSource.id,
-            changeType: ChangeType.DELETE,
-            isDeleted: true,
+            changeType: ChangeType.UPDATE, // Changed from DELETE to UPDATE
+            isDeleted: false, // Not deleted, just unconfirmed
           });
         }
         
-        // Execute all deletes in parallel
-        await Promise.all(personDeletes);
+        // Execute all updates in parallel
+        await Promise.all(personUpdates);
         
         // Create all version records in one query
         await tx.personVersion.createMany({
@@ -563,6 +570,8 @@ export async function applyBulkUpload(
         maxWait: 90000,
         timeout: 90000,
       });
+      
+      console.log(`  Progress: ${Math.min(i + UPDATE_BATCH_SIZE, toUnconfirm.length)}/${toUnconfirm.length} records marked as unconfirmed`);
     }
   }
   

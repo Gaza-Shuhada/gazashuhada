@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -209,38 +210,56 @@ export function PersonsTable() {
                 </TableRow>
               ) : (
                 data.persons.map((person) => (
-                <TableRow key={person.id}>
-                  <TableCell className="font-medium">{person.externalId}</TableCell>
-                  <TableCell>{person.name}</TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant={
-                        person.gender === 'MALE' ? 'default' :
-                        person.gender === 'FEMALE' ? 'secondary' :
-                        'outline'
-                      }
-                    >
-                      {person.gender}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{formatDate(person.dateOfBirth)}</TableCell>
-                  <TableCell>
-                    {person.dateOfDeath ? (
-                      <span className="text-destructive">{formatDate(person.dateOfDeath)}</span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
+                <TableRow key={person.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <TableCell className="font-medium">
+                    <Link href={`/person/${person.externalId}`} className="block">
+                      {person.externalId}
+                    </Link>
                   </TableCell>
                   <TableCell>
-                    {person.locationOfDeathLat && person.locationOfDeathLng ? (
-                      <span className="text-sm">
-                        {person.locationOfDeathLat.toFixed(4)}, {person.locationOfDeathLng.toFixed(4)}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
+                    <Link href={`/person/${person.externalId}`} className="block">
+                      {person.name}
+                    </Link>
                   </TableCell>
                   <TableCell>
+                    <Link href={`/person/${person.externalId}`} className="block">
+                      <Badge 
+                        variant={
+                          person.gender === 'MALE' ? 'default' :
+                          person.gender === 'FEMALE' ? 'secondary' :
+                          'outline'
+                        }
+                      >
+                        {person.gender}
+                      </Badge>
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <Link href={`/person/${person.externalId}`} className="block">
+                      {formatDate(person.dateOfBirth)}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <Link href={`/person/${person.externalId}`} className="block">
+                      {person.dateOfDeath ? (
+                        <span className="text-destructive">{formatDate(person.dateOfDeath)}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <Link href={`/person/${person.externalId}`} className="block">
+                      {person.locationOfDeathLat && person.locationOfDeathLng ? (
+                        <span className="text-sm">
+                          {person.locationOfDeathLat.toFixed(4)}, {person.locationOfDeathLng.toFixed(4)}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </Link>
+                  </TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     {person.photoUrlThumb ? (
                       <a 
                         href={person.photoUrlThumb} 
@@ -257,21 +276,29 @@ export function PersonsTable() {
                         />
                       </a>
                     ) : (
-                      <span className="text-muted-foreground">—</span>
+                      <Link href={`/person/${person.externalId}`} className="block">
+                        <span className="text-muted-foreground">—</span>
+                      </Link>
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary">
-                      v{person.currentVersion}
-                    </Badge>
+                    <Link href={`/person/${person.externalId}`} className="block">
+                      <Badge variant="secondary">
+                        v{person.currentVersion}
+                      </Badge>
+                    </Link>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={person.isDeleted ? 'destructive' : 'default'}>
-                      {person.isDeleted ? 'Yes' : 'No'}
-                    </Badge>
+                    <Link href={`/person/${person.externalId}`} className="block">
+                      <Badge variant={person.isDeleted ? 'destructive' : 'default'}>
+                        {person.isDeleted ? 'Yes' : 'No'}
+                      </Badge>
+                    </Link>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {formatDateTime(person.updatedAt)}
+                    <Link href={`/person/${person.externalId}`} className="block">
+                      {formatDateTime(person.updatedAt)}
+                    </Link>
                   </TableCell>
                 </TableRow>
                 ))

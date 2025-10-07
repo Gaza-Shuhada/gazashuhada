@@ -10,25 +10,17 @@ export async function POST(request: NextRequest) {
     if (!userId || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
-    console.log('[Community Submit] User:', userId, 'Role:', user.publicMetadata?.role);
-
-    // All authenticated users can submit (admin, moderator, community)
-    // No role restriction needed
 
     const body = await request.json();
-    console.log('[Community Submit] Request body:', JSON.stringify(body, null, 2));
     const { type, proposedPayload, reason, externalId } = body;
 
     // Validate submission type
     if (!type || (type !== 'NEW_RECORD' && type !== 'EDIT')) {
-      console.log('[Community Submit] Invalid submission type:', type);
       return NextResponse.json({ error: 'Invalid submission type' }, { status: 400 });
     }
 
     // Validate proposed payload
     if (!proposedPayload || typeof proposedPayload !== 'object') {
-      console.log('[Community Submit] Invalid payload:', proposedPayload);
       return NextResponse.json({ error: 'Invalid proposed payload' }, { status: 400 });
     }
 
@@ -37,7 +29,6 @@ export async function POST(request: NextRequest) {
       const required = ['externalId', 'name', 'gender', 'dateOfBirth'];
       for (const field of required) {
         if (!proposedPayload[field]) {
-          console.log(`[Community Submit] Missing required field: ${field}`);
           return NextResponse.json({ error: `Missing required field: ${field}` }, { status: 400 });
         }
       }
@@ -61,7 +52,6 @@ export async function POST(request: NextRequest) {
       if (proposedPayload.nameEnglish !== undefined && 
           proposedPayload.nameEnglish !== null && 
           typeof proposedPayload.nameEnglish !== 'string') {
-        console.log('[Community Submit] Invalid nameEnglish type:', typeof proposedPayload.nameEnglish);
         return NextResponse.json({ error: 'nameEnglish must be a string or null' }, { status: 400 });
       }
 
@@ -100,27 +90,32 @@ export async function POST(request: NextRequest) {
       // Check if external ID already exists
       const existingPerson = await prisma.person.findUnique({
         where: { externalId: proposedPayload.externalId },
+        select: { id: true, externalId: true, isDeleted: true },
       });
 
-      if (existingPerson) {
+      // If active record exists, reject and tell user to use EDIT
+      if (existingPerson && !existingPerson.isDeleted) {
         return NextResponse.json({ 
-          error: 'A person with this External ID already exists. Use "Suggest Edit" instead.' 
+          error: `A person with External ID "${proposedPayload.externalId}" already exists. Use "Suggest Edit" instead.` 
         }, { status: 400 });
       }
+      
+      // If deleted record exists, allow NEW_RECORD submission
+      // (This will be an "undelete" operation when approved by moderator)
+      // Store the existing person ID for the moderator to see in the submission
+      const personIdForUndelete = existingPerson?.isDeleted ? existingPerson.id : null;
 
       // Create NEW_RECORD submission
-      console.log('[Community Submit] Creating submission with payload:', JSON.stringify(proposedPayload, null, 2));
-      console.log('[Community Submit] User ID:', userId);
       const submission = await prisma.communitySubmission.create({
         data: {
           type: 'NEW_RECORD',
+          personId: personIdForUndelete, // Set if this is an undelete operation
           proposedPayload: proposedPayload,
           reason: reason || null,
           submittedBy: userId,
           status: 'PENDING',
         },
       });
-      console.log('[Community Submit] Submission created successfully:', submission.id);
 
       return NextResponse.json({
         success: true,
@@ -153,6 +148,13 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ 
           error: 'Person not found. Use "Propose New Record" instead.' 
         }, { status: 404 });
+      }
+
+      // Block edits to deleted records
+      if (person.isDeleted) {
+        return NextResponse.json({ 
+          error: 'This record has been deleted and cannot be edited. If you believe it should exist, use "Propose New Record" to submit it as a new entry.' 
+        }, { status: 400 });
       }
 
       // Validate that only allowed fields are being edited
@@ -228,7 +230,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('[Community Submit] Error:', error);
-    console.error('[Community Submit] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json({ 
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'

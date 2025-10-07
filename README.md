@@ -157,6 +157,7 @@ Open [http://localhost:3000](http://localhost:3000)
 │   └── middleware.ts           # Auth middleware (role-based access)
 └── docs/                       # Documentation
     ├── DATABASE.md             # Database schema and design
+    ├── DATA_CONFLICTS.md       # Edge cases and conflict resolution
     ├── ENGINEERING.md          # Technical architecture
     ├── PRODUCT.md              # Product overview
     ├── CONTRIBUTING.md         # Contribution guidelines
@@ -221,6 +222,7 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ### Essential Reading
 - 🗄️ **[DATABASE.md](docs/DATABASE.md)** - Database schema, design patterns, event sourcing
+- ⚠️ **[DATA_CONFLICTS.md](docs/DATA_CONFLICTS.md)** - Edge cases, conflict resolution, undelete operations
 - 🏗️ **[ENGINEERING.md](docs/ENGINEERING.md)** - Technical architecture, configuration, performance
 - 📦 **[PRODUCT.md](docs/PRODUCT.md)** - Product overview, features, workflows
 - 🤝 **[CONTRIBUTING.md](docs/CONTRIBUTING.md)** - Development standards (read .cursorrules!)

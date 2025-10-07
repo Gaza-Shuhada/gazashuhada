@@ -5,6 +5,15 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { toast } from 'sonner';
+import dynamic from 'next/dynamic';
+
+// Dynamically import LocationPicker to avoid SSR issues with Leaflet
+const LocationPicker = dynamic(() => import('@/components/LocationPicker'), {
+  ssr: false,
+  loading: () => <div className="h-96 w-full bg-muted rounded-md flex items-center justify-center">
+    <p className="text-muted-foreground">Loading map...</p>
+  </div>
+});
 
 interface Submission {
   id: string;
@@ -261,9 +270,13 @@ export default function CommunitySubmitPage() {
         // Fetch submissions in background (don't block)
         fetchSubmissions().catch(err => console.error('Failed to refresh submissions:', err));
       } else {
-        toast.error(data.error || 'Failed to submit record', {
+        const errorMessage = data.error || 'Failed to submit record';
+        // Check if it's a duplicate external ID error
+        const isDuplicateError = errorMessage.includes('already exists');
+        
+        toast.error(isDuplicateError ? 'Duplicate External ID' : 'Submission Failed', {
           id: submitToast,
-          description: 'Please try again or contact support if the issue persists.',
+          description: errorMessage,
           duration: Infinity,
         });
       }
@@ -565,35 +578,20 @@ export default function CommunitySubmitPage() {
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-foreground mb-1">
-                      Location Coordinates <span className="text-muted-foreground">(Optional)</span>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Location of Death <span className="text-muted-foreground">(Optional)</span>
                     </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <input
-                          type="number"
-                          step="any"
-                          value={newRecordForm.locationOfDeathLat}
-                          onChange={(e) => setNewRecordForm({ ...newRecordForm, locationOfDeathLat: e.target.value })}
-                          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
-                          placeholder="Latitude (e.g., 31.5)"
-                          min="-90"
-                          max="90"
-                        />
-                      </div>
-                      <div>
-                        <input
-                          type="number"
-                          step="any"
-                          value={newRecordForm.locationOfDeathLng}
-                          onChange={(e) => setNewRecordForm({ ...newRecordForm, locationOfDeathLng: e.target.value })}
-                          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
-                          placeholder="Longitude (e.g., 34.5)"
-                          min="-180"
-                          max="180"
-                        />
-                      </div>
-                    </div>
+                    <LocationPicker
+                      initialLat={newRecordForm.locationOfDeathLat ? parseFloat(newRecordForm.locationOfDeathLat) : null}
+                      initialLng={newRecordForm.locationOfDeathLng ? parseFloat(newRecordForm.locationOfDeathLng) : null}
+                      onLocationChange={(lat, lng) => {
+                        setNewRecordForm({
+                          ...newRecordForm,
+                          locationOfDeathLat: lat !== null ? lat.toString() : '',
+                          locationOfDeathLng: lng !== null ? lng.toString() : '',
+                        });
+                      }}
+                    />
                   </div>
                 </div>
 
@@ -717,35 +715,20 @@ export default function CommunitySubmitPage() {
                     </div>
 
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-foreground mb-1">
-                        Location Coordinates <span className="text-muted-foreground">(Both required if updating location)</span>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Location of Death <span className="text-muted-foreground">(Optional)</span>
                       </label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <input
-                            type="number"
-                            step="any"
-                            value={editForm.locationOfDeathLat}
-                            onChange={(e) => setEditForm({ ...editForm, locationOfDeathLat: e.target.value })}
-                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
-                            placeholder="Latitude (e.g., 31.5)"
-                            min="-90"
-                            max="90"
-                          />
-                        </div>
-                        <div>
-                          <input
-                            type="number"
-                            step="any"
-                            value={editForm.locationOfDeathLng}
-                            onChange={(e) => setEditForm({ ...editForm, locationOfDeathLng: e.target.value })}
-                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
-                            placeholder="Longitude (e.g., 34.5)"
-                            min="-180"
-                            max="180"
-                          />
-                        </div>
-                      </div>
+                      <LocationPicker
+                        initialLat={editForm.locationOfDeathLat ? parseFloat(editForm.locationOfDeathLat) : null}
+                        initialLng={editForm.locationOfDeathLng ? parseFloat(editForm.locationOfDeathLng) : null}
+                        onLocationChange={(lat, lng) => {
+                          setEditForm({
+                            ...editForm,
+                            locationOfDeathLat: lat !== null ? lat.toString() : '',
+                            locationOfDeathLng: lng !== null ? lng.toString() : '',
+                          });
+                        }}
+                      />
                     </div>
                   </div>
                 </div>

@@ -5,7 +5,14 @@ import { prisma } from '@/lib/prisma';
  * Public Single Person Endpoint
  * No authentication required
  * Returns a single person by ID (UUID) or externalId
+ * 
+ * Query params:
+ * - includeHistory=true: Include full version history with source details
  */
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -35,19 +42,16 @@ export async function GET(
         isDeleted: true, // We need this to check, but won't return it
         versions: includeHistory ? {
           orderBy: {
-            versionNumber: 'asc'
+            versionNumber: 'desc'
           },
-          select: {
-            versionNumber: true,
-            changeType: true,
-            createdAt: true,
+          include: {
             source: {
-              select: {
-                type: true,
-                description: true
-              }
-            }
-          }
+              include: {
+                bulkUpload: true,
+                communitySubmission: true,
+              },
+            },
+          },
         } : false
       }
     });
@@ -73,19 +77,16 @@ export async function GET(
           isDeleted: true,
           versions: includeHistory ? {
             orderBy: {
-              versionNumber: 'asc'
+              versionNumber: 'desc'
             },
-            select: {
-              versionNumber: true,
-              changeType: true,
-              createdAt: true,
+            include: {
               source: {
-                select: {
-                  type: true,
-                  description: true
-                }
-              }
-            }
+                include: {
+                  bulkUpload: true,
+                  communitySubmission: true,
+                },
+              },
+            },
           } : false
         }
       });
@@ -98,7 +99,16 @@ export async function GET(
       );
     }
 
-    // Don't expose deleted records to public
+    // If full history is requested, return complete person data including versions
+    // (This is used for admin/staff views)
+    if (includeHistory) {
+      return NextResponse.json({
+        success: true,
+        person,
+      });
+    }
+
+    // For public API without history, don't expose deleted records
     if (person.isDeleted) {
       return NextResponse.json(
         { error: 'Person not found' },
@@ -106,18 +116,13 @@ export async function GET(
       );
     }
 
-    // Remove isDeleted from response
-    const { versions, ...personData } = person;
-
-    const response = {
+    // Public API response (minimal data, no deleted flag)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { isDeleted, ...publicData } = person;
+    return NextResponse.json({
       success: true,
-      data: {
-        ...personData,
-        ...(includeHistory && versions ? { history: versions } : {})
-      }
-    };
-
-    return NextResponse.json(response);
+      data: publicData,
+    });
 
   } catch (error) {
     console.error('Error fetching person:', error);
