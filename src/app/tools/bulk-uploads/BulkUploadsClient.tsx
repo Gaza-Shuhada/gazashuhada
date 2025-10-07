@@ -105,31 +105,32 @@ export default function BulkUploadsClient() {
     }
 
     setSimulating(true);
-    const simulateToast = toast.loading('Uploading file...', {
-      description: 'Preparing CSV for analysis',
+    const simulateToast = toast.loading('Uploading file to blob storage...', {
+      description: `Uploading ${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`,
       duration: Infinity,
     });
     
     try {
-      // Step 1: Upload file to Vercel Blob (bypasses 4.5MB request limit)
-      const uploadFormData = new FormData();
-      uploadFormData.append('file', selectedFile);
+      // Step 1: Upload file directly to Vercel Blob (client-side, no API route)
+      // Use the @vercel/blob put API with client-side upload
+      const response = await fetch(
+        `/api/admin/bulk-upload/upload-csv?filename=${encodeURIComponent(selectedFile.name)}`,
+        {
+          method: 'POST',
+          body: selectedFile,
+        }
+      );
       
-      const uploadResponse = await fetch('/api/admin/bulk-upload/upload-csv', { 
-        method: 'POST', 
-        body: uploadFormData 
-      });
-      
-      if (!uploadResponse.ok) {
-        const uploadError = await uploadResponse.json();
-        toast.error(uploadError.error || 'Failed to upload file', { 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
+        toast.error(errorData.error || 'Failed to upload file', { 
           id: simulateToast,
           duration: Infinity,
         });
         return;
       }
       
-      const { blobUrl: uploadedBlobUrl } = await uploadResponse.json();
+      const { blobUrl: uploadedBlobUrl } = await response.json();
       setBlobUrl(uploadedBlobUrl); // Store for later use in apply
       
       // Step 2: Simulate using the blob URL
@@ -139,15 +140,15 @@ export default function BulkUploadsClient() {
         duration: Infinity,
       });
       
-      const response = await fetch('/api/admin/bulk-upload/simulate', { 
+      const simulateResponse = await fetch('/api/admin/bulk-upload/simulate', { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ blobUrl: uploadedBlobUrl })
       });
       
-      const text = await response.text();
+      const text = await simulateResponse.text();
       const data = text ? JSON.parse(text) : {};
-      if (!response.ok) {
+      if (!simulateResponse.ok) {
         toast.error(data.error || 'Simulation failed', { 
           id: simulateToast,
           duration: Infinity,

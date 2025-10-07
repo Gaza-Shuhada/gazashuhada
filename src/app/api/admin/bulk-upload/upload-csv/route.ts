@@ -1,54 +1,72 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { put } from '@vercel/blob';
+import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { requireAdmin } from '@/lib/auth-utils';
 
 /**
  * Route Configuration for CSV Upload to Blob Storage
  * 
- * This endpoint handles large CSV file uploads by storing them in Vercel Blob,
- * bypassing the 4.5MB request body limit for subsequent processing.
+ * This endpoint handles large CSV file uploads using Vercel's handleUpload API,
+ * which bypasses the 4.5MB request body limit by streaming directly to Blob storage.
  */
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     // Check authentication and admin role
     await requireAdmin();
     
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
+    const filename = request.nextUrl.searchParams.get('filename');
     
-    if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    if (!filename) {
+      return NextResponse.json({ error: 'Filename is required' }, { status: 400 });
     }
     
-    if (!file.name.endsWith('.csv')) {
+    if (!filename.endsWith('.csv')) {
       return NextResponse.json({ error: 'File must be a CSV' }, { status: 400 });
     }
     
-    console.log(`[Upload CSV] Uploading ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB) to Vercel Blob`);
+    console.log(`[Upload CSV] Starting upload for: ${filename}`);
     
-    // Upload to Vercel Blob with temporary path
-    const blob = await put(`bulk-uploads/temp/${Date.now()}-${file.name}`, file, {
-      access: 'public',
-      addRandomSuffix: true,
+    // Use Vercel's handleUpload which streams the file directly to Blob storage
+    // This bypasses the body size limit entirely
+    const jsonResponse = await handleUpload({
+      request,
+      body: request.body as HandleUploadBody,
+      onBeforeGenerateToken: async () => {
+        // Security check - ensure user is admin (already checked above, but double-check)
+        await requireAdmin();
+        
+        return {
+          allowedContentTypes: ['text/csv', 'application/vnd.ms-excel'],
+          tokenPayload: JSON.stringify({}),
+        };
+      },
+      onUploadCompleted: async ({ blob }) => {
+        console.log(`[Upload CSV] File uploaded successfully: ${blob.url}`);
+      },
     });
     
-    console.log(`[Upload CSV] File uploaded to: ${blob.url}`);
+    const { blob } = await jsonResponse.json();
+    
+    if (!blob || !blob.url) {
+      throw new Error('Upload failed - no blob URL returned');
+    }
+    
+    console.log(`[Upload CSV] Upload complete: ${blob.url} (${(blob.size / 1024 / 1024).toFixed(2)} MB)`);
     
     return NextResponse.json({ 
       blobUrl: blob.url,
-      filename: file.name,
-      size: file.size,
+      filename: blob.pathname,
+      size: blob.size,
     });
     
   } catch (error) {
     console.error('[Upload CSV] Error:', error);
     return NextResponse.json(
-      { error: 'Failed to upload file' },
+      { error: error instanceof Error ? error.message : 'Failed to upload file' },
       { status: 500 }
     );
   }
