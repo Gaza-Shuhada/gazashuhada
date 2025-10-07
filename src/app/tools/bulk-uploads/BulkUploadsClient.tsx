@@ -106,25 +106,33 @@ export default function BulkUploadsClient() {
     }
 
     setSimulating(true);
+    
+    console.log('[Client] Starting simulation');
+    console.log('[Client] File:', selectedFile.name, `(${(selectedFile.size / 1024 / 1024).toFixed(2)} MB)`);
+    
     const simulateToast = toast.loading('Uploading file to blob storage...', {
       description: `Uploading ${(selectedFile.size / 1024 / 1024).toFixed(2)} MB directly to storage`,
       duration: Infinity,
     });
     
     try {
-      // Upload file DIRECTLY to Blob storage using Vercel's client upload API
-      // This bypasses the 4.5MB serverless function limit entirely
-      const pathname = `bulk-uploads/temp/${Date.now()}-${selectedFile.name}`;
+      // Upload file directly to Vercel Blob using client uploads
+      // This bypasses the 4.5MB serverless function limit
+      // Based on: https://vercel.com/guides/how-to-bypass-vercel-body-size-limit-serverless-functions
       
-      const blob = await upload(pathname, selectedFile, {
+      console.log('[Client] Calling upload() with handleUploadUrl:', '/api/admin/bulk-upload/upload-csv');
+      
+      const newBlob = await upload(selectedFile.name, selectedFile, {
         access: 'public',
         handleUploadUrl: '/api/admin/bulk-upload/upload-csv',
       });
       
-      const uploadedBlobUrl = blob.url;
+      console.log('[Client] Upload response:', newBlob);
+      
+      const uploadedBlobUrl = newBlob.url;
       setBlobUrl(uploadedBlobUrl); // Store for later use in apply
       
-      console.log('[Client] File uploaded to:', uploadedBlobUrl);
+      console.log('[Client] File uploaded successfully to:', uploadedBlobUrl);
       
       // Step 2: Simulate using the blob URL
       toast.loading('Simulating upload...', {
@@ -133,21 +141,30 @@ export default function BulkUploadsClient() {
         duration: Infinity,
       });
       
+      console.log('[Client] Starting simulation with blobUrl:', uploadedBlobUrl);
+      
       const simulateResponse = await fetch('/api/admin/bulk-upload/simulate', { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ blobUrl: uploadedBlobUrl })
       });
       
+      console.log('[Client] Simulate response status:', simulateResponse.status, simulateResponse.statusText);
+      
       const text = await simulateResponse.text();
+      console.log('[Client] Simulate response body:', text.substring(0, 500)); // First 500 chars
+      
       const data = text ? JSON.parse(text) : {};
+      
       if (!simulateResponse.ok) {
+        console.error('[Client] Simulation failed:', data);
         toast.error(data.error || 'Simulation failed', { 
           id: simulateToast,
           duration: Infinity,
         });
         setSimulation(null);
       } else {
+        console.log('[Client] Simulation successful:', data.simulation.summary);
         setSimulation(data.simulation);
         const { summary } = data.simulation;
         toast.success('Simulation complete!', { 
@@ -157,11 +174,15 @@ export default function BulkUploadsClient() {
         });
       }
     } catch (err) {
+      console.error('[Client] Error during simulation:', err);
+      console.error('[Client] Error stack:', err instanceof Error ? err.stack : 'No stack trace');
+      console.error('[Client] Error message:', err instanceof Error ? err.message : String(err));
+      
       toast.error('Failed to simulate upload', { 
         id: simulateToast,
+        description: err instanceof Error ? err.message : 'Unknown error',
         duration: Infinity,
       });
-      console.error(err);
     } finally {
       setSimulating(false);
     }
