@@ -79,6 +79,34 @@ export function PublicNavbar() {
                       Admin Tools →
                     </Link>
                   )}
+
+                  {/* User Button / Sign In - Mobile only */}
+                  <div className="border-t pt-4 mt-4">
+                    {isSignedIn ? (
+                      <div className="px-3 py-2">
+                        <UserButton 
+                          appearance={{
+                            elements: {
+                              avatarBox: "h-8 w-8",
+                              userButtonPopoverCard: "bg-background border-border",
+                              userButtonPopoverActionButton: "text-foreground hover:bg-accent",
+                              userButtonPopoverActionButtonText: "text-foreground",
+                              userButtonPopoverFooter: "hidden",
+                            },
+                            variables: {
+                              colorText: "hsl(var(--foreground))",
+                              colorTextSecondary: "hsl(var(--muted-foreground))",
+                            }
+                          }}
+                          showName
+                        />
+                      </div>
+                    ) : (
+                      <Button variant="ghost" size="sm" asChild className="w-full justify-start">
+                        <Link href="/sign-in" onClick={() => setMobileMenuOpen(false)}>Sign In</Link>
+                      </Button>
+                    )}
+                  </div>
                 </nav>
               </SheetContent>
             </Sheet>
@@ -125,19 +153,19 @@ export function PublicNavbar() {
             </Link>
           </div>
 
-          {/* Right Side: Staff Tools + User Menu */}
-          <div className="flex items-center space-x-2">
+          {/* Right Side: Staff Tools + User Menu (Desktop only) */}
+          <div className="hidden md:flex items-center space-x-2">
             {/* Staff Tools Link - Desktop only */}
             {isStaff && (
               <Link
                 href="/tools"
-                className="hidden md:block text-white hover:text-white/80 px-3 py-2 rounded-md text-sm font-medium"
+                className="text-white hover:text-white/80 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Admin Tools →
               </Link>
             )}
 
-            {/* User Button / Sign In */}
+            {/* User Button / Sign In - Desktop only */}
             {isSignedIn ? (
               <UserButton 
                 appearance={{

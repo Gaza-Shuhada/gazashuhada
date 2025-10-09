@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Menu } from 'lucide-react';
 import { useState } from 'react';
-import { ThemeToggle } from '@/components/theme-toggle';
 
 export function ToolsNavbar() {
   const { isSignedIn } = useAuth();
@@ -105,7 +104,7 @@ export function ToolsNavbar() {
 
             {/* Logo/Home */}
             <Link href="/tools" className="flex items-center">
-              <span className="text-xl font-bold text-foreground">Admin Tools</span>
+              <span className="text-xl font-bold text-foreground">Tools</span>
             </Link>
 
             {/* Desktop Navigation - Hidden on mobile */}
@@ -176,11 +175,8 @@ export function ToolsNavbar() {
             )}
           </div>
 
-          {/* Right Side: Theme + User Menu */}
+          {/* Right Side: User Menu */}
           <div className="flex items-center space-x-2">
-            {/* Theme Toggle */}
-            <ThemeToggle />
-
             {/* User Button / Sign In */}
             {isSignedIn ? (
               <UserButton 
