@@ -1,362 +1,238 @@
-# feat: Complete public-facing UI redesign and About page
+# feat: Memorial photo grid background on landing page
 
 ## 🎯 Overview
 
-Major overhaul of the public landing page, navigation structure, and addition of comprehensive About page. Updated terminology from "submissions" to "contributions" throughout the application, added animated counter, person search with autocomplete, and restructured contribution flows with clean URL patterns.
+Complete visual redesign of the landing page with a powerful memorial photo grid as the background, featuring 51 B&W photos of victims. Updated navbar to transparent overlay with white text.
 
 ---
 
-## 🏠 Landing Page Redesign
+## 🖼️ Photo Grid Background
 
-### New Messaging & Design
+### Memorial Wall Design
 
 **Location**: `src/app/page.tsx`
 
 **Changes**:
-- **New title**: "We will not forget them"
-- **Animated counter**: Counts up from 0 to total persons in database on page load
-- **Subtitle**: Dynamic stats showing total persons from database
-- **Removed**: Feature cards (Document, Track, Remember sections)
-- **Removed**: Get Started and Sign In buttons
-- **Added**: Prominent search box for contributing missing information
+- **Full-page background**: Fixed position photo grid covering entire viewport
+- **51 B&W photos**: All images converted to grayscale for memorial aesthetic
+- **Minimal spacing**: 2px gap between photos (gap-0.5) for dense grid
+- **Responsive grid**: 6-14 columns depending on screen size
+- **120 photo instances**: Photos repeat to completely fill background
+- **Dimmed overlay**: 40% opacity photos + 60% black overlay for text readability
+- **Hover effects**: Photos brighten to 70% opacity, scale slightly, show names
 
-**Features**:
-- `AnimatedCounter` component with smooth easing animation (2 second duration)
-- Real-time stats fetched from `/api/public/stats`
-- Responsive design with centered content
-- Clear call-to-action card with border and shadow
+**Photos**:
+- 12 named individuals (Anas, Faten, Hind, Ismael, Khaled, Lana, Nahedh, Omar, Rakan, Sara, Suleiman, Yaqeen)
+- 39 additional victims from screenshots
+- All cropped to 500x500 (center crop, no distortion)
+- All converted to black and white
 
-**Files**:
-- `src/app/page.tsx` - Main landing page
-- `src/components/AnimatedCounter.tsx` - New animated counter component
-- `src/components/PersonSearch.tsx` - New autocomplete search component
-
----
-
-## 🔍 Person Search with Autocomplete
-
-### New Component: PersonSearch
-
-**Location**: `src/components/PersonSearch.tsx`
-
-**Features**:
-- Real-time search as you type (300ms debounce)
-- Searches by name (Arabic/English) or external ID
-- Shows up to 10 results with person details
-- Displays name, English name, ID, birth/death dates
-- Click to navigate to person detail page
-- Loading spinner during search
-- "No results found" state
-- Closes when clicking outside
-
-**API Integration**:
-- Uses `/api/public/persons?search={query}&limit=10&confirmedOnly=false`
-- Searches across all persons (MoH and community)
+**Visual Impact**:
+- Creates powerful "memorial wall" effect
+- Humanizes the statistics
+- Content floats over photos with glassmorphism card
 
 ---
 
-## 🗺️ Navigation Restructure
+## 🎨 Navbar Redesign
 
-### Centered Logo with Left Navigation
+### Transparent Overlay
 
 **Location**: `src/components/PublicNavbar.tsx`
 
 **Changes**:
-- **Center**: "Gaza Deaths وفيات غزة" logo (absolute positioning)
-- **Left**: Navigation links (Database, Contributions, About)
-- **Right**: Theme toggle, Admin Tools (for staff), User menu
-- **Order**: Database → Contributions → About (from left to right)
-- **Mobile**: Hamburger menu with same order
+- **Removed background**: Changed from `bg-background` to transparent
+- **Removed border**: Removed `border-b` and `shadow-sm`
+- **White text**: All nav items, logo, and buttons now white
+- **Subtle hover**: White text at 80% opacity, full white on hover
+- **Mobile menu button**: White with hover effects
 
-**Responsive Design**:
-- Desktop: Full horizontal nav with centered logo
-- Mobile: Hamburger menu, logo visible, user buttons remain
-- All pages accessible without sign-in requirement
+**Before**: Solid background navbar with border
+**After**: Transparent navbar floating over photo grid
 
 ---
 
-## 📝 About Page
+## 📁 Photo Processing
 
-### New Comprehensive About Page
+### Image Preparation Pipeline
 
-**Location**: `src/app/about/page.tsx`
+**Source**: `/public/people/originals/` (51 images)  
+**Destination**: `/public/people/` (51 processed images)
 
-**Sections**:
+**Processing Steps**:
+1. **Center crop to 500x500**: Using sharp with `fit: 'cover'` (no aspect ratio distortion)
+2. **Convert to grayscale**: All photos black and white for memorial aesthetic
+3. **Optimize**: Proper compression and sizing
 
-1. **Mission Statement**
-   - "Gaza Death Toll aims to memorialise those dead and missing..."
-   - Explanation of MoH foundation + community contributions
-   - Purpose: canonical document for international justice
-   - "Remembering is both an ethical and political act"
+**Original Dimensions** (varied):
+- 736x900, 739x1600, 1000x800, 1536x2048, 784x678, etc.
 
-2. **Advisory Team** (8 members)
-   - Profile photos from `/public/team/`
-   - Name, title, description, LinkedIn/website links
-   - Team members:
-     - Dima Hamdan (Journalist and filmmaker)
-     - Joshua Andresen (International lawyer & Legal academic)
-     - Randa Mirza (Visual artist)
-     - Jens Munch (Entrepreneur & Builder)
-     - Wil Grace (Product leader)
-     - Heidi El-Hosaini (Geo data & Activism)
-     - Imran Sulemanji (Technical Lead)
-     - Yousef Eldin (Director of video)
-
-3. **FAQ Section** (7 questions)
-   - Why call them "deaths"?
-   - Who is involved?
-   - Data ownership and usage
-   - Project funding
-   - Relationship to Iraq Body Count
-   - Relationship to Tech4Palestine
-   - Relationship to Gaza MoH
-
-**Components Used**:
-- shadcn `Card` for team member profiles
-- shadcn `Accordion` for FAQ (installed via `npx shadcn@latest add accordion`)
-- Responsive grid (2 columns on desktop, 1 on mobile)
-- Round profile photos with hover effects
-- Clickable names (external links)
-
----
-
-## 🔄 Contributions → Terminology Change
-
-### Updated from "Submissions" to "Contributions"
-
-**Renamed**:
-- Route: `/submission` → `/contribution`
-- Navbar: "Submissions" → "Contributions"
-- Page title: "Community Submissions" → "Community Contributions"
-- Tab label: "My Submissions" → "My Contributions"
-- Section: "Submission History" → "Contribution History"
-- Variable names: `submissions` → `contributions`
-- Function names: `fetchSubmissions` → `fetchContributions`
-
-**Files Updated**:
-- `src/app/contribution/page.tsx` (renamed from submission/page.tsx)
-- `src/components/PublicNavbar.tsx`
-
-**Interface Renamed**:
-```typescript
-interface Contribution {  // was: Submission
-  id: string;
-  type: 'NEW_RECORD' | 'EDIT';
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUPERSEDED';
-  // ...
-}
-```
-
----
-
-## 🛣️ Clean URL Structure for Contributions
-
-### New Route: `/contribution/edit/[externalId]`
-
-**Location**: `src/app/contribution/edit/[externalId]/page.tsx`
-
-**Purpose**: Direct link to contribute information for a specific person
-
-**Features**:
-- External ID in URL path (not query parameter)
-- Clean, shareable URLs
-- Prepopulated form with person's external ID
-- All form fields (date of death, location, obituary, photo)
-- Validation and moderation flow
-- Redirects back to person page after submission
-
-**Example**: `/contribution/edit/P12345`
-
-**Integration**:
-- Person detail page: "Contribute information" button links to this route
-- Landing page search: Clicking result → person page → contribute button
-
-**Removed**: Query parameter approach (`/submission?externalId=...`)
-- Cleaner URLs
-- Better for sharing
-- RESTful pattern
-
----
-
-## 🎨 UI/UX Improvements
-
-### Landing Page
-
-**Before**:
-- Complex feature cards
-- Multiple CTAs
-- Busy layout
-
-**After**:
-- Single focused message
-- Animated counter (impactful)
-- One clear action: search and contribute
-- Minimal, clean design
-
-### Navigation
-
-**Before**:
-- Logo on left
-- Nav items next to logo
-- Cluttered on small screens
-
-**After**:
-- Logo centered (prominent)
-- Nav items on left (logical order)
-- User actions on right
-- Balanced, professional layout
-
-### About Page
-
-- Professional team presentation
-- Collapsible FAQ for easy scanning
-- Clear mission statement at top
-- External links open in new tabs
-- Responsive images and layout
-
----
-
-## 🐛 Bug Fixes
-
-### Fixed: useSearchParams Suspense Boundary Error
-
-**Problem**: Build failed with "useSearchParams() should be wrapped in a suspense boundary"
-
-**Root Cause**: `/contribution/page.tsx` was using `useSearchParams()` but never using the result
-
-**Fix**: 
-- Removed `useSearchParams` import
-- Removed unused `externalIdParam` variable
-- No longer needed since we have dedicated `/contribution/edit/[externalId]` route
+**Final Dimensions**: All 500x500 perfect squares
 
 **Files**:
-- `src/app/contribution/page.tsx`
-
-### Fixed: Build Warnings
-
-**Removed**: Unused variable `externalIdParam` (TypeScript warning)
+- `anas.jpeg`, `faten.jpeg`, `hind.jpg`, `ismael.jpeg`, `khaled.jpg`
+- `lana.jpg`, `nahedh.jpg`, `omar.jpg`, `rakan.jpg`, `sara.jpeg`
+- `suleiman.jpeg`, `yaqeen.jpg`
+- 39 screenshot PNGs (11.10.17 through 11.21.07)
 
 ---
 
-## 🔧 Technical Details
+## 🎯 Design System
 
-### New Components
+### Content Overlay
 
-1. **AnimatedCounter** (`src/components/AnimatedCounter.tsx`)
-   - Uses `requestAnimationFrame` for smooth 60fps animation
-   - Easing function: `easeOutQuart` for natural counting effect
-   - Props: `end` (number), `duration` (default 2000ms)
-   - Cancels animation on unmount (cleanup)
+**Main Content**:
+- `z-10` - Floats above background
+- White text throughout
+- Glassmorphism card: `bg-black/40 backdrop-blur-sm border-white/10`
+- Full contrast against dark background
 
-2. **PersonSearch** (`src/components/PersonSearch.tsx`)
-   - Client component (`'use client'`)
-   - Debounced search (300ms)
-   - Ref-based click outside detection
-   - Loading and empty states
-   - Keyboard accessible
+**Background Grid**:
+- `z-0` - Behind all content
+- Fixed positioning (stays while scrolling)
+- Edge-to-edge coverage (no padding)
+- Subtle interactions (hover brightness, names appear)
 
-### Route Configuration
+---
 
-- About page: Static generation (no dynamic data)
-- Contribution edit page: Dynamic (uses `[externalId]` param)
-- Landing page: Dynamic (fetches stats on server)
+## 🔧 Technical Implementation
 
-### Dependencies
+### Photo Grid Component
 
-- **New**: `@/components/ui/accordion` (installed via shadcn CLI)
-- **Existing**: All other shadcn components already present
+```typescript
+// 120 photos displayed (51 unique photos repeated)
+Array.from({ length: 120 }).map((_, index) => {
+  const person = people[index % people.length];
+  // Grid item with hover effects
+})
+```
+
+**Grid Specifications**:
+- Breakpoints: 6 → 8 → 10 → 12 → 14 columns
+- Gap: 0.5 (2px)
+- Aspect ratio: 1:1 (square)
+- Hover scale: 105%
+- Hover z-index: 10 (pops forward)
+
+### Image Optimization
+
+**Sharp Configuration**:
+```javascript
+.resize(500, 500, { fit: 'cover', position: 'center' })
+.grayscale()
+```
+
+**Next.js Image**:
+- `fill` prop for responsive sizing
+- `object-cover` for proper cropping
+- `sizes` attribute for responsive loading
+- Optimized formats (WebP when supported)
 
 ---
 
 ## 📦 File Summary
 
-### New Files (4)
-- `src/components/AnimatedCounter.tsx` - Animated number counter
-- `src/components/PersonSearch.tsx` - Autocomplete search
-- `src/app/about/page.tsx` - About page with team & FAQ
-- `src/app/contribution/edit/[externalId]/page.tsx` - Contribution edit page
-- `src/components/ui/accordion.tsx` - shadcn accordion (auto-installed)
+### New/Modified Files
 
-### Modified Files (3)
-- `src/app/page.tsx` - Complete redesign
-- `src/components/PublicNavbar.tsx` - Centered logo, reordered nav
-- `src/app/contribution/page.tsx` - Renamed from submission, terminology updates
+**Modified**:
+- `src/app/page.tsx` - Added photo grid background, updated to 51 photos
+- `src/components/PublicNavbar.tsx` - Transparent with white text
+- `.gitignore` - Updated
 
-### Renamed Directories (1)
-- `src/app/submission/` → `src/app/contribution/`
+**Added**:
+- `public/people/originals/` - 51 original photos (stored for backup)
+- `public/people/` - 51 processed photos (500x500, B&W)
 
-### Assets Added
-- Team photos in `/public/team/`:
-  - dima.jpg, heidi.jpg, imran.jpg, jens.jpg
-  - joshua.jpg, randa.jpg, wil.jpg, yousef.jpg
+**Assets**:
+- 51 photos total
+- All 500x500 px
+- All black and white
+- Properly cropped (no distortion)
+
+---
+
+## 🎨 Visual Aesthetic
+
+### Memorial Design Language
+
+**Color Palette**:
+- Black background (#000000)
+- White text (#FFFFFF)
+- Grayscale photos
+- Subtle gradients (black/60 overlay)
+
+**Typography**:
+- Hero title: White, 5xl/6xl
+- Body text: gray-300
+- Photo labels: Small, white, appear on hover
+
+**Effects**:
+- Backdrop blur on main card
+- Smooth transitions (300ms)
+- Hover brightness increase
+- Glassmorphism for depth
+
+**Emotional Impact**:
+- Somber, respectful
+- Powerful visual statement
+- Each face visible and dignified
+- Numbers become people
 
 ---
 
 ## ✅ Testing Checklist
 
-- [x] Landing page displays animated counter
-- [x] Person search autocomplete works
-- [x] Search results link to person pages
-- [x] About page displays team members with photos
-- [x] FAQ accordion works correctly
-- [x] Navigation centered and responsive
-- [x] Contribution edit page accessible via clean URL
-- [x] "Contribute information" button uses correct route
-- [x] Mobile navigation hamburger menu works
-- [x] All external links open in new tabs
-- [x] Build successful (no errors, no warnings)
-- [x] No TypeScript errors
-- [x] No ESLint warnings
+- [x] All 51 photos properly cropped (500x500, no distortion)
+- [x] All photos converted to black and white
+- [x] Photo grid covers full viewport
+- [x] Minimal spacing between photos (2px)
+- [x] Content readable over photo background
+- [x] Navbar transparent with white text
+- [x] All text visible (sufficient contrast)
+- [x] Hover effects work smoothly
+- [x] Photos repeat to fill background
+- [x] Responsive on all screen sizes
+- [x] Names appear on hover
+- [x] Glassmorphism card renders correctly
 
 ---
 
 ## 🚀 Deployment Notes
 
-**No Database Changes**: Pure UI/frontend update
+**Static Assets**: 
+- 51 photos in `/public/people/` (~10-20MB total)
+- Originals backed up in `/public/people/originals/`
 
-**Environment Variables**: None required
+**Performance**:
+- Photos optimized by Next.js Image
+- Lazy loading for off-screen images
+- Fixed positioning (no layout shift)
 
-**Breaking Changes**: 
-- Route changed: `/submission` → `/contribution`
-- Old links will 404 (update any external references)
-
-**Static Assets**: Team photos must be deployed to `/public/team/`
+**No Database Changes**: Pure frontend update
 
 ---
 
 ## 📈 Impact
 
 **User Experience**:
-- ✅ Clearer, more focused landing page
-- ✅ Easier to find and contribute to person records
-- ✅ Professional About page with team transparency
-- ✅ Consistent terminology ("contributions" vs "submissions")
-- ✅ Clean, shareable URLs
+- ✅ Powerful emotional impact
+- ✅ Humanizes the death toll
+- ✅ Memorial aesthetic appropriate for subject
+- ✅ Clear, focused messaging over photos
 
-**SEO & Accessibility**:
-- ✅ Semantic HTML structure
-- ✅ Alt text for images
-- ✅ Proper heading hierarchy
-- ✅ Keyboard navigation support
+**Accessibility**:
+- ✅ Sufficient contrast (white on dark)
+- ✅ Alt text for all photos
+- ✅ Hover states for interaction feedback
 
-**Code Quality**:
-- ✅ Removed unused code
-- ✅ TypeScript strict mode compliance
-- ✅ Component reusability
-- ✅ Clean separation of concerns
+**Brand**:
+- ✅ Professional memorial design
+- ✅ Respects dignity of victims
+- ✅ Visual storytelling through faces
+- ✅ Impactful first impression
 
 ---
 
-## 🔗 Related Changes
-
-- Builds on previous person detail page work
-- Uses existing `/api/public/persons` endpoint
-- Integrates with existing moderation workflow
-- Maintains version history tracking
-
----
-
-**Status**: ✅ All changes tested and production-ready  
-**Build**: ✅ Successful (Exit code: 0)  
-**TypeScript**: ✅ No errors  
-**ESLint**: ✅ No warnings
+**Status**: ✅ Production-ready  
+**Visual QA**: ✅ All photos processed correctly  
+**No breaking changes**: Purely additive

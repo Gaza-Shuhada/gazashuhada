@@ -17,7 +17,7 @@ export function PublicNavbar() {
   const isStaff = user?.publicMetadata?.role === 'admin' || user?.publicMetadata?.role === 'moderator';
 
   return (
-    <nav className="sticky top-0 z-50 bg-background shadow-sm border-b">
+    <nav className="sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           {/* Left: Navigation Links */}
@@ -25,7 +25,7 @@ export function PublicNavbar() {
             {/* Mobile Menu Button - Always visible */}
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
+                <Button variant="ghost" size="icon" className="md:hidden text-white hover:text-white/80 hover:bg-white/10">
                   <Menu className="h-5 w-5" />
                   <span className="sr-only">Toggle menu</span>
                 </Button>
@@ -89,8 +89,8 @@ export function PublicNavbar() {
                 href="/about"
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   pathname === '/about'
-                    ? 'text-foreground font-semibold'
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'text-white font-semibold'
+                    : 'text-white/80 hover:text-white'
                 }`}
               >
                 About
@@ -99,8 +99,8 @@ export function PublicNavbar() {
                 href="/database"
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   pathname === '/database'
-                    ? 'text-foreground font-semibold'
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'text-white font-semibold'
+                    : 'text-white/80 hover:text-white'
                 }`}
               >
                 Database
@@ -109,8 +109,8 @@ export function PublicNavbar() {
                 href="/contribution"
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   pathname?.startsWith('/contribution')
-                    ? 'text-foreground font-semibold'
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'text-white font-semibold'
+                    : 'text-white/80 hover:text-white'
                 }`}
               >
                 Contributions
@@ -121,7 +121,7 @@ export function PublicNavbar() {
           {/* Center: Logo/Title */}
           <div className="absolute left-1/2 transform -translate-x-1/2">
             <Link href="/" className="flex items-center">
-              <span className="text-xl font-bold text-foreground whitespace-nowrap">Gaza Deaths وفيات غزة</span>
+              <span className="text-xl font-bold text-white whitespace-nowrap">Gaza Deaths وفيات غزة</span>
             </Link>
           </div>
 
@@ -131,7 +131,7 @@ export function PublicNavbar() {
             {isStaff && (
               <Link
                 href="/tools"
-                className="hidden md:block text-primary hover:text-primary/80 px-3 py-2 rounded-md text-sm font-medium"
+                className="hidden md:block text-white hover:text-white/80 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Admin Tools →
               </Link>
@@ -156,7 +156,7 @@ export function PublicNavbar() {
                 showName
               />
             ) : (
-              <Button variant="ghost" size="sm" asChild>
+              <Button variant="ghost" size="sm" asChild className="text-white hover:text-white/80 hover:bg-white/10">
                 <Link href="/sign-in">Sign In</Link>
               </Button>
             )}
