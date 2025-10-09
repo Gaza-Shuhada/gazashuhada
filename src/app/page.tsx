@@ -140,7 +140,7 @@ export default async function Home() {
           </p>
           <p className="mx-auto mb-16 max-w-3xl text-base text-gray-400 leading-relaxed">
             {stats && stats.percentageMissing > 0 
-              ? `${stats.percentageMissing}% of our records are still missing information. Help us by spreading the word and contributing.`
+              ? `${stats.percentageMissing}% of the records are still incomplete. Help us by spreading the word and contributing.`
               : 'Help us by spreading the word and contributing more information.'
             }
           </p>
@@ -149,7 +149,7 @@ export default async function Home() {
         <div className="max-w-2xl mx-auto">
           <Card className="border-2 shadow-2xl bg-black/40 backdrop-blur-sm border-white/10">
             <CardContent className="pt-8 pb-8 px-6">
-              <h2 className="text-2xl font-semibold mb-6 text-center text-white">Contribute missing information</h2>
+              <h2 className="text-2xl font-semibold mb-6 text-center text-white">Contribute information</h2>
               <PersonSearch />
             </CardContent>
           </Card>

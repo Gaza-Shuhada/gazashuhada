@@ -184,6 +184,7 @@ export async function POST(
             decisionNote: note || null,
             approvedChangeSourceId: changeSource.id,
             appliedVersionId: version.id,
+            personId: person.id, // Link the submission to the person
           },
         });
 

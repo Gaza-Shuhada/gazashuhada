@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { UserButton, useAuth, useUser } from '@clerk/nextjs';
+import { SignInButton, SignOutButton, useAuth, useUser } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Menu } from 'lucide-react';
@@ -83,28 +83,17 @@ export function PublicNavbar() {
                   {/* User Button / Sign In - Mobile only */}
                   <div className="border-t pt-4 mt-4">
                     {isSignedIn ? (
-                      <div className="px-3 py-2">
-                        <UserButton 
-                          appearance={{
-                            elements: {
-                              avatarBox: "h-8 w-8",
-                              userButtonPopoverCard: "bg-background border-border",
-                              userButtonPopoverActionButton: "text-foreground hover:bg-accent",
-                              userButtonPopoverActionButtonText: "text-foreground",
-                              userButtonPopoverFooter: "hidden",
-                            },
-                            variables: {
-                              colorText: "hsl(var(--foreground))",
-                              colorTextSecondary: "hsl(var(--muted-foreground))",
-                            }
-                          }}
-                          showName
-                        />
-                      </div>
+                      <SignOutButton>
+                        <button className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium transition-colors w-full text-left">
+                          Sign Out
+                        </button>
+                      </SignOutButton>
                     ) : (
-                      <Button variant="ghost" size="sm" asChild className="w-full justify-start">
-                        <Link href="/sign-in" onClick={() => setMobileMenuOpen(false)}>Sign In</Link>
-                      </Button>
+                      <SignInButton mode="modal">
+                        <button className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium transition-colors w-full text-left">
+                          Sign In
+                        </button>
+                      </SignInButton>
                     )}
                   </div>
                 </nav>
@@ -159,7 +148,7 @@ export function PublicNavbar() {
             {isStaff && (
               <Link
                 href="/tools"
-                className="text-white hover:text-white/80 px-3 py-2 rounded-md text-sm font-medium"
+                className="text-white/80 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
               >
                 Admin Tools →
               </Link>
@@ -167,26 +156,17 @@ export function PublicNavbar() {
 
             {/* User Button / Sign In - Desktop only */}
             {isSignedIn ? (
-              <UserButton 
-                appearance={{
-                  elements: {
-                    avatarBox: "h-8 w-8",
-                    userButtonPopoverCard: "bg-background border-border",
-                    userButtonPopoverActionButton: "text-foreground hover:bg-accent",
-                    userButtonPopoverActionButtonText: "text-foreground",
-                    userButtonPopoverFooter: "hidden",
-                  },
-                  variables: {
-                    colorText: "hsl(var(--foreground))",
-                    colorTextSecondary: "hsl(var(--muted-foreground))",
-                  }
-                }}
-                showName
-              />
+              <SignOutButton>
+                <button className="text-white/80 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                  Sign Out
+                </button>
+              </SignOutButton>
             ) : (
-              <Button variant="ghost" size="sm" asChild className="text-white hover:text-white/80 hover:bg-white/10">
-                <Link href="/sign-in">Sign In</Link>
-              </Button>
+              <SignInButton mode="modal">
+                <button className="text-white/80 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                  Sign In
+                </button>
+              </SignInButton>
             )}
           </div>
         </div>
