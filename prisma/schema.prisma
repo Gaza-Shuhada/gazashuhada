@@ -58,6 +58,7 @@ model Person {
   photoUrlOriginal  String?           // Original uploaded image URL
   photoUrlThumb     String?           // Thumbnail (e.g., 512x512) URL
   isDeleted         Boolean           @default(false)
+  currentVersion    Int               @default(1)
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
   

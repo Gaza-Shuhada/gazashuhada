@@ -452,6 +452,7 @@ export async function applyBulkUpload(
                 nameEnglish: row.name_english,
                 gender: row.gender,
                 dateOfBirth: incomingDate,
+                currentVersion: nextVersionNumber,
               },
             })
           );
@@ -535,7 +536,10 @@ export async function applyBulkUpload(
           personUpdates.push(
             tx.person.update({
               where: { id: existing.id },
-              data: { isDeleted: true },
+              data: { 
+                isDeleted: true,
+                currentVersion: nextVersionNumber,
+              },
             })
           );
           

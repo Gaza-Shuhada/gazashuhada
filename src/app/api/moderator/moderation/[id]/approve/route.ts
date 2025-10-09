@@ -121,6 +121,7 @@ export async function POST(
       if ('locationOfDeathLng' in payload) updateData.locationOfDeathLng = typeof payload.locationOfDeathLng === 'number' ? payload.locationOfDeathLng : null;
       if ('photoUrlThumb' in payload) updateData.photoUrlThumb = payload.photoUrlThumb || null;
       if ('photoUrlOriginal' in payload) updateData.photoUrlOriginal = payload.photoUrlOriginal || null;
+      updateData.currentVersion = latestVersion.versionNumber + 1;
 
       const updatedPerson = await tx.person.update({
         where: { id: person.id },

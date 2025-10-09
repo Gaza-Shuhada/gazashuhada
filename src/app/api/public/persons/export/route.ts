@@ -63,24 +63,16 @@ export async function GET(request: NextRequest) {
         photoUrlOriginal: true,
         photoUrlThumb: true,
         isDeleted: true,
+        currentVersion: true,
         createdAt: true,
         updatedAt: true,
-        versions: {
-          select: {
-            versionNumber: true,
-          },
-          orderBy: {
-            versionNumber: 'desc',
-          },
-          take: 1,
-        },
       },
     });
 
     // Convert to CSV
     const csvRows: string[] = [];
     
-    // Header row with ALL fields
+    // Header row with ALL fields (excluding internal fields like isDeleted)
     const headers = [
       'id',
       'externalId',
@@ -93,7 +85,6 @@ export async function GET(request: NextRequest) {
       'locationOfDeathLng',
       'photoUrlOriginal',
       'photoUrlThumb',
-      'isDeleted',
       'currentVersion',
       'createdAt',
       'updatedAt',
@@ -102,7 +93,6 @@ export async function GET(request: NextRequest) {
 
     // Data rows
     for (const person of persons) {
-      const currentVersion = person.versions[0]?.versionNumber || 1;
       const row = [
         escapeCsvValue(person.id),
         escapeCsvValue(person.externalId),
@@ -115,8 +105,7 @@ export async function GET(request: NextRequest) {
         escapeCsvValue(person.locationOfDeathLng?.toString() || ''),
         escapeCsvValue(person.photoUrlOriginal || ''),
         escapeCsvValue(person.photoUrlThumb || ''),
-        escapeCsvValue(person.isDeleted.toString()),
-        escapeCsvValue(currentVersion.toString()),
+        escapeCsvValue(person.currentVersion.toString()),
         escapeCsvValue(person.createdAt.toISOString()),
         escapeCsvValue(person.updatedAt.toISOString()),
       ];
