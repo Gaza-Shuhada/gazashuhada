@@ -40,6 +40,6 @@ export function AnimatedCounter({ end, duration = 2000 }: AnimatedCounterProps) 
     };
   }, [end, duration]);
 
-  return <strong>{count.toLocaleString()}</strong>;
+  return <strong className="tabular-nums">{count.toLocaleString()}</strong>;
 }
 
