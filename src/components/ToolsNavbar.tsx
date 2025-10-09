@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { UserButton, useAuth, useUser } from '@clerk/nextjs';
+import { useAuth, useUser } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Menu } from 'lucide-react';
@@ -171,38 +171,6 @@ export function ToolsNavbar() {
                 >
                   ← Back to Site
                 </Link>
-              </div>
-            )}
-          </div>
-
-          {/* Right Side: User Menu */}
-          <div className="flex items-center space-x-2">
-            {/* User Button / Sign In */}
-            {isSignedIn ? (
-              <UserButton 
-                appearance={{
-                  elements: {
-                    avatarBox: "h-8 w-8",
-                    userButtonPopoverCard: "bg-background border-border",
-                    userButtonPopoverActionButton: "text-foreground hover:bg-accent",
-                    userButtonPopoverActionButtonText: "text-foreground",
-                    userButtonPopoverFooter: "hidden",
-                  },
-                  variables: {
-                    colorText: "hsl(var(--foreground))",
-                    colorTextSecondary: "hsl(var(--muted-foreground))",
-                  }
-                }}
-                showName
-              />
-            ) : (
-              <div className="flex items-center space-x-2">
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/sign-in">Sign In</Link>
-                </Button>
-                <Button size="sm" asChild>
-                  <Link href="/sign-up">Sign Up</Link>
-                </Button>
               </div>
             )}
           </div>

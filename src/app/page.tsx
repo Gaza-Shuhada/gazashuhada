@@ -138,16 +138,12 @@ export default async function Home() {
             {stats ? <AnimatedCounter end={stats.totalPersons} /> : <strong>0</strong>}{' '}
             who have died in the Gaza genocide
           </p>
-          {stats && stats.percentageMissing > 0 && (
-            <p className="mx-auto mb-16 max-w-3xl text-base text-gray-400 leading-relaxed">
-              {stats.percentageMissing}% of our records are still missing information. Help us by spreading the word and contributing.
-            </p>
-          )}
-          {stats && stats.percentageMissing === 0 && (
-            <p className="mx-auto mb-16 max-w-3xl text-base text-gray-400 leading-relaxed">
-              Help us by spreading the word and contributing more information.
-            </p>
-          )}
+          <p className="mx-auto mb-16 max-w-3xl text-base text-gray-400 leading-relaxed">
+            {stats && stats.percentageMissing > 0 
+              ? `${stats.percentageMissing}% of our records are still missing information. Help us by spreading the word and contributing.`
+              : 'Help us by spreading the word and contributing more information.'
+            }
+          </p>
         </div>
 
         <div className="max-w-2xl mx-auto">
