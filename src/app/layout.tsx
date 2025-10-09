@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { shadcn } from "@clerk/themes";
 import { Analytics } from "@vercel/analytics/react";
 import { PublicNavbar } from "@/components/PublicNavbar";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -31,7 +32,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      appearance={{
+        baseTheme: shadcn,
+      }}
+    >
       <html lang="en" suppressHydrationWarning>
         <body
           className={`${inter.variable} antialiased font-sans`}

@@ -11,7 +11,24 @@ async function getStats() {
       where: { isDeleted: false }
     });
     
-    return { totalPersons };
+    // Count persons with community contributions (approved submissions)
+    const personsWithCommunityEdits = await prisma.person.count({
+      where: {
+        isDeleted: false,
+        submissions: {
+          some: {
+            status: 'APPROVED'
+          }
+        }
+      }
+    });
+    
+    // Calculate percentage of records still missing community information
+    const percentageMissing = totalPersons > 0 
+      ? Math.round(((totalPersons - personsWithCommunityEdits) / totalPersons) * 100)
+      : 0;
+    
+    return { totalPersons, percentageMissing };
   } catch (error) {
     console.error('Failed to fetch stats:', error);
     return null;
@@ -75,14 +92,14 @@ export default async function Home() {
   const stats = await getStats();
 
   // Calculate number of photos needed for each screen size to fill viewport
-  // Mobile: 6x12 = 72, Tablet: 8x8 = 64, Desktop: 12x6 = 72, Large: 14x6 = 84
-  const totalPhotos = 84;
+  // Mobile: 6x12 = 72, Tablet: 8x8 = 64, Desktop: 12x6 = 72, Large: 14x6 = 84, XLarge: 20x8 = 160
+  const totalPhotos = 160;
 
   return (
     <div className="relative min-h-screen bg-black pt-16 pb-24">
       {/* Background Photo Grid */}
       <div className="fixed inset-0 z-0 overflow-hidden">
-        <div className="w-full grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-14 gap-0.5">
+        <div className="w-full grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-16 2xl:grid-cols-20 gap-0.5">
           {/* Repeat photos to fill the background */}
           {Array.from({ length: totalPhotos }).map((_, index) => {
             const person = people[index % people.length];
@@ -116,17 +133,23 @@ export default async function Home() {
           <h1 className="mb-6 text-5xl font-bold tracking-tight sm:text-6xl text-white">
             We will not forget them
           </h1>
-          <p className="mx-auto mb-16 max-w-3xl text-lg text-gray-300 leading-relaxed">
+          <p className="mx-auto mb-4 max-w-3xl text-lg text-gray-300 leading-relaxed">
             Documenting and humanising the{' '}
             {stats ? <AnimatedCounter end={stats.totalPersons} /> : <strong>0</strong>}{' '}
             who have died in the Gaza genocide
+          </p>
+          <p className="mx-auto mb-16 max-w-3xl text-base text-gray-400 leading-relaxed">
+            {stats && stats.percentageMissing > 0 
+              ? `${stats.percentageMissing}% of the records are still incomplete. Help us by spreading the word and contributing.`
+              : 'Help us by spreading the word and contributing more information.'
+            }
           </p>
         </div>
 
         <div className="max-w-2xl mx-auto">
           <Card className="border-2 shadow-2xl bg-black/40 backdrop-blur-sm border-white/10">
             <CardContent className="pt-8 pb-8 px-6">
-              <h2 className="text-2xl font-semibold mb-6 text-center text-white">Contribute missing information</h2>
+              <h2 className="text-2xl font-semibold mb-6 text-center text-white">Contribute information</h2>
               <PersonSearch />
             </CardContent>
           </Card>

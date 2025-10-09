@@ -63,6 +63,7 @@ export function PersonsTable() {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: '10',
+        confirmedOnly: 'false', // Show ALL records (MoH confirmed + community submissions)
       });
       
       if (search.trim()) {
