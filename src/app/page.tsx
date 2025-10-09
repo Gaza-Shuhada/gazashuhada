@@ -1,14 +1,16 @@
 import { PersonSearch } from '@/components/PersonSearch';
 import { AnimatedCounter } from '@/components/AnimatedCounter';
 import { Card, CardContent } from '@/components/ui/card';
+import { prisma } from '@/lib/prisma';
 
 async function getStats() {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/public/stats`, {
-      cache: 'no-store'
+    // Fetch stats directly from database instead of API call
+    const totalPersons = await prisma.person.count({
+      where: { isDeleted: false }
     });
-    const data = await response.json();
-    return data.success ? data.data : null;
+    
+    return { totalPersons };
   } catch (error) {
     console.error('Failed to fetch stats:', error);
     return null;
