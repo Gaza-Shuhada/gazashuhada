@@ -92,9 +92,19 @@ export async function GET(request: NextRequest) {
           locationOfDeathLat: true,
           locationOfDeathLng: true,
           photoUrlThumb: true, // Only thumbnail, not original
+          isDeleted: true,
           createdAt: true,
           updatedAt: true,
-          // Do NOT expose: photoUrlOriginal, isDeleted
+          versions: {
+            select: {
+              versionNumber: true,
+            },
+            orderBy: {
+              versionNumber: 'desc',
+            },
+            take: 1,
+          },
+          // Do NOT expose: photoUrlOriginal
         },
         orderBy: {
           updatedAt: 'desc'
@@ -105,10 +115,17 @@ export async function GET(request: NextRequest) {
       prisma.person.count({ where: whereClause })
     ]);
 
+    // Map persons to include currentVersion
+    const personsWithVersion = persons.map(person => ({
+      ...person,
+      currentVersion: person.versions[0]?.versionNumber || 1,
+      versions: undefined, // Remove versions array from response
+    }));
+
     return NextResponse.json({
       success: true,
       data: {
-        persons,
+        persons: personsWithVersion,
         pagination: {
           page,
           limit,
