@@ -12,6 +12,8 @@ const nextConfig = {
       },
     ],
   },
+  // Mark sharp as external to prevent bundling issues
+  serverExternalPackages: ['sharp'],
   // Increase body size limit for large CSV uploads (App Router)
   experimental: {
     serverActions: {
