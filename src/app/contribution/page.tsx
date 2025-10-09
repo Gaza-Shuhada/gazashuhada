@@ -74,14 +74,6 @@ export default function CommunityContributePage() {
   const [editPhotoFile, setEditPhotoFile] = useState<File | null>(null);
   const [editPhotoPreview, setEditPhotoPreview] = useState<string | null>(null);
 
-  // Redirect if not signed in
-  useEffect(() => {
-    if (isLoaded && !isSignedIn) {
-      router.push('/sign-in');
-    }
-    // All roles (admin, moderator, community) can access this page
-  }, [isLoaded, isSignedIn, router]);
-
   // Load user's contribution history
   useEffect(() => {
     if (isSignedIn) {
@@ -416,7 +408,7 @@ export default function CommunityContributePage() {
     }
   };
 
-  if (!isLoaded || !isSignedIn) {
+  if (!isLoaded) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-muted-foreground">Loading...</div>
@@ -432,18 +424,34 @@ export default function CommunityContributePage() {
           <p className="text-muted-foreground mt-2">Propose new records or suggest edits to existing death-related information</p>
         </div>
 
-        {/* OLD: Inline message display (replaced with toast notifications)
-        {message && (
-          <div className={`mb-6 p-4 rounded-lg ${message.type === 'success' ? 'bg-accent text-accent-foreground' : 'bg-destructive/5 text-destructive'}`}>
-            {message.text}
+        {!isSignedIn && (
+          <div className="bg-card border rounded-lg p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-2">Sign in to contribute</h2>
+            <p className="text-muted-foreground mb-4">
+              You need to sign in to propose new records or suggest edits. All contributions are reviewed by moderators before being added to the database.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => router.push('/sign-in')}
+                className="bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => router.push('/sign-up')}
+                className="border border-primary text-primary px-6 py-2 rounded-lg font-medium hover:bg-primary/5 transition-colors"
+              >
+                Sign Up
+              </button>
+            </div>
           </div>
         )}
-        */}
 
-        {/* Tabs */}
-        <div className="bg-card border rounded-lg mb-6">
-          <div className="border-b">
-            <nav className="flex -mb-px">
+        {/* Tabs - Only show when signed in */}
+        {isSignedIn && (
+          <div className="bg-card border rounded-lg mb-6">
+            <div className="border-b">
+              <nav className="flex -mb-px">
               <button
                 onClick={() => setActiveTab('edit')}
                 className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
@@ -887,6 +895,7 @@ export default function CommunityContributePage() {
             )}
           </div>
         </div>
+        )}
       </div>
     </div>
   );

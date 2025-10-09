@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Menu } from 'lucide-react';
 import { useState } from 'react';
-import { ThemeToggle } from '@/components/theme-toggle';
 
 export function PublicNavbar() {
   const { isSignedIn } = useAuth();
@@ -23,7 +22,7 @@ export function PublicNavbar() {
         <div className="flex justify-between h-16 items-center">
           {/* Left: Navigation Links */}
           <div className="flex items-center space-x-6">
-            {/* Mobile Menu Button - Only visible on mobile */}
+            {/* Mobile Menu Button - Always visible */}
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="md:hidden">
@@ -36,6 +35,17 @@ export function PublicNavbar() {
                   <SheetTitle>Navigation</SheetTitle>
                 </SheetHeader>
                 <nav className="flex flex-col space-y-4 mt-6">
+                  <Link
+                    href="/about"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      pathname === '/about'
+                        ? 'text-foreground font-semibold'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    About
+                  </Link>
                   <Link
                     href="/database"
                     onClick={() => setMobileMenuOpen(false)}
@@ -58,19 +68,8 @@ export function PublicNavbar() {
                   >
                     Contributions
                   </Link>
-                  <Link
-                    href="/about"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      pathname === '/about'
-                        ? 'text-foreground font-semibold'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    About
-                  </Link>
                   
-                  {/* Staff Tools Link */}
+                  {/* Staff Tools Link - Only for staff */}
                   {isStaff && (
                     <Link
                       href="/tools"
@@ -84,8 +83,18 @@ export function PublicNavbar() {
               </SheetContent>
             </Sheet>
 
-            {/* Desktop Navigation - Hidden on mobile */}
+            {/* Desktop Navigation - Always visible */}
             <div className="hidden md:flex items-center space-x-6">
+              <Link
+                href="/about"
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  pathname === '/about'
+                    ? 'text-foreground font-semibold'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                About
+              </Link>
               <Link
                 href="/database"
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -106,16 +115,6 @@ export function PublicNavbar() {
               >
                 Contributions
               </Link>
-              <Link
-                href="/about"
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  pathname === '/about'
-                    ? 'text-foreground font-semibold'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                About
-              </Link>
             </div>
           </div>
 
@@ -126,7 +125,7 @@ export function PublicNavbar() {
             </Link>
           </div>
 
-          {/* Right Side: Staff Tools + Theme + User Menu */}
+          {/* Right Side: Staff Tools + User Menu */}
           <div className="flex items-center space-x-2">
             {/* Staff Tools Link - Desktop only */}
             {isStaff && (
@@ -137,9 +136,6 @@ export function PublicNavbar() {
                 Admin Tools →
               </Link>
             )}
-
-            {/* Theme Toggle */}
-            <ThemeToggle />
 
             {/* User Button / Sign In */}
             {isSignedIn ? (
@@ -160,14 +156,9 @@ export function PublicNavbar() {
                 showName
               />
             ) : (
-              <div className="flex items-center space-x-2">
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/sign-in">Sign In</Link>
-                </Button>
-                <Button size="sm" asChild>
-                  <Link href="/sign-up">Sign Up</Link>
-                </Button>
-              </div>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/sign-in">Sign In</Link>
+              </Button>
             )}
           </div>
         </div>

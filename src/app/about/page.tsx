@@ -111,11 +111,8 @@ export default function AboutPage() {
       <main className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="space-y-12">
           {/* Mission Statement */}
-          <div className="space-y-6">
-            <div className="text-center">
-              <h1 className="text-4xl font-bold mb-6">About Gaza Deaths</h1>
-            </div>
-            
+          <div className="space-y-6 mt-6">
+  
             <div className="prose prose-lg max-w-none space-y-4 text-muted-foreground">
               <p>
                 Gaza Death Toll aims to memorialise those dead and missing in Gaza since Oct. 7. 

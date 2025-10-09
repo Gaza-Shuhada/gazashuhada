@@ -69,7 +69,7 @@ export function PersonsTable() {
         params.append('search', search.trim());
       }
       
-      const response = await fetch(`/api/moderator/persons?${params.toString()}`);
+      const response = await fetch(`/api/public/persons?${params.toString()}`);
       const result = await response.json();
 
       if (!response.ok) {
