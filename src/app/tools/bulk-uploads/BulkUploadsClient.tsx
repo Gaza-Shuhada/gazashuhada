@@ -3,11 +3,14 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { upload } from '@vercel/blob/client';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Info } from 'lucide-react';
 
 interface BulkUpload {
   id: string;
   filename: string;
-  label: string;
+  comment: string | null;
   dateReleased: string;
   uploadedAt: string;
   fileUrl: string;
@@ -96,10 +99,6 @@ export default function BulkUploadsClient() {
 
   const handleSimulate = async () => {
     if (!selectedFile) return;
-    if (!label.trim()) { 
-      toast.error('Please provide a label for this upload', { duration: Infinity });
-      return; 
-    }
     if (!dateReleased.trim()) { 
       toast.error('Please provide the date when this data was released', { duration: Infinity });
       return; 
@@ -167,7 +166,6 @@ export default function BulkUploadsClient() {
       const data = text ? JSON.parse(text) : {};
       
       if (!simulateResponse.ok) {
-        console.error('[CLIENT] ❌ Simulation failed:', data.error);
         toast.error(data.error || 'Simulation failed', { 
           id: simulateToast,
           duration: Infinity,
@@ -209,13 +207,9 @@ export default function BulkUploadsClient() {
       toast.error('Please simulate the upload first', { duration: Infinity });
       return;
     }
-    if (!label.trim()) { 
-      toast.error('Please provide a label for this upload', { duration: Infinity });
-      return; 
-    }
     if (!dateReleased.trim()) { 
       toast.error('Please provide the date when this data was released', { duration: Infinity });
-      return; 
+      return;
     }
 
     console.log('[CLIENT] 🚀 Starting bulk upload apply');
@@ -251,7 +245,6 @@ export default function BulkUploadsClient() {
       const data = text ? JSON.parse(text) : {};
       
       if (!response.ok) {
-        console.error('[CLIENT] ❌ Apply failed:', data.error);
         toast.error(data.error || 'Apply failed', { 
           id: applyToast,
           duration: Infinity,
@@ -379,14 +372,14 @@ export default function BulkUploadsClient() {
               <p className="mt-2 text-sm text-muted-foreground">CSV must contain only: external_id, name, gender, date_of_birth</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Label <span className="text-destructive">*</span></label>
-              <input type="text" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g., Q4 2024 Update, January Corrections, etc." className="w-full md:w-1/2 px-3 py-2 border rounded-md shadow-sm focus:ring-ring focus:border-primary sm:text-sm text-foreground placeholder-muted-foreground" maxLength={200} required/>
-              <p className="mt-1 text-sm text-muted-foreground">Provide a description to identify this upload (required)</p>
-            </div>
-            <div>
               <label className="block text-sm font-medium text-foreground mb-2">Date Released <span className="text-destructive">*</span></label>
               <input type="date" value={dateReleased} onChange={(e) => setDateReleased(e.target.value)} className="w-full md:w-1/2 px-3 py-2 border rounded-md shadow-sm focus:ring-ring focus:border-primary sm:text-sm text-foreground" required/>
               <p className="mt-1 text-sm text-muted-foreground">When was this source data published/released? (required)</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Comment</label>
+              <input type="text" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g., Q4 2024 Update, January Corrections, etc." className="w-full md:w-1/2 px-3 py-2 border rounded-md shadow-sm focus:ring-ring focus:border-primary sm:text-sm text-foreground placeholder-muted-foreground" maxLength={200}/>
+              <p className="mt-1 text-sm text-muted-foreground">Optional: Provide a description to identify this upload</p>
             </div>
             {/* LEGACY: Inline error box - replaced with toast notifications */}
             {/* Uncomment to revert to inline error messages: */}
@@ -398,22 +391,26 @@ export default function BulkUploadsClient() {
             )}
             */}
             {selectedFile && !simulation && (
-              <button onClick={handleSimulate} disabled={simulating} className="bg-primary text-white px-6 py-2 rounded-md hover:bg-primary disabled:opacity-50">
+              <Button onClick={handleSimulate} disabled={simulating}>
                 {simulating ? 'Simulating...' : 'Simulate Upload'}
-              </button>
+              </Button>
             )}
             {simulation && (
               <div className="border rounded-lg p-4 space-y-4">
                 <h3 className="font-semibold text-lg">Simulation Results</h3>
                 <div className="grid grid-cols-4 gap-4">
-                  <div className="bg-muted p-4 rounded"><div className="text-sm text-muted-foreground">Total Incoming</div><div className="text-2xl font-bold">{simulation.summary.totalIncoming}</div></div>
+                  <div className="bg-muted p-4 rounded"><div className="text-sm text-muted-foreground">Total After Update</div><div className="text-2xl font-bold">{simulation.summary.totalIncoming}</div></div>
                   <div className="bg-accent p-4 rounded"><div className="text-sm text-accent-foreground">Inserts</div><div className="text-2xl font-bold text-accent-foreground">{simulation.summary.inserts}</div></div>
                   <div className="bg-secondary/20 p-4 rounded"><div className="text-sm text-secondary-foreground">Updates</div><div className="text-2xl font-bold text-secondary-foreground">{simulation.summary.updates}</div></div>
                   <div className="bg-destructive/5 p-4 rounded"><div className="text-sm text-destructive">Deletes</div><div className="text-2xl font-bold text-destructive">{simulation.summary.deletes}</div></div>
                 </div>
                 <div className="flex gap-4 pt-2">
-                  <button onClick={handleApply} disabled={applying} className="bg-primary text-white px-6 py-2 rounded-md hover:bg-primary/90 disabled:opacity-50">{applying ? 'Applying...' : 'Apply Upload'}</button>
-                  <button onClick={handleCancel} disabled={applying} className="bg-secondary text-secondary-foreground px-6 py-2 rounded-md hover:bg-secondary/80 disabled:opacity-50">Cancel</button>
+                  <Button onClick={handleApply} disabled={applying}>
+                    {applying ? 'Applying...' : 'Apply Upload'}
+                  </Button>
+                  <Button onClick={handleCancel} disabled={applying} variant="secondary">
+                    Cancel
+                  </Button>
                 </div>
                 {simulation.deletions.length > 0 && (
                   <div className="border border-destructive/20 rounded-lg p-4 bg-destructive/5">
@@ -508,7 +505,7 @@ export default function BulkUploadsClient() {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Filename</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">File</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Label</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Comment</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Date Released</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Uploaded At</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Changes</th>
@@ -536,7 +533,20 @@ export default function BulkUploadsClient() {
                           <span className="text-muted-foreground text-xs">{formatFileSize(upload.fileSize)}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-muted-foreground"><span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-primary/10 text-primary">{upload.label}</span></td>
+                      <td className="px-6 py-4 text-sm text-muted-foreground">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button className="text-muted-foreground hover:text-foreground transition-colors">
+                                <Info className="h-4 w-4" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="max-w-xs">{upload.comment}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{formatDateOfBirth(upload.dateReleased)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{formatDate(upload.uploadedAt)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">{upload.stats.total}</td>

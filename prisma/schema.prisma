@@ -29,7 +29,6 @@ enum ChangeType {
 }
 
 enum SubmissionType {
-  NEW_RECORD
   EDIT
 }
 
@@ -56,10 +55,8 @@ model Person {
   dateOfDeath       DateTime?
   locationOfDeathLat Float?           // Latitude coordinate
   locationOfDeathLng Float?           // Longitude coordinate
-  obituary          String?
   photoUrlOriginal  String?           // Original uploaded image URL
   photoUrlThumb     String?           // Thumbnail (e.g., 512x512) URL
-  confirmedByMoh    Boolean           @default(false) // true for bulk uploads, false for community submissions
   isDeleted         Boolean           @default(false)
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
@@ -79,10 +76,8 @@ model PersonVersion {
   dateOfDeath       DateTime?
   locationOfDeathLat Float?           // Latitude coordinate
   locationOfDeathLng Float?           // Longitude coordinate
-  obituary          String?
   photoUrlOriginal  String?           // Original uploaded image URL
   photoUrlThumb     String?           // Thumbnail (e.g., 512x512) URL
-  confirmedByMoh    Boolean           @default(false) // true for bulk uploads, false for community submissions
   versionNumber     Int
   sourceId          String
   changeType        ChangeType        @default(INSERT)
@@ -117,7 +112,7 @@ model BulkUpload {
   id                String            @id @default(uuid())
   changeSourceId    String            @unique
   filename          String
-  label             String            // Required: manual description/label for the upload
+  comment           String?           // Optional: manual description/comment for the upload
   dateReleased      DateTime          // Required: when the source data was published/released
   
   // Blob storage references
@@ -134,10 +129,10 @@ model BulkUpload {
 
 model CommunitySubmission {
   id                      String            @id @default(uuid())
-  type                    SubmissionType
-  baseVersionId           String?           // NULL for NEW_RECORD submissions
-  personId                String?           // NULL for NEW_RECORD submissions
-  proposedPayload         Json              // For NEW_RECORD: all fields; For EDIT: only date_of_death, location_of_death, obituary, photo_url
+  type                    SubmissionType    // Always EDIT (only edits allowed)
+  baseVersionId           String            // Required: version being edited
+  personId                String            // Required: person being edited
+  proposedPayload         Json              // Only editable fields: date_of_death, location_of_death, photo_url
   reason                  String?           // Optional explanation for the submission
   submittedBy             String            // Clerk user ID
   status                  SubmissionStatus  @default(PENDING)

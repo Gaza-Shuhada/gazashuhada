@@ -27,15 +27,6 @@ export async function GET(request: NextRequest) {
     let whereClause: Prisma.PersonWhereInput = {};
 
     switch (filter) {
-      case 'reported_by_community':
-        // Records created by community (not confirmed by MoH)
-        whereClause = {
-          confirmedByMoh: false,
-          isDeleted: false,
-          ...(searchCondition ? { OR: searchCondition } : {})
-        };
-        break;
-
       case 'deleted_by_moh':
         // Records marked as deleted
         whereClause = {
@@ -111,7 +102,6 @@ export async function GET(request: NextRequest) {
           locationOfDeathLat: true,
           locationOfDeathLng: true,
           photoUrlThumb: true,
-          confirmedByMoh: true,
           isDeleted: true,
           createdAt: true,
           updatedAt: true,

@@ -49,11 +49,11 @@ export async function POST(request: NextRequest) {
     
     const body = await request.json();
     console.log('[SERVER] 📦 Request body keys:', Object.keys(body));
-    const { blobUrl, label, dateReleased, filename } = body;
+    const { blobUrl, label: comment, dateReleased, filename } = body;
     
     console.log('[SERVER] 📋 Request metadata:', {
       hasBlob: !!blobUrl,
-      label: label?.trim(),
+      comment: comment?.trim() || null,
       dateReleased,
       filename,
     });
@@ -66,11 +66,6 @@ export async function POST(request: NextRequest) {
     if (!filename) {
       console.error('[SERVER] ❌ No filename provided');
       return NextResponse.json({ error: 'No filename provided' }, { status: 400 });
-    }
-    
-    if (!label || !label.trim()) {
-      console.error('[SERVER] ❌ No label provided');
-      return NextResponse.json({ error: 'Label is required' }, { status: 400 });
     }
     
     if (!dateReleased || !dateReleased.trim()) {
@@ -136,12 +131,12 @@ export async function POST(request: NextRequest) {
     console.log('[SERVER] 🔄 Starting bulk upload application...');
     console.log('[SERVER] 📋 Upload metadata:', {
       filename,
-      label: label.trim(),
+      comment: comment?.trim() || null,
       dateReleased: dateReleasedObj.toISOString(),
       rowCount: rows.length,
     });
     const applyStart = Date.now();
-    const result = await applyBulkUpload(rows, filename, rawFile, label.trim(), dateReleasedObj);
+    const result = await applyBulkUpload(rows, filename, rawFile, comment?.trim() || null, dateReleasedObj);
     const applyTime = Date.now() - applyStart;
     
     console.log('[SERVER] ✅ Bulk upload applied successfully!');

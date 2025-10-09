@@ -49,10 +49,7 @@ export async function POST(
     });
 
     // Create audit log
-    const payload = submission.proposedPayload as Record<string, string>;
-    const description = submission.type === 'NEW_RECORD'
-      ? `Rejected NEW_RECORD submission for ${payload.name || 'unknown'}`
-      : `Rejected EDIT submission for ${submission.person?.name || 'unknown'}`;
+    const description = `Rejected EDIT submission for ${submission.person?.name || 'unknown'}`;
 
     await createAuditLogWithUser(
       clerkUser!.id,

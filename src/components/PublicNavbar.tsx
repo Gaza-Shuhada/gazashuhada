@@ -57,17 +57,21 @@ export function PublicNavbar() {
                   >
                     Database
                   </Link>
-                  <Link
-                    href="/contribution"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      pathname?.startsWith('/contribution')
-                        ? 'text-foreground font-semibold'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    Contributions
-                  </Link>
+                  
+                  {/* Contributions - Only when signed in */}
+                  {isSignedIn && (
+                    <Link
+                      href="/contribution"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        pathname?.startsWith('/contribution')
+                          ? 'text-foreground font-semibold'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Contributions
+                    </Link>
+                  )}
                   
                   {/* Staff Tools Link - Only for staff */}
                   {isStaff && (
@@ -122,16 +126,20 @@ export function PublicNavbar() {
               >
                 Database
               </Link>
-              <Link
-                href="/contribution"
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  pathname?.startsWith('/contribution')
-                    ? 'text-white font-semibold'
-                    : 'text-white/80 hover:text-white'
-                }`}
-              >
-                Contributions
-              </Link>
+              
+              {/* Contributions - Only when signed in */}
+              {isSignedIn && (
+                <Link
+                  href="/contribution"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    pathname?.startsWith('/contribution')
+                      ? 'text-white font-semibold'
+                      : 'text-white/80 hover:text-white'
+                  }`}
+                >
+                  Contributions
+                </Link>
+              )}
             </div>
           </div>
 

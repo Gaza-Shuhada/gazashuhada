@@ -3,6 +3,7 @@
 import { useUser } from '@clerk/nextjs';
 import { ReactNode } from 'react';
 import Link from 'next/link';
+import { buttonVariants } from '@/components/ui/button';
 
 interface BulkUploadsLayoutProps {
   children: ReactNode;
@@ -35,10 +36,7 @@ export default function BulkUploadsLayout({ children }: BulkUploadsLayoutProps) 
           </div>
           <h1 className="text-2xl font-bold text-foreground mb-4">Authentication Required</h1>
           <p className="text-muted-foreground mb-6">You must be signed in to access this page.</p>
-          <Link
-            href="/sign-in"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary"
-          >
+          <Link href="/sign-in" className={buttonVariants({ variant: "default" })}>
             Sign In
           </Link>
         </div>
@@ -63,10 +61,7 @@ export default function BulkUploadsLayout({ children }: BulkUploadsLayoutProps) 
             Current role: <span className="font-medium">{userRole || 'Community Member'}</span>
           </p>
           <div className="space-x-4">
-            <Link
-              href="/"
-              className="inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md text-foreground bg-background hover:bg-muted"
-            >
+            <Link href="/" className={buttonVariants({ variant: "outline" })}>
               Go to Dashboard
             </Link>
           </div>

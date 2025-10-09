@@ -17,6 +17,11 @@ const LocationPicker = dynamic(() => import('@/components/LocationPicker'), {
   </div>
 });
 
+interface PersonInfo {
+  name: string;
+  dateOfBirth: string | null;
+}
+
 export default function ContributeEditPage() {
   const { isLoaded, isSignedIn } = useUser();
   const router = useRouter();
@@ -25,13 +30,14 @@ export default function ContributeEditPage() {
 
   const [loading, setLoading] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [personInfo, setPersonInfo] = useState<PersonInfo | null>(null);
+  const [fetchingPerson, setFetchingPerson] = useState(true);
 
   // Form states for EDIT
   const [editForm, setEditForm] = useState({
     dateOfDeath: '',
     locationOfDeathLat: '',
     locationOfDeathLng: '',
-    obituary: '',
     photoUrlThumb: '',
     photoUrlOriginal: '',
     reason: '',
@@ -40,6 +46,31 @@ export default function ContributeEditPage() {
   // Photo upload states for edit
   const [editPhotoFile, setEditPhotoFile] = useState<File | null>(null);
   const [editPhotoPreview, setEditPhotoPreview] = useState<string | null>(null);
+
+  // Fetch person info
+  useEffect(() => {
+    const fetchPerson = async () => {
+      try {
+        const response = await fetch(`/api/public/person/${externalId}`);
+        if (response.ok) {
+          const result = await response.json();
+          const data = result.data; // Response has { success: true, data: {...} }
+          setPersonInfo({
+            name: data.name,
+            dateOfBirth: data.dateOfBirth,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch person info:', error);
+      } finally {
+        setFetchingPerson(false);
+      }
+    };
+
+    if (externalId) {
+      fetchPerson();
+    }
+  }, [externalId]);
 
   // Redirect if not signed in
   useEffect(() => {
@@ -138,14 +169,12 @@ export default function ContributeEditPage() {
         dateOfDeath?: string;
         locationOfDeathLat?: number;
         locationOfDeathLng?: number;
-        obituary?: string;
         photoUrlThumb?: string;
         photoUrlOriginal?: string;
       } = {};
       if (editForm.dateOfDeath) payload.dateOfDeath = editForm.dateOfDeath;
       if (editForm.locationOfDeathLat) payload.locationOfDeathLat = parseFloat(editForm.locationOfDeathLat);
       if (editForm.locationOfDeathLng) payload.locationOfDeathLng = parseFloat(editForm.locationOfDeathLng);
-      if (editForm.obituary) payload.obituary = editForm.obituary;
       if (photoUrlThumb) payload.photoUrlThumb = photoUrlThumb;
       if (photoUrlOriginal) payload.photoUrlOriginal = photoUrlOriginal;
 
@@ -203,7 +232,7 @@ export default function ContributeEditPage() {
     }
   };
 
-  if (!isLoaded || !isSignedIn) {
+  if (!isLoaded || !isSignedIn || fetchingPerson) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-muted-foreground">Loading...</div>
@@ -220,64 +249,22 @@ export default function ContributeEditPage() {
             Back to Person
           </Button>
           <h1 className="text-3xl font-bold">Contribute Information</h1>
-          <p className="text-muted-foreground mt-2">
-            Suggest edits to record: <span className="font-mono font-semibold">{externalId}</span>
-          </p>
+          {personInfo ? (
+            <p className="text-muted-foreground mt-2">
+              Contributing information for <span className="font-semibold text-foreground">{personInfo.name}</span>
+              {personInfo.dateOfBirth && (
+                <span> with date of birth <span className="font-semibold text-foreground">{new Date(personInfo.dateOfBirth).toLocaleDateString()}</span></span>
+              )}
+            </p>
+          ) : (
+            <p className="text-muted-foreground mt-2">
+              Suggest edits to record: <span className="font-mono font-semibold">{externalId}</span>
+            </p>
+          )}
         </div>
 
         <div className="bg-card border rounded-lg p-6">
           <form onSubmit={handleEditSubmit} className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-4">Propose Changes</h3>
-              <p className="text-sm text-muted-foreground mb-6">
-                You can propose changes to death-related information. Name, gender, and date of birth cannot be edited.
-                Location coordinates should be provided as latitude/longitude pairs (both required if updating location).
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Date of Death
-                </label>
-                <input
-                  type="date"
-                  value={editForm.dateOfDeath}
-                  onChange={(e) => setEditForm({ ...editForm, dateOfDeath: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Location of Death <span className="text-muted-foreground">(Optional)</span>
-                </label>
-                <LocationPicker
-                  initialLat={editForm.locationOfDeathLat ? parseFloat(editForm.locationOfDeathLat) : null}
-                  initialLng={editForm.locationOfDeathLng ? parseFloat(editForm.locationOfDeathLng) : null}
-                  onLocationChange={(lat, lng) => {
-                    setEditForm({
-                      ...editForm,
-                      locationOfDeathLat: lat !== null ? lat.toString() : '',
-                      locationOfDeathLng: lng !== null ? lng.toString() : '',
-                    });
-                  }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                Obituary
-              </label>
-              <textarea
-                rows={4}
-                value={editForm.obituary}
-                onChange={(e) => setEditForm({ ...editForm, obituary: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
-                placeholder="Additional information or obituary text"
-              />
-            </div>
 
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
@@ -320,6 +307,37 @@ export default function ContributeEditPage() {
               </div>
             </div>
 
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Date of Death
+                </label>
+                <input
+                  type="date"
+                  value={editForm.dateOfDeath}
+                  onChange={(e) => setEditForm({ ...editForm, dateOfDeath: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Location of Death <span className="text-muted-foreground">(Optional)</span>
+                </label>
+                <LocationPicker
+                  initialLat={editForm.locationOfDeathLat ? parseFloat(editForm.locationOfDeathLat) : null}
+                  initialLng={editForm.locationOfDeathLng ? parseFloat(editForm.locationOfDeathLng) : null}
+                  onLocationChange={(lat, lng) => {
+                    setEditForm({
+                      ...editForm,
+                      locationOfDeathLat: lat !== null ? lat.toString() : '',
+                      locationOfDeathLng: lng !== null ? lng.toString() : '',
+                    });
+                  }}
+                />
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">
                 Reason for Edit <span className="text-muted-foreground">(Optional)</span>
@@ -333,13 +351,23 @@ export default function ContributeEditPage() {
               />
             </div>
 
-            <button
+            <Button
               type="submit"
-              disabled={loading || uploadingPhoto || (!editForm.dateOfDeath && !editForm.locationOfDeathLat && !editForm.locationOfDeathLng && !editForm.obituary && !editPhotoFile)}
-              className="w-full bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              disabled={
+                loading || 
+                uploadingPhoto || 
+                (
+                  !editForm.dateOfDeath && 
+                  !editForm.locationOfDeathLat && 
+                  !editForm.locationOfDeathLng && 
+                  !editPhotoFile &&
+                  !editForm.reason?.trim()
+                )
+              }
+              className="w-full"
             >
               {uploadingPhoto ? 'Uploading photo...' : loading ? 'Submitting...' : 'Submit Edit Proposal'}
-            </button>
+            </Button>
           </form>
         </div>
       </div>

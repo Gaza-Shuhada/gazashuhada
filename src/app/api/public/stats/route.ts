@@ -11,8 +11,7 @@ export async function GET() {
     // Get public statistics (no sensitive data)
     const [
       totalPersons,
-      totalDeceased,
-      confirmedByMoh
+      totalDeceased
     ] = await Promise.all([
       // Total persons (not deleted)
       prisma.person.count({
@@ -25,14 +24,6 @@ export async function GET() {
           isDeleted: false,
           dateOfDeath: { not: null }
         }
-      }),
-      
-      // Confirmed by MoH
-      prisma.person.count({
-        where: {
-          isDeleted: false,
-          confirmedByMoh: true
-        }
       })
     ]);
 
@@ -41,7 +32,6 @@ export async function GET() {
       data: {
         totalPersons,
         totalDeceased,
-        confirmedByMoh,
         lastUpdated: new Date().toISOString()
       }
     });

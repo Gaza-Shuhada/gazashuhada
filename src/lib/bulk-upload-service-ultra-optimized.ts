@@ -54,13 +54,13 @@ const UPDATE_BATCH_SIZE = 100;
  */
 async function fetchPersonsInBatches(externalIds: string[]) {
   if (externalIds.length <= MAX_BATCH_SIZE) {
-    // No batching needed
+    // No batching needed - fetch ALL records (including deleted ones)
     return await prisma.person.findMany({
       where: { 
-        externalId: { in: externalIds },
-        isDeleted: false 
+        externalId: { in: externalIds }
+        // Don't filter by isDeleted - we need to know about ALL existing records
       },
-      select: { externalId: true, name: true, nameEnglish: true, gender: true, dateOfBirth: true },
+      select: { externalId: true, name: true, nameEnglish: true, gender: true, dateOfBirth: true, isDeleted: true },
     });
   }
 
@@ -70,10 +70,10 @@ async function fetchPersonsInBatches(externalIds: string[]) {
     const batch = externalIds.slice(i, i + MAX_BATCH_SIZE);
     const batchResults = await prisma.person.findMany({
       where: { 
-        externalId: { in: batch },
-        isDeleted: false 
+        externalId: { in: batch }
+        // Don't filter by isDeleted - we need to know about ALL existing records
       },
-      select: { externalId: true, name: true, nameEnglish: true, gender: true, dateOfBirth: true },
+      select: { externalId: true, name: true, nameEnglish: true, gender: true, dateOfBirth: true, isDeleted: true },
     });
     results.push(...batchResults);
     console.log(`  Fetched batch ${Math.floor(i / MAX_BATCH_SIZE) + 1} (${batchResults.length} records)`);
@@ -86,11 +86,11 @@ async function fetchPersonsInBatches(externalIds: string[]) {
  */
 async function fetchFullPersonsInBatches(externalIds: string[]) {
   if (externalIds.length <= MAX_BATCH_SIZE) {
-    // No batching needed
+    // No batching needed - fetch ALL records (including deleted ones)
     return await prisma.person.findMany({
       where: { 
-        externalId: { in: externalIds },
-        isDeleted: false 
+        externalId: { in: externalIds }
+        // Don't filter by isDeleted - we need to know about ALL existing records
       },
       select: {
         id: true,
@@ -102,7 +102,7 @@ async function fetchFullPersonsInBatches(externalIds: string[]) {
         dateOfDeath: true,
         locationOfDeathLat: true,
         locationOfDeathLng: true,
-        obituary: true,
+        isDeleted: true, // Include this so we can check if it's deleted
       },
     });
   }
@@ -113,8 +113,8 @@ async function fetchFullPersonsInBatches(externalIds: string[]) {
     const batch = externalIds.slice(i, i + MAX_BATCH_SIZE);
     const batchResults = await prisma.person.findMany({
       where: { 
-        externalId: { in: batch },
-        isDeleted: false 
+        externalId: { in: batch }
+        // Don't filter by isDeleted - we need to know about ALL existing records
       },
       select: {
         id: true,
@@ -126,7 +126,7 @@ async function fetchFullPersonsInBatches(externalIds: string[]) {
         dateOfDeath: true,
         locationOfDeathLat: true,
         locationOfDeathLng: true,
-        obituary: true,
+        isDeleted: true, // Include this so we can check if it's deleted
       },
     });
     results.push(...batchResults);
@@ -146,7 +146,7 @@ interface ExistingPerson {
   dateOfDeath: Date | null;
   locationOfDeathLat: number | null;
   locationOfDeathLng: number | null;
-  obituary: string | null;
+  isDeleted: boolean;
 }
 
 // Same interfaces as before...
@@ -192,7 +192,7 @@ export async function simulateBulkUpload(rows: BulkUploadRow[]): Promise<Simulat
   
   const allExistingIds = await prisma.person.findMany({
     where: { isDeleted: false },
-    select: { externalId: true, name: true, nameEnglish: true, gender: true, dateOfBirth: true, confirmedByMoh: true },
+    select: { externalId: true, name: true, nameEnglish: true, gender: true, dateOfBirth: true, isDeleted: true },
   });
   
   const insertDiffs: DiffItem[] = [];
@@ -204,6 +204,7 @@ export async function simulateBulkUpload(rows: BulkUploadRow[]): Promise<Simulat
     const incomingDate = row.date_of_birth ? new Date(row.date_of_birth) : null;
     
     if (!existing) {
+      // Truly new record - no existing record with this externalId
       insertDiffs.push({
         externalId: row.external_id,
         changeType: ChangeType.INSERT,
@@ -215,12 +216,14 @@ export async function simulateBulkUpload(rows: BulkUploadRow[]): Promise<Simulat
         },
       });
     } else {
+      // Record exists (either active or deleted)
       const existingDate = existing.dateOfBirth ? new Date(existing.dateOfBirth) : null;
       const isDifferent = 
         existing.name !== row.name ||
         existing.nameEnglish !== row.name_english ||
         existing.gender !== row.gender ||
-        (existingDate?.getTime() !== incomingDate?.getTime());
+        (existingDate?.getTime() !== incomingDate?.getTime()) ||
+        existing.isDeleted; // If deleted, we need to un-delete it
       
       if (isDifferent) {
         updateDiffs.push({
@@ -243,13 +246,13 @@ export async function simulateBulkUpload(rows: BulkUploadRow[]): Promise<Simulat
     }
   }
   
-  // Only mark MoH-confirmed records as "deleted" (actually unconfirmed)
-  // Community records (confirmedByMoh = false) are left alone
+  // Mark removed records as deleted
+  // Records not in the new MoH upload should be marked isDeleted = true
   for (const existing of allExistingIds) {
-    if (!incomingIdsSet.has(existing.externalId) && existing.confirmedByMoh) {
+    if (!incomingIdsSet.has(existing.externalId) && !existing.isDeleted) {
       deleteDiffs.push({
         externalId: existing.externalId,
-        changeType: ChangeType.DELETE, // UI still calls this "delete" but it's really "unconfirm"
+        changeType: ChangeType.DELETE,
         current: {
           name: existing.name,
           nameEnglish: existing.nameEnglish,
@@ -287,7 +290,7 @@ export async function applyBulkUpload(
   rows: BulkUploadRow[],
   filename: string,
   rawFile: Buffer,
-  label: string,
+  comment: string | null,
   dateReleased: Date
 ): Promise<{ uploadId: string; changeSourceId: string }> {
   const incomingIds = rows.map(r => r.external_id);
@@ -302,7 +305,7 @@ export async function applyBulkUpload(
   
   const allExistingPersons = await prisma.person.findMany({
     where: { isDeleted: false },
-    select: { id: true, externalId: true, name: true, nameEnglish: true, gender: true, dateOfBirth: true, dateOfDeath: true, locationOfDeathLat: true, locationOfDeathLng: true, obituary: true, confirmedByMoh: true },
+    select: { id: true, externalId: true, name: true, nameEnglish: true, gender: true, dateOfBirth: true, dateOfDeath: true, locationOfDeathLat: true, locationOfDeathLng: true, isDeleted: true },
   });
   
   // Upload file to Blob storage
@@ -324,7 +327,7 @@ export async function applyBulkUpload(
     data: {
       changeSourceId: changeSource.id,
       filename,
-      label,
+      comment,
       dateReleased,
       // Blob storage metadata (replaces rawFile)
       fileUrl: blobMetadata.url,
@@ -344,14 +347,17 @@ export async function applyBulkUpload(
     const incomingDate = row.date_of_birth ? new Date(row.date_of_birth) : null;
     
     if (!existing) {
+      // Truly new record - no existing record with this externalId
       toInsert.push(row);
     } else {
+      // Record exists (either active or deleted)
       const existingDate = existing.dateOfBirth ? new Date(existing.dateOfBirth) : null;
       const isDifferent = 
         existing.name !== row.name ||
         existing.nameEnglish !== row.name_english ||
         existing.gender !== row.gender ||
-        (existingDate?.getTime() !== incomingDate?.getTime());
+        (existingDate?.getTime() !== incomingDate?.getTime()) ||
+        existing.isDeleted; // If deleted, we need to un-delete it
       
       if (isDifferent) {
         toUpdate.push({ existing, row });
@@ -376,7 +382,6 @@ export async function applyBulkUpload(
           nameEnglish: row.name_english,
           gender: row.gender,
           dateOfBirth: row.date_of_birth ? new Date(row.date_of_birth) : null,
-          confirmedByMoh: true, // Bulk uploads are from MoH
         })),
       });
       
@@ -391,7 +396,6 @@ export async function applyBulkUpload(
           nameEnglish: person.nameEnglish,
           gender: person.gender,
           dateOfBirth: person.dateOfBirth,
-          confirmedByMoh: true, // Bulk uploads are from MoH
           versionNumber: 1,
           sourceId: changeSource.id,
           changeType: ChangeType.INSERT,
@@ -448,7 +452,6 @@ export async function applyBulkUpload(
                 nameEnglish: row.name_english,
                 gender: row.gender,
                 dateOfBirth: incomingDate,
-                confirmedByMoh: true, // Bulk uploads are from MoH
               },
             })
           );
@@ -464,8 +467,6 @@ export async function applyBulkUpload(
             dateOfDeath: existing.dateOfDeath,
             locationOfDeathLat: existing.locationOfDeathLat,
             locationOfDeathLng: existing.locationOfDeathLng,
-            obituary: existing.obituary,
-            confirmedByMoh: true, // Bulk uploads are from MoH
             versionNumber: nextVersionNumber,
             sourceId: changeSource.id,
             changeType: ChangeType.UPDATE,
@@ -491,51 +492,50 @@ export async function applyBulkUpload(
     }
   }
   
-  // MARK AS UNCONFIRMED (Previously: DELETE)
-  // Records not in the new MoH upload should have confirmedByMoh set to false
-  // (not deleted, as they may be community submissions or no longer confirmed by MoH)
-  const toUnconfirm = allExistingPersons.filter(existing => 
-    !incomingIdsSet.has(existing.externalId) && existing.confirmedByMoh === true
+  // MARK AS DELETED
+  // Records not in the new MoH upload should be marked as deleted
+  const toDelete = allExistingPersons.filter(existing => 
+    !incomingIdsSet.has(existing.externalId) && !existing.isDeleted
   );
   
-  if (toUnconfirm.length > 0) {
+  if (toDelete.length > 0) {
     // Step 1: Get all latest version numbers - batched to avoid bind variable limit
-    const unconfirmIds = toUnconfirm.map(d => d.id);
-    const unconfirmVersionMap = new Map<string, number>();
+    const deleteIds = toDelete.map(d => d.id);
+    const deleteVersionMap = new Map<string, number>();
     
     // Fetch version numbers in batches
-    for (let i = 0; i < unconfirmIds.length; i += MAX_BATCH_SIZE) {
-      const batch = unconfirmIds.slice(i, i + MAX_BATCH_SIZE);
-      const latestUnconfirmVersions = await prisma.personVersion.groupBy({
+    for (let i = 0; i < deleteIds.length; i += MAX_BATCH_SIZE) {
+      const batch = deleteIds.slice(i, i + MAX_BATCH_SIZE);
+      const latestDeleteVersions = await prisma.personVersion.groupBy({
         by: ['personId'],
         where: { personId: { in: batch } },
         _max: { versionNumber: true },
       });
       
-      latestUnconfirmVersions.forEach(v => {
-        unconfirmVersionMap.set(v.personId, v._max.versionNumber || 0);
+      latestDeleteVersions.forEach(v => {
+        deleteVersionMap.set(v.personId, v._max.versionNumber || 0);
       });
     }
     
-    console.log(`  Fetched latest versions for ${toUnconfirm.length} persons to mark as unconfirmed`);
+    console.log(`  Fetched latest versions for ${toDelete.length} persons to mark as deleted`);
     
-    // Step 2: Process unconfirm operations in batches
-    for (let i = 0; i < toUnconfirm.length; i += UPDATE_BATCH_SIZE) {
-      const batch = toUnconfirm.slice(i, Math.min(i + UPDATE_BATCH_SIZE, toUnconfirm.length));
+    // Step 2: Process delete operations in batches
+    for (let i = 0; i < toDelete.length; i += UPDATE_BATCH_SIZE) {
+      const batch = toDelete.slice(i, Math.min(i + UPDATE_BATCH_SIZE, toDelete.length));
       
       await prisma.$transaction(async (tx) => {
         const personUpdates = [];
         const versionCreates = [];
         
         for (const existing of batch) {
-          const currentVersion = unconfirmVersionMap.get(existing.id) || 0;
+          const currentVersion = deleteVersionMap.get(existing.id) || 0;
           const nextVersionNumber = currentVersion + 1;
           
-          // Prepare batch updates: Mark as no longer confirmed by MoH
+          // Prepare batch updates: Mark as deleted
           personUpdates.push(
             tx.person.update({
               where: { id: existing.id },
-              data: { confirmedByMoh: false },
+              data: { isDeleted: true },
             })
           );
           
@@ -550,12 +550,10 @@ export async function applyBulkUpload(
             dateOfDeath: existing.dateOfDeath,
             locationOfDeathLat: existing.locationOfDeathLat,
             locationOfDeathLng: existing.locationOfDeathLng,
-            obituary: existing.obituary,
-            confirmedByMoh: false, // No longer confirmed by MoH
             versionNumber: nextVersionNumber,
             sourceId: changeSource.id,
-            changeType: ChangeType.UPDATE, // Changed from DELETE to UPDATE
-            isDeleted: false, // Not deleted, just unconfirmed
+            changeType: ChangeType.UPDATE,
+            isDeleted: true,
           });
         }
         
@@ -571,7 +569,7 @@ export async function applyBulkUpload(
         timeout: 90000,
       });
       
-      console.log(`  Progress: ${Math.min(i + UPDATE_BATCH_SIZE, toUnconfirm.length)}/${toUnconfirm.length} records marked as unconfirmed`);
+      console.log(`  Progress: ${Math.min(i + UPDATE_BATCH_SIZE, toDelete.length)}/${toDelete.length} records marked as deleted`);
     }
   }
   
@@ -715,7 +713,6 @@ export async function rollbackBulkUpload(
             dateOfDeath: previousVersion.dateOfDeath,
             locationOfDeathLat: previousVersion.locationOfDeathLat,
             locationOfDeathLng: previousVersion.locationOfDeathLng,
-            obituary: previousVersion.obituary,
             isDeleted: previousVersion.isDeleted,
           },
         });
@@ -752,7 +749,6 @@ export async function rollbackBulkUpload(
             dateOfDeath: previousVersion.dateOfDeath,
             locationOfDeathLat: previousVersion.locationOfDeathLat,
             locationOfDeathLng: previousVersion.locationOfDeathLng,
-            obituary: previousVersion.obituary,
           },
         });
 

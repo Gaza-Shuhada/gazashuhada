@@ -13,8 +13,7 @@ export async function GET() {
       recordsWithPhoto,
       totalBulkUploads,
       pendingSubmissions,
-      communityContributions,
-      mohUpdates
+      communityEditedRecords
     ] = await Promise.all([
       // Total records (not deleted)
       prisma.person.count({
@@ -39,19 +38,15 @@ export async function GET() {
         }
       }),
 
-      // Community contributions (records not confirmed by MoH)
+      // Records with community edits (has approved community submissions)
       prisma.person.count({
         where: {
-          confirmedByMoh: false,
-          isDeleted: false
-        }
-      }),
-
-      // MoH updates (records confirmed by MoH)
-      prisma.person.count({
-        where: {
-          confirmedByMoh: true,
-          isDeleted: false
+          isDeleted: false,
+          submissions: {
+            some: {
+              status: 'APPROVED'
+            }
+          }
         }
       })
     ]);
@@ -61,8 +56,7 @@ export async function GET() {
       recordsWithPhoto,
       totalBulkUploads,
       pendingSubmissions,
-      communityContributions,
-      mohUpdates
+      communityEditedRecords
     });
 
   } catch (error) {

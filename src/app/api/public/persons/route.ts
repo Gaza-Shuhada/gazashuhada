@@ -16,17 +16,13 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
     const search = searchParams.get('search'); // Optional name search
     const filter = searchParams.get('filter'); // Optional filter
-    const confirmedOnly = searchParams.get('confirmedOnly') !== 'false'; // Default to true
+    const minAge = searchParams.get('minAge'); // Optional minimum age
+    const maxAge = searchParams.get('maxAge'); // Optional maximum age
 
     // Build base where clause - never show deleted records publicly
     const whereClause: Prisma.PersonWhereInput = {
       isDeleted: false,
     };
-
-    // Apply confirmed filter (default: only show MoH confirmed)
-    if (confirmedOnly) {
-      whereClause.confirmedByMoh = true;
-    }
 
     // Add search filter if provided
     if (search) {
@@ -37,6 +33,28 @@ export async function GET(request: NextRequest) {
       ];
     }
 
+    // Add age filter if provided (calculate based on date of birth)
+    if (minAge || maxAge) {
+      const now = new Date();
+      const conditions: Prisma.PersonWhereInput[] = [];
+      
+      if (minAge) {
+        // Maximum date of birth for minimum age (born this many years ago or earlier)
+        const maxDob = new Date(now.getFullYear() - parseInt(minAge), now.getMonth(), now.getDate());
+        conditions.push({ dateOfBirth: { lte: maxDob } });
+      }
+      
+      if (maxAge) {
+        // Minimum date of birth for maximum age (born this many years ago or later)
+        const minDob = new Date(now.getFullYear() - parseInt(maxAge) - 1, now.getMonth(), now.getDate());
+        conditions.push({ dateOfBirth: { gte: minDob } });
+      }
+      
+      if (conditions.length > 0) {
+        whereClause.AND = whereClause.AND ? [...(Array.isArray(whereClause.AND) ? whereClause.AND : [whereClause.AND]), ...conditions] : conditions;
+      }
+    }
+
     // Apply additional filters (public-safe only)
     switch (filter) {
       case 'with_photo':
@@ -44,10 +62,11 @@ export async function GET(request: NextRequest) {
         break;
       
       case 'with_location':
-        whereClause.AND = [
+        const locationConditions = [
           { locationOfDeathLat: { not: null } },
           { locationOfDeathLng: { not: null } }
         ];
+        whereClause.AND = whereClause.AND ? [...(Array.isArray(whereClause.AND) ? whereClause.AND : [whereClause.AND]), ...locationConditions] : locationConditions;
         break;
       
       case 'recent':
@@ -55,11 +74,6 @@ export async function GET(request: NextRequest) {
         whereClause.updatedAt = {
           gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
         };
-        break;
-
-      case 'community_reported':
-        // Community submissions (not confirmed by MoH)
-        whereClause.confirmedByMoh = false;
         break;
     }
 
@@ -78,10 +92,9 @@ export async function GET(request: NextRequest) {
           locationOfDeathLat: true,
           locationOfDeathLng: true,
           photoUrlThumb: true, // Only thumbnail, not original
-          confirmedByMoh: true,
           createdAt: true,
           updatedAt: true,
-          // Do NOT expose: obituary, photoUrlOriginal, isDeleted
+          // Do NOT expose: photoUrlOriginal, isDeleted
         },
         orderBy: {
           updatedAt: 'desc'
@@ -105,7 +118,6 @@ export async function GET(request: NextRequest) {
         filters: {
           search: search || null,
           filter: filter || null,
-          confirmedOnly
         }
       }
     });

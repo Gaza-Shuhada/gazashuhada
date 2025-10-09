@@ -6,9 +6,49 @@ Thank you for your interest in contributing!
 
 1. **Fork and clone** the repository
 2. **Install dependencies**: `npm install`
-3. **Set up environment**: Copy `.env.example` to `.env` and add your keys
+3. **Set up environment variables** (see below)
 4. **Run database migrations**: `npx prisma generate && npx prisma db push`
 5. **Start dev server**: `npm run dev`
+
+---
+
+## 🔐 Environment Variables Setup
+
+### For Contributors (Vercel Project Access)
+
+If you have access to the Vercel project, pull the environment variables automatically:
+
+```bash
+# Install Vercel CLI globally
+npm install -g vercel
+
+# Link to the Vercel project
+vercel link
+
+# Pull environment variables to .env.local
+vercel env pull
+
+# Copy to .env for Prisma (required for migrations)
+cp .env.local .env
+```
+
+### For External Contributors
+
+If you don't have Vercel access, create `.env` manually with:
+
+```env
+# Database (PostgreSQL)
+DATABASE_URL="your_postgresql_connection_string"
+
+# Clerk (Authentication)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="your_clerk_key"
+CLERK_SECRET_KEY="your_clerk_secret"
+
+# Vercel Blob (File Storage)
+BLOB_READ_WRITE_TOKEN="your_blob_token"
+```
+
+See `.env.example` if available for a complete template.
 
 ---
 
