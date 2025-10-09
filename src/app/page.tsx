@@ -25,7 +25,6 @@ const people = [
   { name: 'Ismael', image: '/people/ismael.webp' },
   { name: 'Khaled', image: '/people/khaled.webp' },
   { name: 'Lana', image: '/people/lana.webp' },
-  { name: 'Nahedh', image: '/people/nahedh.webp' },
   { name: 'Omar', image: '/people/omar.webp' },
   { name: 'Rakan', image: '/people/rakan.webp' },
   { name: 'Sara', image: '/people/sara.webp' },
@@ -75,13 +74,17 @@ const people = [
 export default async function Home() {
   const stats = await getStats();
 
+  // Calculate number of photos needed for each screen size to fill viewport
+  // Mobile: 6x12 = 72, Tablet: 8x8 = 64, Desktop: 12x6 = 72, Large: 14x6 = 84
+  const totalPhotos = 84;
+
   return (
     <div className="relative min-h-screen bg-black pt-16 pb-24">
       {/* Background Photo Grid */}
       <div className="fixed inset-0 z-0 overflow-hidden">
-        <div className="absolute inset-0 grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-14 gap-0.5">
+        <div className="w-full grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-14 gap-0.5">
           {/* Repeat photos to fill the background */}
-          {Array.from({ length: 120 }).map((_, index) => {
+          {Array.from({ length: totalPhotos }).map((_, index) => {
             const person = people[index % people.length];
             return (
               <div
