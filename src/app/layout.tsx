@@ -13,8 +13,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Gaza Death Toll",
-  description: "Track and document casualties in Gaza",
+  title: "Gaza Deaths وفيات غزة",
+  description: "",
   icons: {
     icon: [
       { url: '/icon.png', sizes: '32x32', type: 'image/png' },

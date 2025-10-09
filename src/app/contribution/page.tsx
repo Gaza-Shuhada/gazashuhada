@@ -15,7 +15,7 @@ const LocationPicker = dynamic(() => import('@/components/LocationPicker'), {
   </div>
 });
 
-interface Submission {
+interface Contribution {
   id: string;
   type: 'NEW_RECORD' | 'EDIT';
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUPERSEDED';
@@ -27,11 +27,12 @@ interface Submission {
   personId?: string;
 }
 
-export default function CommunitySubmitPage() {
+export default function CommunityContributePage() {
   const { isLoaded, isSignedIn } = useUser();
   const router = useRouter();
+  
   const [activeTab, setActiveTab] = useState<'new' | 'edit' | 'history'>('edit');
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [contributions, setContributions] = useState<Contribution[]>([]);
   const [loading, setLoading] = useState(false);
   // OLD: Inline error/success messages (replaced with toast notifications)
   // const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -81,26 +82,26 @@ export default function CommunitySubmitPage() {
     // All roles (admin, moderator, community) can access this page
   }, [isLoaded, isSignedIn, router]);
 
-  // Load user's submission history
+  // Load user's contribution history
   useEffect(() => {
     if (isSignedIn) {
-      fetchSubmissions();
+      fetchContributions();
     }
   }, [isSignedIn]);
 
-  const fetchSubmissions = async () => {
+  const fetchContributions = async () => {
     try {
       const response = await fetch('/api/community/my-submissions');
       if (response.ok) {
         const text = await response.text();
         if (text) {
           const data = JSON.parse(text);
-          setSubmissions(data.submissions);
+          setContributions(data.submissions);
         }
       }
     } catch (error) {
-      console.error('Failed to fetch submissions:', error);
-      // Don't throw - we don't want to break the submission flow
+      console.error('Failed to fetch contributions:', error);
+      // Don't throw - we don't want to break the contribution flow
     }
   };
 
@@ -187,7 +188,7 @@ export default function CommunitySubmitPage() {
     setLoading(true);
 
     const submitToast = toast.loading('Submitting new record...', {
-      description: 'Please wait while we process your submission',
+      description: 'Please wait while we process your contribution',
     });
 
     try {
@@ -235,14 +236,14 @@ export default function CommunitySubmitPage() {
         }
         data = JSON.parse(text);
       } catch (parseError) {
-        console.error('Submission response error:', parseError);
+        console.error('Contribution response error:', parseError);
         throw new Error('Invalid response from server. Please try again or check server logs.');
       }
 
       if (response.ok) {
         toast.success('New record submitted!', {
           id: submitToast,
-          description: 'Your submission will be reviewed by moderators.',
+          description: 'Your contribution will be reviewed by moderators.',
           duration: Infinity,
         });
         
@@ -267,14 +268,14 @@ export default function CommunitySubmitPage() {
         setPhotoFile(null);
         setPhotoPreview(null);
         
-        // Fetch submissions in background (don't block)
-        fetchSubmissions().catch(err => console.error('Failed to refresh submissions:', err));
+        // Fetch contributions in background (don't block)
+        fetchContributions().catch(err => console.error('Failed to refresh contributions:', err));
       } else {
         const errorMessage = data.error || 'Failed to submit record';
         // Check if it's a duplicate external ID error
         const isDuplicateError = errorMessage.includes('already exists');
         
-        toast.error(isDuplicateError ? 'Duplicate External ID' : 'Submission Failed', {
+        toast.error(isDuplicateError ? 'Duplicate External ID' : 'Contribution Failed', {
           id: submitToast,
           description: errorMessage,
           duration: Infinity,
@@ -282,7 +283,7 @@ export default function CommunitySubmitPage() {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An error occurred while submitting';
-      toast.error('Submission failed', {
+      toast.error('Contribution failed', {
         id: submitToast,
         description: errorMessage,
         duration: Infinity,
@@ -389,8 +390,8 @@ export default function CommunitySubmitPage() {
         setEditPhotoFile(null);
         setEditPhotoPreview(null);
         
-        // Fetch submissions in background (don't block)
-        fetchSubmissions().catch(err => console.error('Failed to refresh submissions:', err));
+        // Fetch contributions in background (don't block)
+        fetchContributions().catch(err => console.error('Failed to refresh contributions:', err));
         
         console.log('[handleEditSubmit] Success handler complete');
       } else {
@@ -427,7 +428,7 @@ export default function CommunitySubmitPage() {
     <div className="min-h-screen bg-background pt-8 pb-8 px-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold">Community Submissions</h1>
+          <h1 className="text-3xl font-bold">Community Contributions</h1>
           <p className="text-muted-foreground mt-2">Propose new records or suggest edits to existing death-related information</p>
         </div>
 
@@ -471,7 +472,7 @@ export default function CommunitySubmitPage() {
                     : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted'
                 }`}
               >
-                My Submissions ({submissions.length})
+                My Contributions ({contributions.length})
               </button>
             </nav>
           </div>
@@ -810,72 +811,72 @@ export default function CommunitySubmitPage() {
               </form>
             )}
 
-            {/* SUBMISSION HISTORY */}
+            {/* CONTRIBUTION HISTORY */}
             {activeTab === 'history' && (
               <div>
-                <h3 className="text-lg font-semibold text-foreground mb-4">Your Submission History</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-4">Your Contribution History</h3>
                 
-                {submissions.length === 0 ? (
+                {contributions.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
-                    <p>You haven&apos;t made any submissions yet.</p>
+                    <p>You haven&apos;t made any contributions yet.</p>
                     <p className="text-sm mt-2">Use the tabs above to propose a new record or suggest an edit.</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {submissions.map((submission) => (
-                      <div key={submission.id} className="border rounded-lg p-4 bg-card">
+                    {contributions.map((contribution) => (
+                      <div key={contribution.id} className="border rounded-lg p-4 bg-card">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center space-x-3">
                             <span className={`px-2 py-1 text-xs font-medium rounded ${
-                              submission.type === 'NEW_RECORD' ? 'bg-accent text-accent-foreground' : 'bg-primary/10 text-primary'
+                              contribution.type === 'NEW_RECORD' ? 'bg-accent text-accent-foreground' : 'bg-primary/10 text-primary'
                             }`}>
-                              {submission.type === 'NEW_RECORD' ? 'New Record' : 'Edit'}
+                              {contribution.type === 'NEW_RECORD' ? 'New Record' : 'Edit'}
                             </span>
                             <span className={`px-2 py-1 text-xs font-medium rounded ${
-                              submission.status === 'PENDING' ? 'bg-secondary/50 text-secondary-foreground' :
-                              submission.status === 'APPROVED' ? 'bg-accent text-accent-foreground' :
-                              submission.status === 'REJECTED' ? 'bg-destructive/10 text-destructive' :
+                              contribution.status === 'PENDING' ? 'bg-secondary/50 text-secondary-foreground' :
+                              contribution.status === 'APPROVED' ? 'bg-accent text-accent-foreground' :
+                              contribution.status === 'REJECTED' ? 'bg-destructive/10 text-destructive' :
                               'bg-accent text-accent-foreground'
                             }`}>
-                              {submission.status}
+                              {contribution.status}
                             </span>
                           </div>
                           <span className="text-xs text-muted-foreground">
-                            {new Date(submission.createdAt).toLocaleDateString()}
+                            {new Date(contribution.createdAt).toLocaleDateString()}
                           </span>
                         </div>
 
                         <div className="text-sm text-foreground mb-2">
-                          {submission.type === 'NEW_RECORD' ? (
+                          {contribution.type === 'NEW_RECORD' ? (
                             <div>
-                              <p className="font-medium">{submission.proposedPayload.name}</p>
-                              <p className="text-muted-foreground">ID: {submission.proposedPayload.externalId}</p>
+                              <p className="font-medium">{contribution.proposedPayload.name}</p>
+                              <p className="text-muted-foreground">ID: {contribution.proposedPayload.externalId}</p>
                             </div>
                           ) : (
                             <div>
-                              <p className="font-medium">Edit to record: {submission.personId || 'N/A'}</p>
+                              <p className="font-medium">Edit to record: {contribution.personId || 'N/A'}</p>
                               <p className="text-muted-foreground">
-                                Fields: {Object.keys(submission.proposedPayload).join(', ')}
+                                Fields: {Object.keys(contribution.proposedPayload).join(', ')}
                               </p>
                             </div>
                           )}
                         </div>
 
-                        {submission.reason && (
+                        {contribution.reason && (
                           <p className="text-sm text-muted-foreground mb-2">
-                            <span className="font-medium">Your note:</span> {submission.reason}
+                            <span className="font-medium">Your note:</span> {contribution.reason}
                           </p>
                         )}
 
-                        {submission.status === 'APPROVED' && submission.approvedAt && (
+                        {contribution.status === 'APPROVED' && contribution.approvedAt && (
                           <p className="text-sm text-accent-foreground">
-                            ✓ Approved on {new Date(submission.approvedAt).toLocaleDateString()}
+                            ✓ Approved on {new Date(contribution.approvedAt).toLocaleDateString()}
                           </p>
                         )}
 
-                        {submission.status === 'REJECTED' && submission.decisionNote && (
+                        {contribution.status === 'REJECTED' && contribution.decisionNote && (
                           <p className="text-sm text-destructive">
-                            <span className="font-medium">Moderator note:</span> {submission.decisionNote}
+                            <span className="font-medium">Moderator note:</span> {contribution.decisionNote}
                           </p>
                         )}
                       </div>

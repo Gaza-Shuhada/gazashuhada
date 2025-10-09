@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, Calendar, MapPin, FileText, Clock, Database } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, FileText, Clock, Database, Edit } from 'lucide-react';
+import Link from 'next/link';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // Dynamically import LocationPicker to avoid SSR issues with Leaflet
@@ -177,10 +178,18 @@ export default function PersonDetailPage() {
     <div className="container mx-auto py-8 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={() => router.back()}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Database
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" onClick={() => router.back()}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Database
+          </Button>
+          <Button variant="default" asChild>
+            <Link href={`/contribution/edit/${externalId}`}>
+              <Edit className="w-4 h-4 mr-2" />
+              Contribute information
+            </Link>
+          </Button>
+        </div>
         <div className="flex gap-2">
           {person.isDeleted && (
             <Badge variant="destructive">Deleted</Badge>
