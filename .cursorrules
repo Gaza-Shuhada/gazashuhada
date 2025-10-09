@@ -121,10 +121,14 @@ A: Fix forward or revert completely. Never add backwards compat as a fix.
    - ❌ Assume you want changes committed just because they're done
    - ❌ Skip asking if you're unsure about committing
 
-4. **Commit Messages**
-   - If `COMMIT_MESSAGE.md` exists, I can update it with suggested commit messages
-   - You decide when to actually commit
-   - I prepare the message, you execute the commit
+4. **Commit Message Format (MANDATORY)**
+   - ALWAYS write detailed markdown commit messages to `COMMIT_MESSAGE.md`
+   - NEVER use inline commit messages
+   - When user asks for commit message, provide this command:
+     ```bash
+     git add -A && git commit -F COMMIT_MESSAGE.md
+     ```
+   - Include: overview, changes, technical details, testing checklist, impact
 
 #### Examples
 
@@ -134,10 +138,20 @@ User: "Fix the favicon issue"
 Me: *makes changes* "Fixed! Changes are ready. Let me know when you want to commit."
 ```
 
+**Good (When Asked for Commit Message):**
+```
+User: "give me commit message"
+Me: *writes detailed markdown to COMMIT_MESSAGE.md*
+    "Here's your commit command: git add -A && git commit -F COMMIT_MESSAGE.md"
+```
+
 **Bad (What I Must NEVER Do):**
 ```
 User: "Fix the favicon issue"
 Me: *makes changes* *runs git commit* "Fixed and committed!"  ❌ WRONG
+
+User: "give me commit message"
+Me: *provides inline message* git commit -m "fix: favicon"  ❌ WRONG
 ```
 
 **Remember**: My job is to make changes. YOUR job is to decide when to commit them.

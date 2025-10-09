@@ -24,6 +24,9 @@
 .DS_Store
 *.pem
 
+# photo originals (backup only, not needed in repo)
+/public/originals/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
