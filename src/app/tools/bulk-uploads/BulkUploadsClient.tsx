@@ -131,6 +131,18 @@ export default function BulkUploadsClient() {
       setBlobUrl(null); // Reset blob URL when new file is selected
       setBlobMetadata(null); // Reset blob metadata when new file is selected
       setSimulationExpiresAt(null); // Clear expiration timer
+      
+      // Auto-populate date released from filename
+      // Expected patterns: MoH-YYYY-MM-DD.csv or MoH-YYYY-MM-DD_edited.csv
+      const dateMatch = file.name.match(/(\d{4})-(\d{2})-(\d{2})/);
+      if (dateMatch) {
+        const [, year, month, day] = dateMatch;
+        const extractedDate = `${year}-${month}-${day}`;
+        setDateReleased(extractedDate);
+        toast.success('Date auto-populated from filename', {
+          description: `Set to: ${extractedDate}`,
+        });
+      }
     }
   };
 

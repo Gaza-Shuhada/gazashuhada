@@ -21,23 +21,25 @@ import { ChangeType, Gender } from '@prisma/client';
 /**
  * SELECT Query Batch Size
  * Used for: Fetching existing persons by external IDs
- * Limit reason: PostgreSQL bind variable limit (32,767)
+ * Limit reason: PostgreSQL bind variable limit (32,767) and Prisma Accelerate query duration (60s)
  */
 const MAX_BATCH_SIZE = 10000;
 
 /**
  * INSERT Operation Batch Size
  * Used for: createMany() and createManyAndReturn() operations
- * Limit reason: Balance between performance and memory usage
+ * Limit reason: Balance between performance and Prisma Accelerate response size limit (20 MiB)
  */
 const INSERT_BATCH_SIZE = 5000;
 
 /**
  * UPDATE Operation Batch Size
  * Used for: Updating existing person records in transactions
- * Limit reason: Smaller batches to avoid transaction timeouts
+ * Limit reason: Prisma Accelerate transaction duration limit (90s)
+ * Note: Each batch runs individual updates in parallel within a single transaction.
+ * Set to 500 to stay well under the 90s transaction timeout with safety margin.
  */
-const UPDATE_BATCH_SIZE = 100;
+const UPDATE_BATCH_SIZE = 500;
 
 /**
  * DELETE Operation Batch Size
@@ -186,12 +188,13 @@ export async function simulateBulkUpload(rows: BulkUploadRow[]): Promise<Simulat
   console.log(`  Simulating bulk upload with ${rows.length} rows...`);
   
   // SMART FETCHING: First get just IDs (lightweight), then fetch full data only for what we need
+  // IMPORTANT: Include deleted records to avoid unique constraint violations
   console.log('  📊 Fetching existing IDs from database...');
   const allExistingIds = await prisma.person.findMany({
-    where: { isDeleted: false },
-    select: { externalId: true },
+    select: { externalId: true, isDeleted: true },
   });
   const existingIdsSet = new Set(allExistingIds.map(p => p.externalId));
+  const activeIdsSet = new Set(allExistingIds.filter(p => !p.isDeleted).map(p => p.externalId));
   
   // Only fetch full records for IDs that exist in the CSV (potential updates)
   const idsToFetch = rows.filter(r => existingIdsSet.has(r.external_id)).map(r => r.external_id);
@@ -253,7 +256,10 @@ export async function simulateBulkUpload(rows: BulkUploadRow[]): Promise<Simulat
   
   // Mark removed records as deleted
   // Records not in the new MoH upload should be marked isDeleted = true
-  const idsToDelete = allExistingIds.filter(e => !incomingIdsSet.has(e.externalId)).map(e => e.externalId);
+  // Only consider active records (not already deleted) for deletion
+  const idsToDelete = allExistingIds
+    .filter(e => !e.isDeleted && !incomingIdsSet.has(e.externalId))
+    .map(e => e.externalId);
   
   if (idsToDelete.length > 0) {
     console.log(`  📦 Fetching ${idsToDelete.length} records for deletion`);
