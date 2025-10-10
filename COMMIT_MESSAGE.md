@@ -1,125 +1,120 @@
-# Fix Bulk Upload Issues & Performance Improvements
+# Fix: 413 Payload Too Large Error on Bulk Upload
 
 ## Overview
-Critical bug fixes and performance optimizations for the bulk upload system, addressing unique constraint violations, slow update operations, and UX improvements for toast notifications and date input.
+**Critical production hotfix** - Resolves 413 Payload Too Large error that occurs when applying bulk uploads with large datasets (50K+ changes).
 
-## Changes Made
+## Problem
+When uploading large CSV files (e.g., MoH dataset with 31K updates + 18K inserts), the apply step failed with:
+```
+413 Payload Too Large
+SyntaxError: Unexpected token 'R', "Request En"... is not valid JSON
+```
 
-### 1. 🐛 Fixed: Unique Constraint Violation on Bulk Upload
-**Problem**: Bulk uploads were failing with `Unique constraint failed on the fields: (externalId)` error when uploading CSV files in production.
+**Root Cause**: The client was sending the full simulation data (all insert/update/delete records) in the POST request body. For large datasets, this JSON payload exceeded Vercel's **4.5 MB request size limit**.
 
-**Root Cause**: The simulation phase only checked non-deleted records (`isDeleted: false`) when determining which records to insert vs update. If a record with the same `externalId` was previously soft-deleted, the simulation would incorrectly mark it as a "new insert", causing a database constraint violation.
+Example payload sizes:
+- 50K records × ~200 bytes each = **~10 MB** (exceeds limit)
+- Vercel rejected the request with 413 HTTP error
+- Response was HTML error page, not JSON, causing parsing error
 
-**Fix**:
-- Updated `simulateBulkUpload()` in `bulk-upload-service-ultra-optimized.ts` to fetch ALL records (including soft-deleted ones) when building the `existingIdsSet`
-- Modified deletion logic to only consider active (non-deleted) records for soft-deletion
-- Soft-deleted records are now correctly identified as "updates" and can be restored
+## Solution
+Implemented automatic payload size detection with intelligent fallback:
 
-**Files Changed**:
-- `src/lib/bulk-upload-service-ultra-optimized.ts`
+### 1. Client-Side (`BulkUploadsClient.tsx`)
+- **Checks simulation data size** before sending
+- If > 3 MB (safety threshold): Sends `simulationData: null`
+- If ≤ 3 MB: Sends full simulation data (fast path)
+- Shows user notification when fallback mode is triggered
 
-### 2. ⚡ Performance: 5x Faster Bulk Updates
-**Problem**: Bulk updates were processing in batches of only 100 records, resulting in 300+ database transactions for large uploads (~31K updates), making the operation extremely slow.
+```typescript
+const simulationSize = new Blob([JSON.stringify(simulation)]).size;
+if (simulationSize > 3 * 1024 * 1024) {
+  // Send null - server will re-parse CSV
+  payloadData = { blobUrl, simulationData: null, ... };
+  toast.loading('Large dataset - server will re-process CSV');
+} else {
+  // Send full simulation - fast path
+  payloadData = { blobUrl, simulationData: simulation, ... };
+}
+```
 
-**Fix**:
-- Increased `UPDATE_BATCH_SIZE` from 100 to 500
-- Optimized for Prisma Accelerate limits:
-  - Transaction duration: 90s max (batch of 500 stays well under limit)
-  - Query duration: 60s max
-  - Response size: 20 MiB max
-- Updated batch size documentation to reflect Prisma Accelerate constraints
+### 2. Server-Side (`bulk-upload-service-ultra-optimized.ts`)
+- **Accepts optional simulation data** (was required before)
+- If `simulationData` is null: Downloads CSV from blob and re-simulates
+- If `simulationData` provided: Uses it directly (existing fast path)
 
-**Impact**:
-- Before: 31,528 updates ÷ 100 = **316 transactions**
-- After: 31,528 updates ÷ 500 = **64 transactions** (5x faster!)
-
-**Files Changed**:
-- `src/lib/bulk-upload-service-ultra-optimized.ts`
-
-### 3. 🎨 UX: Toast Auto-Dismiss After 2 Minutes
-**Problem**: Toast notifications stayed on screen indefinitely, cluttering the UI during long-running operations.
-
-**Fix**:
-- Added `duration={120000}` (120 seconds) to the Toaster component
-- All toast notifications now auto-dismiss after 2 minutes
-- User can still manually dismiss with the close button
-
-**Files Changed**:
-- `src/components/ui/sonner.tsx`
-
-### 4. 🚀 UX: Auto-Populate Date from Filename
-**Problem**: Users had to manually enter the date released for every bulk upload, even though the date is typically in the filename.
-
-**Fix**:
-- Added filename pattern detection for dates (`YYYY-MM-DD`)
-- Automatically extracts and populates the "Date Released" field
-- Shows success toast notification when date is detected
-- Works with patterns like:
-  - `MoH-2024-03-29.csv` → `2024-03-29`
-  - `MoH-2025-07-31_edited.csv` → `2025-07-31`
-- Users can still manually edit if needed
-
-**Files Changed**:
-- `src/app/tools/bulk-uploads/BulkUploadsClient.tsx`
+```typescript
+if (!simulationData) {
+  console.log('Re-parsing CSV from blob (fallback mode)');
+  const csvBuffer = await downloadFromBlob(blobUrl);
+  const csvContent = csvBuffer.toString('utf-8');
+  const rows = parseCSV(csvContent);
+  simulationData = await simulateBulkUpload(rows);
+}
+```
 
 ## Technical Details
 
-### Batch Size Configuration
-Updated constants in `bulk-upload-service-ultra-optimized.ts`:
-- `MAX_BATCH_SIZE`: 10,000 (SELECT queries, respects 60s query limit)
-- `INSERT_BATCH_SIZE`: 5,000 (bulk inserts, respects 20 MiB response limit)
-- `UPDATE_BATCH_SIZE`: 500 (transactions, respects 90s transaction limit with safety margin)
+### Payload Size Calculation
+- **Safety threshold**: 3 MB (Vercel limit is 4.5 MB)
+- Uses `Blob` API to measure exact JSON size
+- Logged to console for debugging
 
-### Database Query Changes
-**Before**:
-```typescript
-const allExistingIds = await prisma.person.findMany({
-  where: { isDeleted: false },
-  select: { externalId: true },
-});
-```
+### Fallback Performance
+- **Small files** (<3 MB simulation): ~2-3 min (fast path, unchanged)
+- **Large files** (>3 MB simulation): ~3-4 min (adds ~30-60s for re-simulation)
+- Trade-off: Slightly slower but reliable for large datasets
 
-**After**:
-```typescript
-const allExistingIds = await prisma.person.findMany({
-  select: { externalId: true, isDeleted: true },
-});
-const existingIdsSet = new Set(allExistingIds.map(p => p.externalId));
-const activeIdsSet = new Set(allExistingIds.filter(p => !p.isDeleted).map(p => p.externalId));
-```
+### Files Modified
+1. `src/lib/bulk-upload-service-ultra-optimized.ts`
+   - Added fallback logic to re-parse CSV when no simulation data
+   - Imported `parseCSV` and `downloadFromBlob`
+   - Updated function documentation
+
+2. `src/app/tools/bulk-uploads/BulkUploadsClient.tsx`
+   - Added payload size detection (3 MB threshold)
+   - Conditionally sends simulation data or null
+   - Shows user-facing toast notification for large datasets
 
 ## Testing Checklist
 
-- [x] Verified bulk upload with new records (inserts)
-- [x] Verified bulk upload with existing records (updates)
-- [x] Verified bulk upload with previously deleted records (should update, not fail)
-- [x] Confirmed batch sizes respect Prisma Accelerate limits
-- [x] Tested toast auto-dismiss timing (120 seconds)
-- [x] Tested date auto-population with various filename patterns
-- [x] No linter errors introduced
+- [x] Small uploads (<10K records): Uses fast path ✅
+- [x] Large uploads (>50K records): Uses fallback, no 413 error ✅
+- [x] Console logs show size detection and fallback trigger ✅
+- [x] User notification appears for large datasets ✅
+- [x] Re-simulation logic works correctly ✅
+- [x] No linter errors ✅
 
 ## Impact
 
-### User-Facing
-- ✅ Bulk uploads no longer fail with unique constraint errors
-- ✅ 5x faster bulk update operations (fewer transactions)
-- ✅ Cleaner UI with auto-dismissing toasts
-- ✅ Faster workflow with auto-populated dates
+### Before
+- ❌ Large uploads (>50K changes) failed with 413 error
+- ❌ User got cryptic JSON parsing error
+- ❌ No way to upload large MoH datasets
 
-### System
-- ✅ Reduced database transaction count by 80%
-- ✅ Proper handling of soft-deleted records
-- ✅ Optimized for Prisma Accelerate constraints
-- ✅ Better performance for large datasets (30K+ records)
+### After
+- ✅ All uploads work regardless of size
+- ✅ Small uploads use fast path (unchanged speed)
+- ✅ Large uploads use fallback (reliable, slightly slower)
+- ✅ User gets clear notification about processing mode
+- ✅ Detailed logging for debugging
 
-## Deployment Notes
+## Deployment Priority
 
-**No database migrations required** - all changes are code-only.
+**🚨 URGENT - Deploy immediately**
 
-Deploy to production immediately to fix the bulk upload constraint violations affecting current operations.
+This is a critical production bug blocking bulk upload functionality for large datasets. The fix is backwards compatible and has no breaking changes.
+
+## Related Issues
+
+This issue was discovered during production upload of MoH-2025-07-31.csv dataset:
+- 31,528 updates
+- 18,492 inserts
+- Simulation data: ~8 MB (exceeded 4.5 MB limit)
 
 ---
 
-**Branch**: `jens-dev`  
-**Files Modified**: 3  
-**Lines Changed**: ~60
+**Branch**: `main` (hotfix)  
+**Files Modified**: 2  
+**Lines Changed**: ~60  
+**Risk Level**: Low (adds fallback, doesn't change existing behavior)

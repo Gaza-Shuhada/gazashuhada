@@ -1,5 +1,6 @@
 import { prisma } from './prisma';
-import { BulkUploadRow } from './csv-utils';
+import { BulkUploadRow, parseCSV } from './csv-utils';
+import { downloadFromBlob } from './blob-storage';
 import { ChangeType, Gender } from '@prisma/client';
 
 /**
@@ -304,6 +305,8 @@ export async function simulateBulkUpload(rows: BulkUploadRow[]): Promise<Simulat
 /**
  * TRUST-SIMULATION VERSION: Uses simulation results directly, no re-fetching
  * Applies changes based on what simulation found, dramatically faster
+ * 
+ * FALLBACK: If simulationData is null (e.g., payload too large), re-parse CSV from blob
  */
 export async function applyBulkUpload(
   simulationData: SimulationResult | null,
@@ -313,7 +316,18 @@ export async function applyBulkUpload(
   comment: string | null,
   dateReleased: Date
 ): Promise<{ uploadId: string; changeSourceId: string }> {
-  console.log(`  Applying bulk upload - TRUSTING SIMULATION RESULTS`);
+  
+  // FALLBACK: If no simulation data (payload too large), re-parse CSV from blob
+  if (!simulationData) {
+    console.log(`  ⚠️ No simulation data provided - re-parsing CSV from blob (fallback mode)`);
+    const csvBuffer = await downloadFromBlob(blobUrl);
+    const csvContent = csvBuffer.toString('utf-8');
+    const rows = parseCSV(csvContent);
+    simulationData = await simulateBulkUpload(rows);
+    console.log(`  ✅ Re-simulation complete: ${simulationData.summary.inserts} inserts, ${simulationData.summary.updates} updates, ${simulationData.summary.deletes} deletes`);
+  } else {
+    console.log(`  Applying bulk upload - TRUSTING SIMULATION RESULTS`);
+  }
   
   // TRUST SIMULATION: Use results directly, no re-fetching
   const hasChanges = simulationData && (

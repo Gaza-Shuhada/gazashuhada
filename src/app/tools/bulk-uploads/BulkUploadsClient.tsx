@@ -332,17 +332,49 @@ export default function BulkUploadsClient() {
     
     try {
       console.log('[CLIENT] 📤 Sending apply request to API');
-      const response = await fetch('/api/admin/bulk-upload/apply', { 
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      
+      // Check if simulation data is too large (>3MB when stringified)
+      // Vercel has 4.5MB limit, so use 3MB as safety threshold
+      const simulationJSON = JSON.stringify(simulation);
+      const simulationSize = new Blob([simulationJSON]).size;
+      const sizeMB = (simulationSize / 1024 / 1024).toFixed(2);
+      
+      console.log(`[CLIENT] 📊 Simulation data size: ${sizeMB} MB`);
+      
+      let payloadData;
+      if (simulationSize > 3 * 1024 * 1024) {
+        console.log(`[CLIENT] ⚠️ Simulation data too large (${sizeMB} MB > 3 MB) - sending without simulation data`);
+        console.log(`[CLIENT] 🔄 Server will re-parse CSV from blob (slower but reliable)`);
+        toast.loading('Large dataset detected - this may take longer', {
+          description: 'Server will re-process the CSV file',
+          duration: 5000,
+        });
+        // Send without simulation data - server will re-parse CSV
+        payloadData = {
           blobUrl,
           blobMetadata,
-          simulationData: simulation, // Pass full simulation data, not just summary
+          simulationData: null, // Force server fallback
           label: label.trim(),
           dateReleased,
           filename: selectedFile.name
-        })
+        };
+      } else {
+        console.log(`[CLIENT] ✅ Simulation data size OK (${sizeMB} MB) - sending full simulation`);
+        // Send with simulation data - faster path
+        payloadData = {
+          blobUrl,
+          blobMetadata,
+          simulationData: simulation,
+          label: label.trim(),
+          dateReleased,
+          filename: selectedFile.name
+        };
+      }
+      
+      const response = await fetch('/api/admin/bulk-upload/apply', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payloadData)
       });
       
       console.log('[CLIENT] 📨 Apply response status:', response.status);
