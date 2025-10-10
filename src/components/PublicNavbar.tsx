@@ -146,7 +146,7 @@ export function PublicNavbar() {
           {/* Center: Logo/Title */}
           <div className="absolute left-1/2 transform -translate-x-1/2">
             <Link href="/" className="flex items-center">
-              <span className="text-xl font-bold text-foreground whitespace-nowrap">Gaza Deaths وفيات غزة</span>
+              <span className="text-xl font-bold text-foreground whitespace-nowrap">Gaza Martyrs شهداء غزة</span>
             </Link>
           </div>
 
