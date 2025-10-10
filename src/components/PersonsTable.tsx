@@ -68,7 +68,6 @@ export function PersonsTable() {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: mode === 'photos' ? '24' : '10', // More items for grid view
-        confirmedOnly: 'false', // Show ALL records (MoH confirmed + community submissions)
       });
       
       if (search.trim()) {
@@ -125,9 +124,7 @@ export function PersonsTable() {
       setDownloading(true);
       
       // Build the same query params as the current view
-      const params = new URLSearchParams({
-        confirmedOnly: 'false',
-      });
+      const params = new URLSearchParams();
       
       if (debouncedSearch.trim()) {
         params.append('search', debouncedSearch.trim());
