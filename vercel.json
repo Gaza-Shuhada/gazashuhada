@@ -1,0 +1,11 @@
+{
+  "functions": {
+    "src/app/api/admin/bulk-upload/apply/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/admin/bulk-upload/simulate/route.ts": {
+      "maxDuration": 300
+    }
+  }
+}
+

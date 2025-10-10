@@ -76,7 +76,7 @@ export default function BulkUploadsClient() {
     fetchUploads();
   }, []);
 
-  // 60-second timeout: Reset form after simulation expires
+  // 5-minute timeout: Reset form after simulation expires
   useEffect(() => {
     if (!simulationExpiresAt) return;
 
@@ -97,7 +97,7 @@ export default function BulkUploadsClient() {
   }, [simulationExpiresAt]);
 
   const handleSimulationExpired = () => {
-    toast.error('Simulation expired after 60 seconds', {
+    toast.error('Simulation expired after 5 minutes', {
       description: 'Please re-simulate before applying',
       duration: 5000,
     });
@@ -270,14 +270,14 @@ export default function BulkUploadsClient() {
         setSimulation(data.simulation);
         setBlobMetadata(data.blobMetadata);
         
-        // Set 60-second expiration timer
-        const expiresAt = Date.now() + 60000; // 60 seconds from now
+        // Set 5-minute expiration timer (large files take 3-4 minutes to apply)
+        const expiresAt = Date.now() + 300000; // 5 minutes (300 seconds) from now
         setSimulationExpiresAt(expiresAt);
         
         const { summary } = data.simulation;
         toast.success('Simulation complete!', { 
           id: simulateToast,
-          description: `${summary.inserts} inserts, ${summary.updates} updates, ${summary.deletes} deletes. Valid for 60 seconds.`,
+          description: `${summary.inserts} inserts, ${summary.updates} updates, ${summary.deletes} deletes. Valid for 5 minutes.`,
           duration: Infinity,
         });
       }
