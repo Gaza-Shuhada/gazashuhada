@@ -70,12 +70,60 @@ See `.cursorrules` for complete details.
 
 ## 🔄 Workflow
 
+### Development Workflow
+
 1. **Create a branch**: `git checkout -b feature/your-feature`
 2. **Make changes** following `.cursorrules`
 3. **Test locally**: `npm run dev`
 4. **Check for errors**: `npm run lint`
 5. **Commit changes**: Use clear commit messages
-6. **Push and create PR`
+6. **Push and create PR**
+
+### After Your PR is Merged
+
+**Important**: Stay on the same branch for continued work. When your PR is accepted, clean up your branch:
+
+```bash
+# Delete local branch
+git checkout main
+git branch -D your-branch-name
+
+# Recreate from main
+git checkout -b your-branch-name
+
+# Force push to update remote
+git push origin your-branch-name --force
+```
+
+**Why?** After merging, your branch has duplicate commits (originals + merge commit). Recreating from main gives you a clean slate without rebase conflicts.
+
+---
+
+## 🗄️ Database Management
+
+### Resetting Production Database
+
+If the production database is out of sync with your schema (e.g., missing tables, old fields), you can reset it:
+
+```bash
+# Get the PRODUCTION DATABASE_URL from Vercel Dashboard
+# Settings → Environment Variables → DATABASE_URL (Production)
+
+# Reset and recreate all tables from schema
+DATABASE_URL="your_production_url" npx prisma db push --accept-data-loss
+```
+
+**⚠️ WARNING**: This will **DELETE ALL PRODUCTION DATA**. Only use when:
+- Production database is corrupted
+- Schema is completely out of sync
+- You're okay losing all existing data
+
+**After Reset**:
+1. Verify tables exist: `DATABASE_URL="your_production_url" npx prisma studio`
+2. Re-upload MoH data via `/tools/bulk-uploads` in production
+3. Test all endpoints
+
+**Note**: Make sure you use the **Production** DATABASE_URL from Vercel, not Development or Preview environments.
 
 ---
 

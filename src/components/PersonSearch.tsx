@@ -44,7 +44,7 @@ export function PersonSearch() {
       setIsLoading(true);
       try {
         const response = await fetch(
-          `/api/public/persons?search=${encodeURIComponent(query)}&limit=10&confirmedOnly=false`
+          `/api/public/persons?search=${encodeURIComponent(query)}&limit=10`
         );
         const data = await response.json();
         
