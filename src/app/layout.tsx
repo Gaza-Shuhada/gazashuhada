@@ -14,7 +14,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Gaza Martyrs شهداء غزة",
+  title: "Gaza Witnesses شهداء غزة",
   description: "",
   icons: {
     icon: [
