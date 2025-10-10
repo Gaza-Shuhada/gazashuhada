@@ -1,7 +1,6 @@
 import { prisma } from './prisma';
 import { BulkUploadRow } from './csv-utils';
 import { ChangeType, Gender } from '@prisma/client';
-import { uploadToBlob } from './blob-storage';
 
 /**
  * ==================================================================================
@@ -323,11 +322,15 @@ export async function applyBulkUpload(
   }
   
   // SMART FETCHING: Only fetch what we actually need
-  let toInsert: BulkUploadRow[] = [];
-  let toUpdate: Array<{ existing: ExistingPerson; row: BulkUploadRow }> = [];
-  let toDelete: ExistingPerson[] = [];
+  let toInsert: BulkUploadRow[];
+  let toUpdate: Array<{ existing: ExistingPerson; row: BulkUploadRow }>;
+  let toDelete: ExistingPerson[];
   
   if (hasChanges) {
+    // Initialize arrays
+    toInsert = [];
+    toUpdate = [];
+    
     // Step 1: Get lightweight ID-only list from database (very fast)
     console.log('  📊 Fetching existing IDs from database...');
     const existingIds = await prisma.person.findMany({
@@ -378,6 +381,11 @@ export async function applyBulkUpload(
     toDelete = personsToCheck.filter(p => 
       !incomingIdsSet.has(p.externalId) && !p.isDeleted
     );
+  } else {
+    // No changes - initialize empty arrays
+    toInsert = [];
+    toUpdate = [];
+    toDelete = [];
   }
   
   // Create metadata (blob already uploaded during simulation)
