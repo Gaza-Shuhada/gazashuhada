@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 interface Person {
   id: string;
@@ -13,8 +14,6 @@ interface Person {
   dateOfDeath: string | null;
   locationOfDeathLat: number | null;
   locationOfDeathLng: number | null;
-  obituary: string | null;
-  confirmedByMoh: boolean;
 }
 
 interface BaseVersion {
@@ -22,12 +21,11 @@ interface BaseVersion {
   dateOfDeath: string | null;
   locationOfDeathLat: number | null;
   locationOfDeathLng: number | null;
-  obituary: string | null;
 }
 
 interface Submission {
   id: string;
-  type: 'NEW_RECORD' | 'EDIT';
+  type: 'EDIT';
   status: string;
   proposedPayload: Record<string, string | number | boolean | null>;
   reason: string | null;
@@ -136,15 +134,15 @@ export default function ModerationClient() {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold">Pending Moderation</h1>
-          <p className="text-muted-foreground mt-2">Review and approve community submissions</p>
+          <p className="text-muted-foreground mt-2">Review and approve community edit proposals</p>
         </div>
-        <button
+        <Button
           onClick={fetchSubmissions}
           disabled={loading}
-          className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary disabled:opacity-50"
+          variant="default"
         >
           {loading ? 'Refreshing...' : 'Refresh'}
-        </button>
+        </Button>
       </div>
 
       {loading ? (
@@ -165,10 +163,8 @@ export default function ModerationClient() {
               <div className="bg-muted/50 px-6 py-4 border-b">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <span className={`px-3 py-1 text-sm font-medium rounded-full ${
-                      submission.type === 'NEW_RECORD' ? 'bg-accent text-accent-foreground' : 'bg-primary/10 text-primary'
-                    }`}>
-                      {submission.type === 'NEW_RECORD' ? 'New Record Proposal' : 'Edit Proposal'}
+                    <span className="px-3 py-1 text-sm font-medium rounded-full bg-primary/10 text-primary">
+                      Edit Proposal
                     </span>
                     <span className="text-sm text-muted-foreground">
                       Submitted {new Date(submission.createdAt).toLocaleString()}
@@ -178,158 +174,81 @@ export default function ModerationClient() {
               </div>
 
               <div className="px-6 py-4">
-                {submission.type === 'NEW_RECORD' ? (
-                  <div>
-                    <h3 className="text-lg font-semibold text-foreground mb-4">Proposed New Person Record</h3>
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <span className="text-sm font-medium text-muted-foreground">External ID:</span>
-                        <p className="text-foreground font-medium">{String(submission.proposedPayload.externalId)}</p>
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-muted-foreground">Name:</span>
-                        <p className="text-foreground font-medium">{String(submission.proposedPayload.name)}</p>
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-muted-foreground">Gender:</span>
-                        <p className="text-foreground">{String(submission.proposedPayload.gender)}</p>
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-muted-foreground">Date of Birth:</span>
-                        <p className="text-foreground">{submission.proposedPayload.dateOfBirth ? new Date(String(submission.proposedPayload.dateOfBirth)).toLocaleDateString() : 'N/A'}</p>
-                      </div>
-                      {submission.proposedPayload.dateOfDeath && (
-                        <div>
-                          <span className="text-sm font-medium text-muted-foreground">Date of Death:</span>
-                          <p className="text-foreground">{new Date(String(submission.proposedPayload.dateOfDeath)).toLocaleDateString()}</p>
-                        </div>
-                      )}
-                      {(submission.proposedPayload.locationOfDeathLat && submission.proposedPayload.locationOfDeathLng) && (
-                        <div>
-                          <span className="text-sm font-medium text-muted-foreground">Location of Death (Lat, Lng):</span>
-                          <p className="text-foreground">{Number(submission.proposedPayload.locationOfDeathLat).toFixed(4)}, {Number(submission.proposedPayload.locationOfDeathLng).toFixed(4)}</p>
-                        </div>
-                      )}
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-4">Proposed Edit to Existing Record</h3>
+
+                  {submission.person && (
+                    <div className="mb-4 p-4 bg-muted/50 rounded-lg border">
+                      <p className="text-sm font-medium text-muted-foreground mb-2">Current Record:</p>
+                      <p className="text-foreground font-semibold">
+                        {submission.person.name} ({submission.person.externalId})
+                      </p>
                     </div>
-                    {submission.proposedPayload.obituary && (
-                      <div className="mb-4">
-                        <span className="text-sm font-medium text-muted-foreground">Obituary:</span>
-                        <p className="text-foreground mt-1">{String(submission.proposedPayload.obituary)}</p>
-                      </div>
-                    )}
-                    {submission.proposedPayload.photoUrlThumb && (
-                      <div className="mb-4">
-                        <span className="text-sm font-medium text-muted-foreground">Photo:</span>
-                        <a
-                          href={String(submission.proposedPayload.photoUrlThumb)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block mt-2"
-                        >
-                          <Image
-                            src={String(submission.proposedPayload.photoUrlThumb)}
-                            alt="Submitted photo"
-                            width={128}
-                            height={128}
-                            className="w-32 h-32 object-cover rounded-lg border-2 border hover:border-primary transition-colors cursor-pointer"
-                            unoptimized
-                          />
-                        </a>
-                        {submission.proposedPayload.photoUrlOriginal && (
-                          <div className="mt-2 text-sm">
+                  )}
+
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium text-foreground">Proposed Changes:</p>
+
+                    {Object.entries(submission.proposedPayload).map(([key, value]) => {
+                      if (key === 'photoUrlThumb' && value) {
+                        return (
+                          <div key={key} className="text-sm">
+                            <span className="font-medium text-muted-foreground mb-2 block">New Photo (Thumbnail):</span>
                             <a
-                              href={String(submission.proposedPayload.photoUrlOriginal)}
+                              href={String(value)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-primary underline"
+                              className="block"
                             >
-                              Open original image in new tab
+                              <Image
+                                src={String(value)}
+                                alt="Proposed photo"
+                                width={128}
+                                height={128}
+                                className="w-32 h-32 object-cover rounded-lg border-2 border hover:border-primary transition-colors cursor-pointer"
+                                unoptimized
+                              />
                             </a>
                           </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div>
-                    <h3 className="text-lg font-semibold text-foreground mb-4">Proposed Edit to Existing Record</h3>
-
-                    {submission.person && (
-                      <div className="mb-4 p-4 bg-muted/50 rounded-lg border">
-                        <p className="text-sm font-medium text-muted-foreground mb-2">Current Record:</p>
-                        <p className="text-foreground font-semibold">
-                          {submission.person.name} ({submission.person.externalId})
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {submission.person.confirmedByMoh ? '✓ MoH Confirmed' : '○ Community Submitted'}
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="space-y-3">
-                      <p className="text-sm font-medium text-foreground">Proposed Changes:</p>
-
-                      {Object.entries(submission.proposedPayload).map(([key, value]) => {
-                        if (key === 'photoUrlThumb' && value) {
-                          return (
-                            <div key={key} className="text-sm">
-                              <span className="font-medium text-muted-foreground mb-2 block">New Photo (Thumbnail):</span>
-                              <a
-                                href={String(value)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block"
-                              >
-                                <Image
-                                  src={String(value)}
-                                  alt="Proposed photo"
-                                  width={128}
-                                  height={128}
-                                  className="w-32 h-32 object-cover rounded-lg border-2 border hover:border-primary transition-colors cursor-pointer"
-                                  unoptimized
-                                />
-                              </a>
-                            </div>
-                          );
-                        }
-                        if (key === 'photoUrlOriginal' && value) {
-                          return (
-                            <div key={key} className="text-sm">
-                              <span className="font-medium text-muted-foreground min-w-[150px] block">Photo Url Original:</span>
-                              <a
-                                href={String(value)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-primary underline break-all"
-                              >
-                                {String(value)}
-                              </a>
-                            </div>
-                          );
-                        }
-
-                        const currentValue = submission.person ? submission.person[key as keyof Person] : null;
-                        const displayValue = value && typeof value === 'string' && key.includes('Date')
-                          ? new Date(value).toLocaleDateString()
-                          : String(value || 'N/A');
-                        const displayCurrent = currentValue && typeof currentValue === 'string' && key.includes('Date')
-                          ? new Date(currentValue).toLocaleDateString()
-                          : String(currentValue || 'N/A');
-
+                        );
+                      }
+                      if (key === 'photoUrlOriginal' && value) {
                         return (
-                          <div key={key} className="flex items-center space-x-2 text-sm">
-                            <span className="font-medium text-muted-foreground min-w-[150px]">
-                              {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
-                            </span>
-                            <span className="text-destructive line-through">{displayCurrent}</span>
-                            <span className="text-muted-foreground">→</span>
-                            <span className="text-accent-foreground font-medium">{displayValue}</span>
+                          <div key={key} className="text-sm">
+                            <span className="font-medium text-muted-foreground min-w-[150px] block">Photo Url Original:</span>
+                            <a
+                              href={String(value)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary underline break-all"
+                            >
+                              {String(value)}
+                            </a>
                           </div>
                         );
-                      })}
-                    </div>
+                      }
+
+                      const currentValue = submission.person ? submission.person[key as keyof Person] : null;
+                      const displayValue = value && typeof value === 'string' && key.includes('Date')
+                        ? new Date(value).toLocaleDateString()
+                        : String(value || 'N/A');
+                      const displayCurrent = currentValue && typeof currentValue === 'string' && key.includes('Date')
+                        ? new Date(currentValue).toLocaleDateString()
+                        : String(currentValue || 'N/A');
+
+                      return (
+                        <div key={key} className="flex items-center space-x-2 text-sm">
+                          <span className="font-medium text-muted-foreground min-w-[150px]">
+                            {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
+                          </span>
+                          <span className="text-destructive line-through">{displayCurrent}</span>
+                          <span className="text-muted-foreground">→</span>
+                          <span className="text-accent-foreground font-medium">{displayValue}</span>
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
+                </div>
 
                 {submission.reason && (
                   <div className="mt-4 p-3 bg-muted/50 rounded-lg border">
@@ -340,20 +259,19 @@ export default function ModerationClient() {
               </div>
 
               <div className="bg-muted/50 px-6 py-4 border-t flex justify-end space-x-3">
-                <button
+                <Button
                   onClick={() => setModalState({ type: 'reject', submission, note: '' })}
                   disabled={actionLoading === submission.id}
-                  className="px-4 py-2 bg-destructive text-white rounded-lg hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  variant="destructive"
                 >
                   Reject
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => setModalState({ type: 'approve', submission, note: '' })}
                   disabled={actionLoading === submission.id}
-                  className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {actionLoading === submission.id ? 'Processing...' : 'Approve'}
-                </button>
+                </Button>
               </div>
             </div>
           ))}
@@ -369,7 +287,7 @@ export default function ModerationClient() {
             
             <p className="text-sm text-muted-foreground mb-4">
               {modalState.type === 'approve'
-                ? 'Are you sure you want to approve this submission? This will create a new record or update an existing one.'
+                ? 'Are you sure you want to approve this edit? This will update the existing record.'
                 : 'Are you sure you want to reject this submission? Please provide a reason for the submitter.'}
             </p>
 
@@ -387,23 +305,19 @@ export default function ModerationClient() {
             </div>
 
             <div className="flex justify-end space-x-3">
-              <button
+              <Button
                 onClick={() => setModalState(null)}
-                className="px-4 py-2 text-foreground bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
+                variant="secondary"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={modalState.type === 'approve' ? handleApprove : handleReject}
                 disabled={actionLoading !== null}
-                className={`px-4 py-2 text-white rounded-lg transition-colors ${
-                  modalState.type === 'approve'
-                    ? 'bg-primary hover:bg-primary/90'
-                    : 'bg-destructive hover:bg-destructive/90'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                variant={modalState.type === 'approve' ? 'default' : 'destructive'}
               >
                 {actionLoading ? 'Processing...' : modalState.type === 'approve' ? 'Approve' : 'Reject'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -411,5 +325,3 @@ export default function ModerationClient() {
     </div>
   );
 }
-
-

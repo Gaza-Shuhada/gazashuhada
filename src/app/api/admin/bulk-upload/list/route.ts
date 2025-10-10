@@ -90,7 +90,7 @@ export async function GET() {
       return {
         id: upload.id,
         filename: upload.filename,
-        label: upload.label,
+        comment: upload.comment,
         dateReleased: upload.dateReleased,
         uploadedAt: upload.uploadedAt,
         fileUrl: upload.fileUrl, // Blob storage URL for downloading original CSV

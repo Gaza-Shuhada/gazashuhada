@@ -36,7 +36,6 @@ export async function GET(
         locationOfDeathLat: true,
         locationOfDeathLng: true,
         photoUrlThumb: true, // Only thumbnail
-        confirmedByMoh: true,
         createdAt: true,
         updatedAt: true,
         isDeleted: true, // We need this to check, but won't return it
@@ -71,7 +70,6 @@ export async function GET(
           locationOfDeathLat: true,
           locationOfDeathLng: true,
           photoUrlThumb: true,
-          confirmedByMoh: true,
           createdAt: true,
           updatedAt: true,
           isDeleted: true,

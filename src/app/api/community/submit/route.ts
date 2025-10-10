@@ -14,9 +14,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { type, proposedPayload, reason, externalId } = body;
 
-    // Validate submission type
-    if (!type || (type !== 'NEW_RECORD' && type !== 'EDIT')) {
-      return NextResponse.json({ error: 'Invalid submission type' }, { status: 400 });
+    // Only EDIT type is allowed
+    if (!type || type !== 'EDIT') {
+      return NextResponse.json({ error: 'Invalid submission type. Only EDIT is allowed.' }, { status: 400 });
     }
 
     // Validate proposed payload
@@ -24,209 +24,101 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid proposed payload' }, { status: 400 });
     }
 
-    if (type === 'NEW_RECORD') {
-      // Validate required fields for NEW_RECORD
-      const required = ['externalId', 'name', 'gender', 'dateOfBirth'];
-      for (const field of required) {
-        if (!proposedPayload[field]) {
-          return NextResponse.json({ error: `Missing required field: ${field}` }, { status: 400 });
-        }
-      }
-      
-      // Validate External ID format
-      const externalId = proposedPayload.externalId.trim();
-      if (externalId.length === 0) {
-        return NextResponse.json({ error: 'External ID cannot be empty' }, { status: 400 });
-      }
-      if (externalId.length > 50) {
-        return NextResponse.json({ error: 'External ID cannot exceed 50 characters' }, { status: 400 });
-      }
-      // Allow letters, numbers, hyphens, underscores (e.g., "P12345", "MoH-2024-001", "record_123")
-      if (!/^[A-Za-z0-9_-]+$/.test(externalId)) {
-        return NextResponse.json({ 
-          error: 'External ID can only contain letters, numbers, hyphens, and underscores' 
-        }, { status: 400 });
-      }
-      
-      // nameEnglish is optional but must be string or null if provided
-      if (proposedPayload.nameEnglish !== undefined && 
-          proposedPayload.nameEnglish !== null && 
-          typeof proposedPayload.nameEnglish !== 'string') {
-        return NextResponse.json({ error: 'nameEnglish must be a string or null' }, { status: 400 });
-      }
-
-      // Validate gender enum
-      if (!['MALE', 'FEMALE', 'OTHER'].includes(proposedPayload.gender)) {
-        return NextResponse.json({ error: 'Invalid gender value' }, { status: 400 });
-      }
-
-      // Validate location coordinates (both must be provided or both must be absent)
-      const hasLat = proposedPayload.locationOfDeathLat !== undefined && proposedPayload.locationOfDeathLat !== null;
-      const hasLng = proposedPayload.locationOfDeathLng !== undefined && proposedPayload.locationOfDeathLng !== null;
-      
-      if (hasLat !== hasLng) {
-        return NextResponse.json({ 
-          error: 'Both latitude and longitude must be provided together for location of death' 
-        }, { status: 400 });
-      }
-
-      if (hasLat && hasLng) {
-        const lat = Number(proposedPayload.locationOfDeathLat);
-        const lng = Number(proposedPayload.locationOfDeathLng);
-        
-        if (isNaN(lat) || isNaN(lng)) {
-          return NextResponse.json({ error: 'Location coordinates must be valid numbers' }, { status: 400 });
-        }
-        
-        if (lat < -90 || lat > 90) {
-          return NextResponse.json({ error: 'Latitude must be between -90 and 90' }, { status: 400 });
-        }
-        
-        if (lng < -180 || lng > 180) {
-          return NextResponse.json({ error: 'Longitude must be between -180 and 180' }, { status: 400 });
-        }
-      }
-
-      // Check if external ID already exists
-      const existingPerson = await prisma.person.findUnique({
-        where: { externalId: proposedPayload.externalId },
-        select: { id: true, externalId: true, isDeleted: true },
-      });
-
-      // If active record exists, reject and tell user to use EDIT
-      if (existingPerson && !existingPerson.isDeleted) {
-        return NextResponse.json({ 
-          error: `A person with External ID "${proposedPayload.externalId}" already exists. Use "Suggest Edit" instead.` 
-        }, { status: 400 });
-      }
-      
-      // If deleted record exists, allow NEW_RECORD submission
-      // (This will be an "undelete" operation when approved by moderator)
-      // Store the existing person ID for the moderator to see in the submission
-      const personIdForUndelete = existingPerson?.isDeleted ? existingPerson.id : null;
-
-      // Create NEW_RECORD submission
-      const submission = await prisma.communitySubmission.create({
-        data: {
-          type: 'NEW_RECORD',
-          personId: personIdForUndelete, // Set if this is an undelete operation
-          proposedPayload: proposedPayload,
-          reason: reason || null,
-          submittedBy: userId,
-          status: 'PENDING',
-        },
-      });
-
-      return NextResponse.json({
-        success: true,
-        submission: {
-          id: submission.id,
-          type: submission.type,
-          status: submission.status,
-          createdAt: submission.createdAt,
-        },
-      });
-
-    } else if (type === 'EDIT') {
-      // Validate that externalId is provided
-      if (!externalId) {
-        return NextResponse.json({ error: 'External ID is required for edits' }, { status: 400 });
-      }
-
-      // Find the person by externalId
-      const person = await prisma.person.findUnique({
-        where: { externalId: externalId },
-        include: {
-          versions: {
-            orderBy: { versionNumber: 'desc' },
-            take: 1,
-          },
-        },
-      });
-
-      if (!person) {
-        return NextResponse.json({ 
-          error: 'Person not found. Use "Propose New Record" instead.' 
-        }, { status: 404 });
-      }
-
-      // Block edits to deleted records
-      if (person.isDeleted) {
-        return NextResponse.json({ 
-          error: 'This record has been deleted and cannot be edited. If you believe it should exist, use "Propose New Record" to submit it as a new entry.' 
-        }, { status: 400 });
-      }
-
-      // Validate that only allowed fields are being edited
-      const allowedFields = ['dateOfDeath', 'locationOfDeathLat', 'locationOfDeathLng', 'obituary', 'photoUrlThumb', 'photoUrlOriginal'];
-      const proposedFields = Object.keys(proposedPayload);
-      const invalidFields = proposedFields.filter(field => !allowedFields.includes(field));
-
-      if (invalidFields.length > 0) {
-        return NextResponse.json({ 
-          error: `Invalid fields for edit: ${invalidFields.join(', ')}. Only death-related fields can be edited.` 
-        }, { status: 400 });
-      }
-
-      if (proposedFields.length === 0) {
-        return NextResponse.json({ error: 'At least one field must be provided for edit' }, { status: 400 });
-      }
-
-      // Validate location coordinates (both must be provided or both must be absent)
-      const hasLat = proposedPayload.locationOfDeathLat !== undefined && proposedPayload.locationOfDeathLat !== null;
-      const hasLng = proposedPayload.locationOfDeathLng !== undefined && proposedPayload.locationOfDeathLng !== null;
-      
-      if (hasLat !== hasLng) {
-        return NextResponse.json({ 
-          error: 'Both latitude and longitude must be provided together for location of death' 
-        }, { status: 400 });
-      }
-
-      if (hasLat && hasLng) {
-        const lat = Number(proposedPayload.locationOfDeathLat);
-        const lng = Number(proposedPayload.locationOfDeathLng);
-        
-        if (isNaN(lat) || isNaN(lng)) {
-          return NextResponse.json({ error: 'Location coordinates must be valid numbers' }, { status: 400 });
-        }
-        
-        if (lat < -90 || lat > 90) {
-          return NextResponse.json({ error: 'Latitude must be between -90 and 90' }, { status: 400 });
-        }
-        
-        if (lng < -180 || lng > 180) {
-          return NextResponse.json({ error: 'Longitude must be between -180 and 180' }, { status: 400 });
-        }
-      }
-
-      const latestVersion = person.versions[0];
-
-      // Create EDIT submission
-      const submission = await prisma.communitySubmission.create({
-        data: {
-          type: 'EDIT',
-          baseVersionId: latestVersion.id,
-          personId: person.id,
-          proposedPayload: proposedPayload,
-          reason: reason || null,
-          submittedBy: userId,
-          status: 'PENDING',
-        },
-      });
-
-      return NextResponse.json({
-        success: true,
-        submission: {
-          id: submission.id,
-          type: submission.type,
-          status: submission.status,
-          createdAt: submission.createdAt,
-        },
-      });
+    // Validate that externalId is provided
+    if (!externalId) {
+      return NextResponse.json({ error: 'External ID is required for edits' }, { status: 400 });
     }
 
-    // Fallback return (should never reach here due to validation above)
-    return NextResponse.json({ error: 'Invalid submission type' }, { status: 400 });
+    // Find the person by externalId
+    const person = await prisma.person.findUnique({
+      where: { externalId: externalId },
+      include: {
+        versions: {
+          orderBy: { versionNumber: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    if (!person) {
+      return NextResponse.json({ 
+        error: 'Person not found with that External ID.' 
+      }, { status: 404 });
+    }
+
+    // Block edits to deleted records
+    if (person.isDeleted) {
+      return NextResponse.json({ 
+        error: 'This record has been deleted and cannot be edited.' 
+      }, { status: 400 });
+    }
+
+    // Validate that only allowed fields are being edited
+    const allowedFields = ['dateOfDeath', 'locationOfDeathLat', 'locationOfDeathLng', 'photoUrlThumb', 'photoUrlOriginal'];
+    const proposedFields = Object.keys(proposedPayload);
+    const invalidFields = proposedFields.filter(field => !allowedFields.includes(field));
+
+    if (invalidFields.length > 0) {
+      return NextResponse.json({ 
+        error: `Invalid fields for edit: ${invalidFields.join(', ')}. Only death-related fields can be edited.` 
+      }, { status: 400 });
+    }
+
+    if (proposedFields.length === 0) {
+      return NextResponse.json({ error: 'At least one field must be provided for edit' }, { status: 400 });
+    }
+
+    // Validate location coordinates (both must be provided or both must be absent)
+    const hasLat = proposedPayload.locationOfDeathLat !== undefined && proposedPayload.locationOfDeathLat !== null;
+    const hasLng = proposedPayload.locationOfDeathLng !== undefined && proposedPayload.locationOfDeathLng !== null;
+    
+    if (hasLat !== hasLng) {
+      return NextResponse.json({ 
+        error: 'Both latitude and longitude must be provided together for location of death' 
+      }, { status: 400 });
+    }
+
+    if (hasLat && hasLng) {
+      const lat = Number(proposedPayload.locationOfDeathLat);
+      const lng = Number(proposedPayload.locationOfDeathLng);
+      
+      if (isNaN(lat) || isNaN(lng)) {
+        return NextResponse.json({ error: 'Location coordinates must be valid numbers' }, { status: 400 });
+      }
+      
+      if (lat < -90 || lat > 90) {
+        return NextResponse.json({ error: 'Latitude must be between -90 and 90' }, { status: 400 });
+      }
+      
+      if (lng < -180 || lng > 180) {
+        return NextResponse.json({ error: 'Longitude must be between -180 and 180' }, { status: 400 });
+      }
+    }
+
+    const latestVersion = person.versions[0];
+
+    // Create EDIT submission
+    const submission = await prisma.communitySubmission.create({
+      data: {
+        type: 'EDIT',
+        baseVersionId: latestVersion.id,
+        personId: person.id,
+        proposedPayload: proposedPayload,
+        reason: reason || null,
+        submittedBy: userId,
+        status: 'PENDING',
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      submission: {
+        id: submission.id,
+        type: submission.type,
+        status: submission.status,
+        createdAt: submission.createdAt,
+      },
+    });
 
   } catch (error) {
     console.error('[Community Submit] Error:', error);
@@ -236,4 +128,3 @@ export async function POST(request: NextRequest) {
     }, { status: 500 });
   }
 }
-

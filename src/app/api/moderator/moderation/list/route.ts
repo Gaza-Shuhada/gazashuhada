@@ -38,15 +38,12 @@ export async function GET() {
           dateOfDeath: s.person.dateOfDeath,
           locationOfDeathLat: s.person.locationOfDeathLat,
           locationOfDeathLng: s.person.locationOfDeathLng,
-          obituary: s.person.obituary,
-          confirmedByMoh: s.person.confirmedByMoh,
         } : null,
         baseVersion: s.baseVersion ? {
           versionNumber: s.baseVersion.versionNumber,
           dateOfDeath: s.baseVersion.dateOfDeath,
           locationOfDeathLat: s.baseVersion.locationOfDeathLat,
           locationOfDeathLng: s.baseVersion.locationOfDeathLng,
-          obituary: s.baseVersion.obituary,
         } : null,
       })),
     });

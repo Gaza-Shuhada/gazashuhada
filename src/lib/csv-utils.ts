@@ -158,6 +158,16 @@ export function parseCSV(csvContent: string): BulkUploadRow[] {
     });
   }
   
+  // Check for duplicate external_ids within the CSV
+  const externalIds = rows.map(r => r.external_id);
+  const duplicateIds = externalIds.filter((id, index) => externalIds.indexOf(id) !== index);
+  if (duplicateIds.length > 0) {
+    const uniqueDuplicates = [...new Set(duplicateIds)];
+    throw new Error(
+      `Duplicate externalId field${uniqueDuplicates.length > 1 ? 's' : ''}: ${uniqueDuplicates.join(', ')}`
+    );
+  }
+  
   return rows;
 }
 

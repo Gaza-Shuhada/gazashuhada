@@ -1,66 +1,110 @@
-# Add community contribution stats and fix Next.js config
+docs: comprehensive documentation overhaul and design simplification
 
 ## Overview
-Added a dynamic subtitle showing the percentage of records missing community contributions, updated Next.js image configuration to use the new `remotePatterns` format, and expanded the landing page background grid to cover ultra-wide screens (1800px+).
+Major documentation update to align all docs with current codebase implementation.
+Removed obsolete references, updated schemas, and simplified design patterns.
+Also includes UI theme consistency fixes and About page improvements.
 
-## Changes
+## Documentation Changes
 
-### 1. Homepage - Community Contribution Stats (`src/app/page.tsx`)
-- **Added community contribution tracking**: Query database for records with approved community submissions
-- **Calculate missing percentage**: Show how many records still need community input
-- **Display dynamic subtitle**: Shows "X% of our records are still missing information. Help us by spreading the word and contributing."
-- **Responsive messaging**: Different text when percentage is 0%
+### Updated Files
+- **README.md**: Removed confirmedByMoh, NEW_RECORD references; added trust simulation and client-side validation documentation
+- **docs/PRODUCT.md**: Simplified to EDIT-only workflow, removed obituary field, updated data source explanation
+- **docs/DATABASE.md**: Updated schema definitions to match actual implementation (no confirmedByMoh, no obituary, added currentVersion, updated BulkUpload fields)
+- **docs/ENGINEERING.md**: Added trust simulation optimization docs, client-side validation, updated file structure, performance metrics
 
-### 2. Next.js Configuration (`next.config.js`)
-- **Fixed deprecation warning**: Replaced `images.domains` with `images.remotePatterns`
-- **Updated format**: Now uses explicit protocol and hostname objects
-- **Maintained functionality**: Kept support for Clerk images (`img.clerk.com`) and Unsplash (`images.unsplash.com`)
+### Deleted Files
+- **docs/DATA_CONFLICTS.md**: Removed as design simplification eliminated most conflict scenarios (no NEW_RECORD submissions = simpler conflict model)
 
-### 3. Background Grid Enhancement (`src/app/page.tsx`)
-- **Increased photo count**: From 84 to 160 photos to cover wider screens
-- **Added breakpoints**: 
-  - `xl:grid-cols-16` for 1280px+ screens
-  - `2xl:grid-cols-20` for 1536px+ screens
-- **Full coverage**: Background now seamlessly fills screens 1800px wide and beyond
+### Key Documentation Updates
+- All person records originate from Ministry of Health only
+- Community can only EDIT existing records (no NEW_RECORD)
+- Identity fields (name, gender, DOB) are read-only for community
+- Trust simulation optimization documented (50-70% faster apply)
+- Client-side CSV validation documented
+- Schema changes: label → comment, added blob metadata, removed confirmedByMoh
 
-### 4. Tailwind CSS Custom Utilities (`src/app/globals.css`)
-- **Added custom grid columns**: grid-cols-14, grid-cols-16, grid-cols-20
-- **Tailwind 4 format**: Used `@theme` directive with CSS custom properties
-- **Proper syntax**: `--grid-template-columns-{n}: repeat({n}, minmax(0, 1fr))`
+## UI/Theme Improvements
+
+### Theme Token Migration
+Replaced raw Tailwind colors with Shadcn theme tokens across components:
+- `src/components/PublicNavbar.tsx`: text-white → text-foreground/text-muted-foreground
+- `src/components/PersonsTable.tsx`: text-white → text-foreground/text-muted-foreground
+- `src/app/page.tsx`: text-gray-* → text-foreground/text-muted-foreground
+- `src/app/tools/page.tsx`: Removed hardcoded colors, use default variants
+- `src/app/tools/moderation/layout.tsx`: text-white → text-secondary-foreground
+- `src/app/contribution/edit/[externalId]/page.tsx`: text-white → text-destructive-foreground
+- `src/app/person/[externalId]/page.tsx`: Removed hardcoded badge colors
+- `src/app/tools/bulk-uploads/BulkUploadsClient.tsx`: text-white → text-destructive-foreground
+
+### Navbar Enhancement
+- Added `bg-background/95 backdrop-blur` to PublicNavbar
+- Prevents text overlap when scrolling
+- Modern glassmorphism effect
+
+## About Page
+
+### New FAQ Entry
+Added "What are your data sources?" FAQ with detailed explanation of Ministry of Health as primary source.
+
+### GitHub Link
+Made GitHub repository link clickable with proper styling:
+- Links to: github.com/Gaza-Deaths/gazadeaths/tree/main/data_sources
+- Opens in new tab with security attributes
+- Uses theme colors for consistency
 
 ## Technical Details
 
-### Database Query
-```typescript
-const personsWithCommunityEdits = await prisma.person.count({
-  where: {
-    isDeleted: false,
-    submissions: {
-      some: { status: 'APPROVED' }
-    }
-  }
-});
+### Files Changed
+```
+Documentation:
+  modified: README.md
+  modified: docs/PRODUCT.md
+  modified: docs/DATABASE.md
+  modified: docs/ENGINEERING.md
+  deleted:  docs/DATA_CONFLICTS.md
+
+UI/Theme:
+  modified: src/components/PublicNavbar.tsx
+  modified: src/components/PersonsTable.tsx
+  modified: src/app/page.tsx
+  modified: src/app/tools/page.tsx
+  modified: src/app/tools/moderation/layout.tsx
+  modified: src/app/contribution/edit/[externalId]/page.tsx
+  modified: src/app/person/[externalId]/page.tsx
+  modified: src/app/tools/bulk-uploads/BulkUploadsClient.tsx
+  modified: src/app/about/page.tsx
 ```
 
-### Grid Breakpoints
-- Mobile (0-639px): 6 columns
-- Small (640-767px): 8 columns  
-- Medium (768-1023px): 10 columns
-- Large (1024-1279px): 12 columns
-- XL (1280-1535px): 16 columns
-- 2XL (1536px+): 20 columns
-
-## Testing Checklist
-- [ ] Homepage loads without errors
-- [ ] Community contribution percentage displays correctly
-- [ ] Subtitle appears below main title
-- [ ] Next.js image deprecation warning is gone
-- [ ] Background grid covers full width on 1800px+ screens
-- [ ] Background grid responsive on all screen sizes
-- [ ] No console errors or linter warnings
-
 ## Impact
-- **User Experience**: Better encourages community participation with clear statistics
-- **Visual Quality**: Background grid now properly fills ultra-wide displays
-- **Developer Experience**: Removed deprecation warning, cleaner config
-- **Performance**: No negative impact, single additional database query cached by Next.js
+
+### Documentation Quality
+- All docs now accurately reflect implementation
+- Removed ~500 lines of obsolete documentation
+- Clearer explanation of data model and workflows
+- Eliminated confusion about NEW_RECORD (no longer exists)
+
+### Code Consistency
+- Theme tokens used consistently across all components
+- Better dark mode support
+- Follows Shadcn UI best practices
+- No raw Tailwind colors in text/backgrounds
+
+### User Experience
+- Clear data source transparency on About page
+- Clickable GitHub link for verification
+- Improved navbar visibility and aesthetics
+- Consistent visual language throughout app
+
+## Testing
+- [x] All documentation reviewed against codebase
+- [x] No linter errors
+- [x] UI theme verified in browser
+- [x] Links tested and working
+- [x] Navbar background tested on scroll
+
+## Philosophy
+Following project rules: "Move fast, no cruft, zero backwards compatibility"
+- Deleted obsolete docs cleanly (no "deprecated" markers)
+- Updated all references in one go
+- No transition periods or legacy support

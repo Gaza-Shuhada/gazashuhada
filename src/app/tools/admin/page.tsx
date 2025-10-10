@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useUser } from '@clerk/nextjs';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
@@ -93,10 +93,7 @@ export default function AdminSettingsPage() {
           </div>
           <h1 className="text-2xl font-bold text-foreground mb-4">Authentication Required</h1>
           <p className="text-muted-foreground mb-6">You must be signed in to access settings.</p>
-          <Link
-            href="/sign-in"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring"
-          >
+          <Link href="/sign-in" className={buttonVariants({ variant: "default" })}>
             Sign In
           </Link>
         </div>
@@ -120,10 +117,7 @@ export default function AdminSettingsPage() {
           <p className="text-sm text-muted-foreground mb-6">
             Current role: <span className="font-medium">{userRole || 'None'}</span>
           </p>
-          <Link
-            href="/"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring"
-          >
+          <Link href="/" className={buttonVariants({ variant: "default" })}>
             Go Home
           </Link>
         </div>

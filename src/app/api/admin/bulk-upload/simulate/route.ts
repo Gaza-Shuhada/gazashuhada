@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { parseCSV } from '@/lib/csv-utils';
 import { simulateBulkUpload } from '@/lib/bulk-upload-service-ultra-optimized';
 import { requireAdmin } from '@/lib/auth-utils';
+import crypto from 'crypto';
+import zlib from 'zlib';
 
 /**
  * Route Configuration for Bulk Upload Simulation
@@ -64,13 +66,24 @@ export async function POST(request: NextRequest) {
     
     const csvContent = await response.text();
     const downloadTime = Date.now() - downloadStart;
-    const fileSize = csvContent.length;
+    const fileSize = Buffer.byteLength(csvContent, 'utf-8');
+    
+    // Calculate SHA-256 hash for integrity verification
+    const sha256 = crypto.createHash('sha256').update(csvContent).digest('hex');
+    
+    // Generate preview (first ~20 lines, gzipped)
+    const lines = csvContent.split('\n').slice(0, 21); // Header + 20 data lines
+    const preview = lines.join('\n');
+    const previewGzipped = zlib.gzipSync(Buffer.from(preview, 'utf-8')).toString('base64');
+    
     console.log('[SERVER] ✅ Download complete!');
     console.log('[SERVER] 📊 File stats:', {
       sizeBytes: fileSize,
       sizeMB: (fileSize / 1024 / 1024).toFixed(2),
       downloadTimeMs: downloadTime,
       downloadTimeSec: (downloadTime / 1000).toFixed(2),
+      sha256: sha256.substring(0, 16) + '...',
+      previewSize: previewGzipped.length,
     });
     
     // Parse and validate CSV
@@ -113,6 +126,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       simulation,
+      blobMetadata: {
+        size: fileSize,
+        sha256,
+        contentType: 'text/csv',
+        previewLines: previewGzipped,
+      },
     });
   } catch (error) {
     console.error('[SERVER] ❌ Simulate error:', error);

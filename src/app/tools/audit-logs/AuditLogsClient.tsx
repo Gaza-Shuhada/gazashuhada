@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Prisma } from '@prisma/client';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 interface AuditLog {
   id: string;
@@ -89,13 +90,12 @@ export default function AuditLogsClient() {
           <h1 className="text-3xl font-bold">Audit Logs</h1>
           <p className="text-muted-foreground mt-2">Recent activity log (last 50 actions)</p>
         </div>
-        <button
+        <Button
           onClick={fetchLogs}
           disabled={loading}
-          className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary disabled:opacity-50"
         >
           {loading ? 'Refreshing...' : 'Refresh'}
-        </button>
+        </Button>
       </div>
 
       {loading ? (

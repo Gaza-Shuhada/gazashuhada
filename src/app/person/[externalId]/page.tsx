@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, Calendar, MapPin, FileText, Clock, Database, Edit } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Clock, Database, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -33,10 +33,8 @@ interface PersonVersion {
   dateOfDeath: string | null;
   locationOfDeathLat: number | null;
   locationOfDeathLng: number | null;
-  obituary: string | null;
   photoUrlThumb: string | null;
   photoUrlOriginal: string | null;
-  confirmedByMoh: boolean;
   isDeleted: boolean;
   createdAt: string;
   source: {
@@ -46,7 +44,7 @@ interface PersonVersion {
     bulkUpload: {
       id: string;
       filename: string;
-      label: string;
+      comment: string | null;
       dateReleased: string;
     } | null;
     communitySubmission: {
@@ -67,10 +65,8 @@ interface Person {
   dateOfDeath: string | null;
   locationOfDeathLat: number | null;
   locationOfDeathLng: number | null;
-  obituary: string | null;
   photoUrlThumb: string | null;
   photoUrlOriginal: string | null;
-  confirmedByMoh: boolean;
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
@@ -131,7 +127,7 @@ export default function PersonDetailPage() {
   const getChangeTypeBadge = (changeType: string) => {
     switch (changeType) {
       case 'INSERT':
-        return <Badge variant="default" className="bg-green-600">Insert</Badge>;
+        return <Badge variant="default">Insert</Badge>;
       case 'UPDATE':
         return <Badge variant="secondary">Update</Badge>;
       case 'DELETE':
@@ -193,11 +189,6 @@ export default function PersonDetailPage() {
         <div className="flex gap-2">
           {person.isDeleted && (
             <Badge variant="destructive">Deleted</Badge>
-          )}
-          {person.confirmedByMoh ? (
-            <Badge variant="default">MoH Confirmed</Badge>
-          ) : (
-            <Badge variant="secondary">Community Contribution</Badge>
           )}
         </div>
       </div>
@@ -296,19 +287,6 @@ export default function PersonDetailPage() {
               </div>
             )}
 
-            {/* Obituary */}
-            {person.obituary && (
-              <div className="flex items-start gap-3 md:col-span-2">
-                <FileText className="w-5 h-5 text-muted-foreground mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-muted-foreground mb-2">Obituary</p>
-                  <p className="text-base whitespace-pre-wrap leading-relaxed">
-                    {person.obituary}
-                  </p>
-                </div>
-              </div>
-            )}
-
             {/* Timestamps */}
             <div className="flex items-start gap-3">
               <Clock className="w-5 h-5 text-muted-foreground mt-0.5" />
@@ -345,7 +323,6 @@ export default function PersonDetailPage() {
                   <TableHead>Version</TableHead>
                   <TableHead>Change Type</TableHead>
                   <TableHead>Source</TableHead>
-                  <TableHead>MoH Confirmed</TableHead>
                   <TableHead>Deleted</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Date of Death</TableHead>
@@ -369,15 +346,10 @@ export default function PersonDetailPage() {
                         </p>
                         {version.source.bulkUpload && (
                           <p className="text-xs text-muted-foreground">
-                            {version.source.bulkUpload.label} ({formatDate(version.source.bulkUpload.dateReleased)})
+                            {version.source.bulkUpload.comment} ({formatDate(version.source.bulkUpload.dateReleased)})
                           </p>
                         )}
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={version.confirmedByMoh ? 'default' : 'secondary'}>
-                        {version.confirmedByMoh ? 'Yes' : 'No'}
-                      </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge variant={version.isDeleted ? 'destructive' : 'outline'}>

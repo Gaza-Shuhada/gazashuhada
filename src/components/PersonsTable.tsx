@@ -3,14 +3,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { Search, List, Grid, Download } from 'lucide-react';
 
 interface Person {
   id: string;
@@ -46,6 +47,10 @@ export function PersonsTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [viewMode, setViewMode] = useState<'list' | 'photos'>('list');
+  const [maxAge, setMaxAge] = useState<number>(100);
+  const [sliderValue, setSliderValue] = useState<number>(100); // Temporary state for slider visual
+  const [downloading, setDownloading] = useState(false);
 
   // Debounce search input
   useEffect(() => {
@@ -57,17 +62,27 @@ export function PersonsTable() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const fetchPersons = useCallback(async (page: number = 1, search: string = '') => {
+  const fetchPersons = useCallback(async (page: number = 1, search: string = '', mode: 'list' | 'photos' = 'list', maxAgeFilter?: number) => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: '10',
+        limit: mode === 'photos' ? '24' : '10', // More items for grid view
         confirmedOnly: 'false', // Show ALL records (MoH confirmed + community submissions)
       });
       
       if (search.trim()) {
         params.append('search', search.trim());
+      }
+      
+      // In photo mode, only fetch records with photos
+      if (mode === 'photos') {
+        params.append('filter', 'with_photo');
+      }
+      
+      // Add max age filter if provided and not default (100)
+      if (maxAgeFilter !== undefined && maxAgeFilter < 100) {
+        params.append('maxAge', maxAgeFilter.toString());
       }
       
       const response = await fetch(`/api/public/persons?${params.toString()}`);
@@ -89,13 +104,13 @@ export function PersonsTable() {
 
   // Fetch on mount
   useEffect(() => {
-    fetchPersons(1, '');
-  }, [fetchPersons]);
+    fetchPersons(1, '', viewMode, maxAge);
+  }, [fetchPersons, viewMode, maxAge]);
 
   // Fetch when debounced search changes
   useEffect(() => {
-    fetchPersons(1, debouncedSearch);
-  }, [debouncedSearch, fetchPersons]);
+    fetchPersons(1, debouncedSearch, viewMode, maxAge);
+  }, [debouncedSearch, fetchPersons, viewMode, maxAge]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
@@ -103,6 +118,52 @@ export function PersonsTable() {
 
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString();
+  };
+
+  const handleDownloadCSV = async () => {
+    try {
+      setDownloading(true);
+      
+      // Build the same query params as the current view
+      const params = new URLSearchParams({
+        confirmedOnly: 'false',
+      });
+      
+      if (debouncedSearch.trim()) {
+        params.append('search', debouncedSearch.trim());
+      }
+      
+      if (viewMode === 'photos') {
+        params.append('filter', 'with_photo');
+      }
+      
+      if (maxAge < 100) {
+        params.append('maxAge', maxAge.toString());
+      }
+      
+      const response = await fetch(`/api/public/persons/export?${params.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to download CSV');
+      }
+      
+      // Get the CSV blob
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `gaza-deaths-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to download CSV');
+    } finally {
+      setDownloading(false);
+    }
   };
 
   if (initialLoad && loading) {
@@ -153,38 +214,76 @@ export function PersonsTable() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle>Database Records</CardTitle>
-          <CardDescription>
-            Total: {data.pagination.total} records
-          </CardDescription>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex-1 max-w-sm">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                type="text"
+                placeholder="Search by name, external ID..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            {searchQuery && (
+              <p className="text-sm text-muted-foreground mt-2">
+                {loading ? 'Searching...' : `Found ${data?.pagination.total || 0} result${data?.pagination.total === 1 ? '' : 's'}`}
+              </p>
+            )}
+          </div>
+          
+          {/* Age Filter Slider */}
+          <div className="flex items-center gap-3 flex-1 max-w-xs">
+            <label className="text-sm font-medium text-foreground whitespace-nowrap">
+              Max Age: {sliderValue}
+            </label>
+            <Slider
+              value={[sliderValue]}
+              onValueChange={(value) => setSliderValue(value[0])} // Update visual during drag
+              onValueCommit={(value) => setMaxAge(value[0])} // Apply filter when released
+              min={0}
+              max={100}
+              step={1}
+              className="flex-1"
+            />
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-muted-foreground whitespace-nowrap">
+              Total: <span className="font-medium text-foreground">{data.pagination.total.toLocaleString()}</span> records
+            </div>
+            <div className="flex gap-1 border rounded-md p-1">
+              <Button
+                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                className="gap-2"
+              >
+                <List className="h-4 w-4" />
+                List
+              </Button>
+              <Button
+                variant={viewMode === 'photos' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('photos')}
+                className="gap-2"
+              >
+                <Grid className="h-4 w-4" />
+                Photos
+              </Button>
+            </div>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
-        {/* Search Input */}
-        <div className="mb-4">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              type="text"
-              placeholder="Search by name, external ID..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          {searchQuery && (
-            <p className="text-sm text-muted-foreground mt-2">
-              {loading ? 'Searching...' : `Found ${data?.pagination.total || 0} result${data?.pagination.total === 1 ? '' : 's'}`}
-            </p>
-          )}
-        </div>
-
-        <div className="rounded-md border">
-          <Table>
+        {viewMode === 'list' ? (
+          /* List View - Table */
+          <div className="rounded-md border">
+            <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>External ID</TableHead>
+                <TableHead>National ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Gender</TableHead>
                 <TableHead>Date of Birth</TableHead>
@@ -307,33 +406,89 @@ export function PersonsTable() {
             </TableBody>
           </Table>
         </div>
-
-        {/* Pagination */}
-        {data.pagination.pages > 1 && (
-          <div className="flex items-center justify-between mt-6">
-            <div className="text-sm text-muted-foreground">
-              Showing page {data.pagination.page} of {data.pagination.pages}
-            </div>
-            <div className="flex space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fetchPersons(currentPage - 1, debouncedSearch)}
-                disabled={currentPage === 1}
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fetchPersons(currentPage + 1, debouncedSearch)}
-                disabled={currentPage === data.pagination.pages}
-              >
-                Next
-              </Button>
-            </div>
+        ) : (
+          /* Photo View - Grid */
+          <div>
+            {loading ? (
+              <div className="flex justify-center py-16">
+                <Spinner />
+              </div>
+            ) : data.persons.length === 0 ? (
+              <div className="text-center py-16 text-muted-foreground">
+                No records with photos found {searchQuery ? 'matching your search' : ''}.
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {data.persons.map((person) => (
+                  <Link 
+                    key={person.id} 
+                    href={`/person/${person.externalId}`}
+                    className="group relative aspect-square overflow-hidden rounded-lg border-2 border-transparent hover:border-primary transition-all"
+                  >
+                    <Image
+                      src={person.photoUrlThumb || '/placeholder.jpg'}
+                      alt={person.name}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute bottom-0 left-0 right-0 p-3">
+                        <p className="text-white font-semibold text-sm truncate">{person.name}</p>
+                        <p className="text-white/80 text-xs">{person.externalId}</p>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         )}
+
+        {/* Pagination and Download */}
+        <div className="flex items-center justify-between mt-6">
+          <div className="flex items-center gap-4">
+            {data.pagination.pages > 1 && (
+              <div className="text-sm text-muted-foreground">
+                Showing page {data.pagination.page} of {data.pagination.pages}
+              </div>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadCSV}
+              disabled={downloading || loading || data.persons.length === 0}
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              {downloading ? 'Downloading...' : 'Download CSV'}
+            </Button>
+            
+            {data.pagination.pages > 1 && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchPersons(currentPage - 1, debouncedSearch, viewMode, maxAge)}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchPersons(currentPage + 1, debouncedSearch, viewMode, maxAge)}
+                  disabled={currentPage === data.pagination.pages}
+                >
+                  Next
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

@@ -33,10 +33,10 @@ Internal admin control panel for managing the Gaza Death Toll database.
 - **Audit Logs** — Complete audit trail of all administrative actions
 
 ### Community Participation
-- **Submit New Records** — Community can propose new casualty records
-- **Suggest Edits** — Update death dates, locations, obituaries, and photos
+- **Suggest Edits** — Update death dates, locations, and photos for existing records
 - **Photo Uploads** — Add photos to existing records (automatically resized)
 - **Moderation Queue** — Staff review and approve/reject all submissions
+- **Note**: Only edits to existing Ministry of Health records are allowed (identity fields cannot be changed)
 
 ### Oversight & Control
 - **Simulation Mode** — Preview all changes before applying (inserts/updates/deletes)
@@ -94,17 +94,13 @@ Moderation Queue (This App)
 5. Can rollback if needed (LIFO - last upload first)
 
 ### 2. Community Submission (Any User)
-**New Record**:
-1. User fills form: External ID, Name, Gender, Date of Birth
-2. Optional: Death date, location, obituary, photo
-3. Submission enters moderation queue
-4. Staff reviews and approves/rejects
-
 **Edit Suggestion**:
-1. User searches for existing record
-2. Proposes changes: death date, location, obituary, or photo
+1. User searches for existing Ministry of Health record
+2. Proposes changes: death date, location, or photo
 3. Explains reason for change
-4. Staff reviews and approves/rejects
+4. Submission enters moderation queue
+5. Staff reviews and approves/rejects
+6. Identity fields (name, gender, date of birth) cannot be modified
 
 ### 3. Moderation (Moderators & Admins)
 1. View all pending submissions (FIFO queue)
@@ -141,13 +137,12 @@ These fields can be **added or updated by community submissions** (subject to mo
 | **Date of Death** | When the person died | MoH CSV or Community | ✅ Implemented |
 | **Location (Latitude)** | Death location coordinates (lat) | Community only | ✅ Implemented |
 | **Location (Longitude)** | Death location coordinates (lng) | Community only | ✅ Implemented |
-| **Obituary** | Memorial text, family statement | Community only | ✅ Implemented |
 | **Photo** | Portrait photo | Community only | ✅ Implemented |
 | **Profession** | Person's occupation/role | Community only | 🚧 Not Yet Implemented |
 | **Cause of Death** | How the person died | Community only | 🚧 Not Yet Implemented |
 
 **Important**: 
-- MoH CSV files **do not include** location coordinates, obituaries, photos, profession, or cause of death
+- MoH CSV files **do not include** location coordinates, photos, profession, or cause of death
 - Community submissions **enrich** official records with additional context
 - All community additions require moderation approval
 - Photos are automatically resized to max 2048x2048 pixels
@@ -161,24 +156,19 @@ These fields can be **added or updated by community submissions** (subject to mo
 
 ### Community Submission Rules
 
-**When Proposing a NEW Record**:
-- ✅ Must provide: External ID, Name, Gender, Date of Birth
-- ✅ Optional: Date of Death, Location, Obituary, Photo
-- 🚧 Future: Profession, Cause of Death (not yet implemented)
-- ⚠️ Record marked as `confirmed_by_moh = false` (not official)
-- 📝 Requires moderation approval before appearing in database
-
-**When Suggesting an EDIT**:
-- ✅ Can modify: Date of Death, Location, Obituary, Photo
+**When Suggesting an EDIT** (Only Option):
+- ✅ Can modify: Date of Death, Location, Photo
 - 🚧 Future: Profession, Cause of Death (not yet implemented)
 - ❌ Cannot modify: External ID, Name, English Name, Gender, Date of Birth
+- ❌ Cannot create new records (all records must originate from Ministry of Health)
 - 📝 Requires moderation approval before being applied
 
-**Why This Separation?**:
-- Ensures **core identity data** remains authoritative and traceable to official sources
-- Allows **community enrichment** with contextual information (locations, photos, memorials)
+**Why This Approach?**:
+- Ensures **core identity data** remains authoritative and traceable to Ministry of Health
+- Allows **community enrichment** with contextual information (locations, photos)
 - Prevents unauthorized changes to official government records
 - Maintains clear audit trail of data provenance
+- All casualties must be officially documented by MoH before community can add context
 
 ---
 
