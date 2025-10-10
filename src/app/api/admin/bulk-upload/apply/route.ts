@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     
     const body = await request.json();
     console.log('[SERVER] 📦 Request body keys:', Object.keys(body));
-    const { blobUrl, label: comment, dateReleased, filename, blobMetadata, simulationData } = body;
+    const { blobUrl, label: comment, dateReleased, filename, blobMetadata } = body;
     
     console.log('[SERVER] 📋 Request metadata:', {
       hasBlob: !!blobUrl,
@@ -86,33 +86,19 @@ export async function POST(request: NextRequest) {
     }
     console.log('[SERVER] ✅ Date validation passed:', dateReleasedObj.toISOString());
     
-    // OPTIMIZATION: Check if there are any changes to apply
-    const hasChanges = !simulationData || 
-      simulationData.summary.inserts > 0 || 
-      simulationData.summary.updates > 0 || 
-      simulationData.summary.deletes > 0;
-    
-    if (!hasChanges) {
-      console.log('[SERVER] ⚡ No changes detected - skipping apply entirely');
-    }
-    
-    // Apply the upload
-    console.log('[SERVER] 🔄 Starting bulk upload application...');
+    // Apply the upload (always re-parse, no cached simulation data)
+    console.log('[SERVER] 🔄 Starting bulk upload application (will re-parse CSV)...');
     console.log('[SERVER] 📋 Upload metadata:', {
       filename,
       comment: comment?.trim() || null,
       dateReleased: dateReleasedObj.toISOString(),
-      inserts: simulationData?.summary.inserts || 0,
-      updates: simulationData?.summary.updates || 0,
-      deletes: simulationData?.summary.deletes || 0,
       blobUrl,
       blobSize: blobMetadata.size,
     });
     const applyStart = Date.now();
     const result = await applyBulkUpload(
-      simulationData,
-      filename, 
       blobUrl,
+      filename, 
       blobMetadata,
       comment?.trim() || null, 
       dateReleasedObj
@@ -129,18 +115,16 @@ export async function POST(request: NextRequest) {
     });
     
     // Create audit log
-    const totalRecords = simulationData?.summary.totalIncoming || 0;
     await createAuditLog({
       action: AuditAction.BULK_UPLOAD_APPLIED,
       resourceType: ResourceType.BULK_UPLOAD,
       resourceId: result.uploadId,
-      description: `Applied bulk upload: ${filename} (${totalRecords} records)`,
+      description: `Applied bulk upload: ${filename} (${result.summary.inserts + result.summary.updates + result.summary.deletes} changes)`,
       metadata: {
         filename,
-        totalRecords,
-        inserts: simulationData?.summary.inserts || 0,
-        updates: simulationData?.summary.updates || 0,
-        deletes: simulationData?.summary.deletes || 0,
+        inserts: result.summary.inserts,
+        updates: result.summary.updates,
+        deletes: result.summary.deletes,
         uploadId: result.uploadId,
         changeSourceId: result.changeSourceId,
       },

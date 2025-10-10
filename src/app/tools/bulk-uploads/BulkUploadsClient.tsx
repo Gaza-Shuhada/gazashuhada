@@ -326,55 +326,23 @@ export default function BulkUploadsClient() {
 
     setApplying(true);
     const applyToast = toast.loading('Applying bulk upload...', {
-      description: 'This may take several minutes for large files',
+      description: 'Server is re-parsing CSV and applying changes. This may take 3-4 minutes for large files.',
       duration: Infinity,
     });
     
     try {
-      console.log('[CLIENT] 📤 Sending apply request to API');
-      
-      // Check if simulation data is too large (>3MB when stringified)
-      // Vercel has 4.5MB limit, so use 3MB as safety threshold
-      const simulationJSON = JSON.stringify(simulation);
-      const simulationSize = new Blob([simulationJSON]).size;
-      const sizeMB = (simulationSize / 1024 / 1024).toFixed(2);
-      
-      console.log(`[CLIENT] 📊 Simulation data size: ${sizeMB} MB`);
-      
-      let payloadData;
-      if (simulationSize > 3 * 1024 * 1024) {
-        console.log(`[CLIENT] ⚠️ Simulation data too large (${sizeMB} MB > 3 MB) - sending without simulation data`);
-        console.log(`[CLIENT] 🔄 Server will re-parse CSV from blob (slower but reliable)`);
-        toast.loading('Large dataset detected - this may take longer', {
-          description: 'Server will re-process the CSV file',
-          duration: 5000,
-        });
-        // Send without simulation data - server will re-parse CSV
-        payloadData = {
-          blobUrl,
-          blobMetadata,
-          simulationData: null, // Force server fallback
-          label: label.trim(),
-          dateReleased,
-          filename: selectedFile.name
-        };
-      } else {
-        console.log(`[CLIENT] ✅ Simulation data size OK (${sizeMB} MB) - sending full simulation`);
-        // Send with simulation data - faster path
-        payloadData = {
-          blobUrl,
-          blobMetadata,
-          simulationData: simulation,
-          label: label.trim(),
-          dateReleased,
-          filename: selectedFile.name
-        };
-      }
+      console.log('[CLIENT] 📤 Sending apply request to API (no simulation data, server will re-parse)');
       
       const response = await fetch('/api/admin/bulk-upload/apply', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payloadData)
+        body: JSON.stringify({
+          blobUrl,
+          blobMetadata,
+          label: label.trim(),
+          dateReleased,
+          filename: selectedFile.name
+        })
       });
       
       console.log('[CLIENT] 📨 Apply response status:', response.status);

@@ -76,8 +76,8 @@ const people: Person[] = [
 
 const faqItems = [
   {
-    question: 'Words matter. Why do you refer to deaths?',
-    answer: 'Casualty is a euphemism, murder requires individual intent, shahid possibly excludes those who don\'t subscribe to religious purpose. We chose deaths as a neutral and specific word to not detract from the objectivity of the data.',
+    question: 'Who is involved in this project?',
+    answer: 'An informal advisory team (see page) has been formed that is establishing a charity in the UK that will hold all of the data and assets. This group will also establish Memorandum and Articles of Association, Code of Conduct, and Editorial Principles.',
   },
   {
     question: 'What are your data sources?',
@@ -95,10 +95,6 @@ const faqItems = [
         {' '}ensuring full transparency and allowing anyone to verify our data against the original source materials.
       </>
     ),
-  },
-  {
-    question: 'Who is involved in this project?',
-    answer: 'An informal advisory team (see page) has been formed that is establishing a charity in the UK that will hold all of the data and assets. This group will also establish Memorandum and Articles of Association, Code of Conduct, and Editorial Principles.',
   },
   {
     question: 'Who owns the data and how can it be used?',

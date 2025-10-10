@@ -176,10 +176,19 @@ export interface SimulationResult {
     updates: number;
     deletes: number;
   };
-  deletions: DiffItem[];
+  // Only samples for preview (not full data)
+  samples: {
+    inserts: DiffItem[];   // First 10 inserts
+    updates: DiffItem[];   // First 10 updates
+    deletions: DiffItem[]; // First 10 deletions
+  };
+}
+
+// Internal full diff result (not exposed to client)
+interface FullDiffResult {
+  inserts: DiffItem[];
   updates: DiffItem[];
-  inserts: DiffItem[]; // Full list of inserts (changed from sampleInserts)
-  sampleInserts: DiffItem[]; // Keep for backwards compatibility (first 10)
+  deletes: DiffItem[];
 }
 
 export async function simulateBulkUpload(rows: BulkUploadRow[]): Promise<SimulationResult> {
@@ -195,7 +204,6 @@ export async function simulateBulkUpload(rows: BulkUploadRow[]): Promise<Simulat
     select: { externalId: true, isDeleted: true },
   });
   const existingIdsSet = new Set(allExistingIds.map(p => p.externalId));
-  const activeIdsSet = new Set(allExistingIds.filter(p => !p.isDeleted).map(p => p.externalId));
   
   // Only fetch full records for IDs that exist in the CSV (potential updates)
   const idsToFetch = rows.filter(r => existingIdsSet.has(r.external_id)).map(r => r.external_id);
@@ -295,58 +303,168 @@ export async function simulateBulkUpload(rows: BulkUploadRow[]): Promise<Simulat
       updates: updateDiffs.length,
       deletes: deleteDiffs.length,
     },
-    deletions: deleteDiffs,
-    updates: updateDiffs,
-    inserts: insertDiffs, // Full list for apply to use
-    sampleInserts: insertDiffs.slice(0, 10), // Sample for UI display
+    samples: {
+      inserts: insertDiffs.slice(0, 10),   // First 10 for preview
+      updates: updateDiffs.slice(0, 10),   // First 10 for preview
+      deletions: deleteDiffs.slice(0, 10), // First 10 for preview
+    },
   };
 }
 
 /**
- * TRUST-SIMULATION VERSION: Uses simulation results directly, no re-fetching
- * Applies changes based on what simulation found, dramatically faster
+ * Internal function: Compute full diff (not just samples)
+ * Used by apply endpoint to get complete list of changes
+ * This duplicates logic from simulateBulkUpload but returns full arrays
+ */
+async function computeFullDiff(rows: BulkUploadRow[]): Promise<FullDiffResult> {
+  const incomingIds = rows.map(r => r.external_id);
+  const incomingIdsSet = new Set(incomingIds);
+  
+  // Fetch existing IDs (including deleted)
+  const allExistingIds = await prisma.person.findMany({
+    select: { externalId: true, isDeleted: true },
+  });
+  const existingIdsSet = new Set(allExistingIds.map(p => p.externalId));
+  
+  // Fetch full records for potential updates
+  const idsToFetch = rows.filter(r => existingIdsSet.has(r.external_id)).map(r => r.external_id);
+  const matchingPersons = idsToFetch.length > 0 ? await fetchPersonsInBatches(idsToFetch) : [];
+  const existingMap = new Map(matchingPersons.map(p => [p.externalId, p]));
+  
+  const insertDiffs: DiffItem[] = [];
+  const updateDiffs: DiffItem[] = [];
+  const deleteDiffs: DiffItem[] = [];
+  
+  // Compute inserts and updates
+  for (const row of rows) {
+    const existing = existingMap.get(row.external_id);
+    const incomingDate = row.date_of_birth ? new Date(row.date_of_birth) : null;
+    
+    if (!existing) {
+      insertDiffs.push({
+        externalId: row.external_id,
+        changeType: ChangeType.INSERT,
+        incoming: {
+          name: row.name,
+          nameEnglish: row.name_english,
+          gender: row.gender,
+          dateOfBirth: incomingDate,
+        },
+      });
+    } else {
+      const existingDate = existing.dateOfBirth ? new Date(existing.dateOfBirth) : null;
+      const isDifferent = 
+        existing.name !== row.name ||
+        existing.nameEnglish !== row.name_english ||
+        existing.gender !== row.gender ||
+        (existingDate?.getTime() !== incomingDate?.getTime()) ||
+        existing.isDeleted;
+      
+      if (isDifferent) {
+        updateDiffs.push({
+          externalId: row.external_id,
+          changeType: ChangeType.UPDATE,
+          current: {
+            name: existing.name,
+            nameEnglish: existing.nameEnglish,
+            gender: existing.gender,
+            dateOfBirth: existing.dateOfBirth,
+          },
+          incoming: {
+            name: row.name,
+            nameEnglish: row.name_english,
+            gender: row.gender,
+            dateOfBirth: incomingDate,
+          },
+        });
+      }
+    }
+  }
+  
+  // Compute deletes (records not in new upload)
+  const idsToDelete = allExistingIds
+    .filter(e => !e.isDeleted && !incomingIdsSet.has(e.externalId))
+    .map(e => e.externalId);
+  
+  if (idsToDelete.length > 0) {
+    const personsToDelete = await fetchPersonsInBatches(idsToDelete);
+    for (const existing of personsToDelete) {
+      if (!existing.isDeleted) {
+        deleteDiffs.push({
+          externalId: existing.externalId,
+          changeType: ChangeType.DELETE,
+          current: {
+            name: existing.name,
+            nameEnglish: existing.nameEnglish,
+            gender: existing.gender,
+            dateOfBirth: existing.dateOfBirth,
+          },
+          incoming: {
+            name: existing.name,
+            nameEnglish: existing.nameEnglish,
+            gender: existing.gender,
+            dateOfBirth: existing.dateOfBirth,
+          },
+        });
+      }
+    }
+  }
+  
+  return {
+    inserts: insertDiffs,
+    updates: updateDiffs,
+    deletes: deleteDiffs,
+  };
+}
+
+/**
+ * SIMPLIFIED VERSION: Always re-parse CSV from blob
+ * No cached simulation data, minimal payload size, maximum reliability
  * 
- * FALLBACK: If simulationData is null (e.g., payload too large), re-parse CSV from blob
+ * Trade-off: +60s due to re-parsing, but eliminates payload size issues entirely
  */
 export async function applyBulkUpload(
-  simulationData: SimulationResult | null,
-  filename: string,
   blobUrl: string,
+  filename: string,
   blobMetadata: { size: number; sha256: string; contentType: string; previewLines?: string | null },
   comment: string | null,
   dateReleased: Date
-): Promise<{ uploadId: string; changeSourceId: string }> {
+): Promise<{ 
+  uploadId: string; 
+  changeSourceId: string;
+  summary: {
+    inserts: number;
+    updates: number;
+    deletes: number;
+  };
+}> {
   
-  // FALLBACK: If no simulation data (payload too large), re-parse CSV from blob
-  if (!simulationData) {
-    console.log(`  ⚠️ No simulation data provided - re-parsing CSV from blob (fallback mode)`);
-    const csvBuffer = await downloadFromBlob(blobUrl);
-    const csvContent = csvBuffer.toString('utf-8');
-    const rows = parseCSV(csvContent);
-    simulationData = await simulateBulkUpload(rows);
-    console.log(`  ✅ Re-simulation complete: ${simulationData.summary.inserts} inserts, ${simulationData.summary.updates} updates, ${simulationData.summary.deletes} deletes`);
-  } else {
-    console.log(`  Applying bulk upload - TRUSTING SIMULATION RESULTS`);
-  }
+  console.log(`  ⬇️ Downloading CSV from blob for apply...`);
+  const csvBuffer = await downloadFromBlob(blobUrl);
+  const csvContent = csvBuffer.toString('utf-8');
   
-  // TRUST SIMULATION: Use results directly, no re-fetching
-  const hasChanges = simulationData && (
-    simulationData.summary.inserts > 0 || 
-    simulationData.summary.updates > 0 || 
-    simulationData.summary.deletes > 0
-  );
+  console.log(`  📄 Parsing CSV...`);
+  const rows = parseCSV(csvContent);
+  
+  console.log(`  🔄 Computing full diff for apply...`);
+  const fullDiff = await computeFullDiff(rows);
+  console.log(`  ✅ Diff complete: ${fullDiff.inserts.length} inserts, ${fullDiff.updates.length} updates, ${fullDiff.deletes.length} deletes`);
+  
+  const hasChanges = fullDiff.inserts.length > 0 || 
+                     fullDiff.updates.length > 0 || 
+                     fullDiff.deletes.length > 0;
   
   if (!hasChanges) {
     console.log('  ⚡ No changes to apply');
   }
   
-  // Extract changes from simulation (already computed during simulation)
-  const insertsToApply = simulationData?.inserts || []; // Full list of inserts
-  const updatesToApply = simulationData?.updates || [];
-  const deletesToApply = simulationData?.deletions || [];
+  // Extract changes from full diff
+  const insertsToApply = fullDiff.inserts;
+  const updatesToApply = fullDiff.updates;
+  const deletesToApply = fullDiff.deletes;
   
-  console.log(`  📊 Changes to apply (from simulation):`, {
-    inserts: simulationData?.summary.inserts || 0,
+  console.log(`  📊 Changes to apply:`, {
+    inserts: insertsToApply.length,
     updates: updatesToApply.length,
     deletes: deletesToApply.length,
   });
@@ -617,6 +735,11 @@ export async function applyBulkUpload(
   return {
     uploadId: bulkUpload.id,
     changeSourceId: changeSource.id,
+    summary: {
+      inserts: insertsToApply.length,
+      updates: updatesToApply.length,
+      deletes: deletesToApply.length,
+    },
   };
 }
 
