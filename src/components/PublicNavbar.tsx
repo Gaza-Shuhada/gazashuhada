@@ -17,7 +17,7 @@ export function PublicNavbar() {
   const isStaff = user?.publicMetadata?.role === 'admin' || user?.publicMetadata?.role === 'moderator';
 
   return (
-    <nav className="sticky top-0 z-50">
+    <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           {/* Left: Navigation Links */}
@@ -25,7 +25,7 @@ export function PublicNavbar() {
             {/* Mobile Menu Button - Always visible */}
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden text-white hover:text-white/80 hover:bg-white/10">
+                <Button variant="ghost" size="icon" className="md:hidden">
                   <Menu className="h-5 w-5" />
                   <span className="sr-only">Toggle menu</span>
                 </Button>
@@ -110,8 +110,8 @@ export function PublicNavbar() {
                 href="/about"
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   pathname === '/about'
-                    ? 'text-white font-semibold'
-                    : 'text-white/80 hover:text-white'
+                    ? 'text-foreground font-semibold'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 About
@@ -120,8 +120,8 @@ export function PublicNavbar() {
                 href="/database"
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   pathname === '/database'
-                    ? 'text-white font-semibold'
-                    : 'text-white/80 hover:text-white'
+                    ? 'text-foreground font-semibold'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 Database
@@ -133,8 +133,8 @@ export function PublicNavbar() {
                   href="/contribution"
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     pathname?.startsWith('/contribution')
-                      ? 'text-white font-semibold'
-                      : 'text-white/80 hover:text-white'
+                      ? 'text-foreground font-semibold'
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   Contributions
@@ -146,7 +146,7 @@ export function PublicNavbar() {
           {/* Center: Logo/Title */}
           <div className="absolute left-1/2 transform -translate-x-1/2">
             <Link href="/" className="flex items-center">
-              <span className="text-xl font-bold text-white whitespace-nowrap">Gaza Deaths وفيات غزة</span>
+              <span className="text-xl font-bold text-foreground whitespace-nowrap">Gaza Deaths وفيات غزة</span>
             </Link>
           </div>
 
@@ -156,7 +156,7 @@ export function PublicNavbar() {
             {isStaff && (
               <Link
                 href="/tools"
-                className="text-white/80 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium"
               >
                 Admin Tools →
               </Link>
@@ -165,13 +165,13 @@ export function PublicNavbar() {
             {/* User Button / Sign In - Desktop only */}
             {isSignedIn ? (
               <SignOutButton>
-                <button className="text-white/80 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                <button className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium transition-colors">
                   Sign Out
                 </button>
               </SignOutButton>
             ) : (
               <SignInButton mode="modal">
-                <button className="text-white/80 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                <button className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium transition-colors">
                   Sign In
                 </button>
               </SignInButton>

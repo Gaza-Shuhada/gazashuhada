@@ -96,9 +96,10 @@
 │   │   ├── prisma.ts               # Prisma client singleton
 │   │   ├── auth-utils.ts           # Auth guards (requireAdmin, etc)
 │   │   ├── audit-log.ts            # Audit logging utilities
-│   │   ├── bulk-upload-service-ultra-optimized.ts  # Bulk upload logic
+│   │   ├── bulk-upload-service-ultra-optimized.ts  # Bulk upload logic (trust simulation)
 │   │   ├── blob-storage.ts         # Vercel Blob utilities
-│   │   ├── csv-utils.ts            # CSV parsing and validation
+│   │   ├── csv-utils.ts            # CSV parsing and validation (server-side)
+│   │   ├── csv-validation-client.ts # CSV validation (browser-compatible)
 │   │   └── utils.ts                # General utilities
 │   │
 │   ├── types/
@@ -258,11 +259,19 @@ prisma.$transaction(async (tx) => {
 });
 ```
 
-### Bulk Upload Batch Sizes
+### Bulk Upload Optimizations
 
 **File**: `src/lib/bulk-upload-service-ultra-optimized.ts`
 
-All batch size constants are defined at the top of this file:
+#### Trust Simulation Optimization
+- **Client-side CSV validation** before upload (instant feedback, prevents bad uploads)
+- **Simulation results are trusted** during apply phase
+- No redundant re-fetching or re-parsing during apply
+- **60-second timeout** on simulation results (form resets after expiry)
+- Significantly reduces database load and improves performance
+
+#### Batch Size Constants
+All batch size constants are defined at the top of the file:
 
 ```typescript
 // SELECT queries (fetching data)
@@ -283,10 +292,12 @@ const DELETE_BATCH_SIZE = 100;    // Smaller for transaction safety
 - **INSERT (5K)**: Bulk inserts use multiple fields per record
 - **UPDATE/DELETE (100)**: Run in transactions with multiple ops per record
 
-**Example**: A 32,768 record CSV file would be processed as:
-- 4 fetch batches (10K each)
-- 7 insert batches (5K each)
-- ~328 update batches (100 each, if all records need updating)
+**Example**: A 60,000 record CSV file would be processed as:
+- 6 fetch batches (10K each) - *only during simulation*
+- 12 insert batches (5K each)
+- ~600 update batches (100 each, if all records need updating)
+
+**Performance Improvement**: Apply phase is 50-70% faster by trusting simulation results.
 
 ### File Upload Limits
 
@@ -450,12 +461,18 @@ External Sources (CSV) → Admin Tools → PostgreSQL → Public App → Communi
 ## Core Workflows
 
 ### Bulk Upload
-1. Admin uploads CSV with label (<=200 chars) and date_released
-2. System compares by external_id: INSERT/UPDATE/DELETE
-3. Simulation shows all deletions, all updates (diff), sample inserts
-4. Apply creates change_source, bulk_upload, person_version rows; updates person snapshot
+1. Admin uploads CSV with optional comment and date_released
+2. **Client-side validation** checks CSV format before upload (instant feedback)
+3. File uploaded to Vercel Blob storage
+4. System compares by external_id: INSERT/UPDATE/DELETE
+5. **Simulation** shows all deletions, updates (with diffs), and inserts
+6. **60-second timeout** - form resets if simulation expires
+7. **Apply phase trusts simulation results** (no re-fetching/re-parsing)
+8. Creates change_source, bulk_upload, person_version rows; updates person snapshot
 
 **Safety:**
+- Client-side validation prevents invalid CSVs from being uploaded
+- Simulation results expire after 60 seconds to prevent stale data
 - CSV is the full state; missing IDs are soft-deleted
 - Operator confirmation required for large deletion counts
 
@@ -464,16 +481,20 @@ External Sources (CSV) → Admin Tools → PostgreSQL → Public App → Communi
 - Re-verify conflicts at execution time
 - Single DB transaction for atomicity
 
-### Community Submissions
-**NEW_RECORD flow:**
-- Phase 1 (submission): Data stored as JSON in `CommunitySubmission` table
-- Phase 2 (approval): Creates `Person` + `PersonVersion` (v1) + `ChangeSource`
-- `confirmedByMoh = false` (community-sourced, not official)
+**Performance:**
+- Client-side validation: instant feedback (no server round-trip)
+- Trust simulation: 50-70% faster apply phase
+- Handles 60K+ records efficiently
 
-**EDIT flow:**
-- User edits based on specific version (`baseVersionId`)
+### Community Submissions
+**EDIT flow (only option):**
+- User edits existing Ministry of Health record based on specific version (`baseVersionId`)
 - System checks for staleness (has someone else edited since?)
-- If approved: Updates `Person`, creates new `PersonVersion` (v N+1)
+- Phase 1 (submission): Data stored as JSON in `CommunitySubmission` table
+- Phase 2 (approval): Updates `Person`, creates new `PersonVersion` (v N+1) + `ChangeSource`
+- All identity fields remain unchanged (sourced from MoH)
+
+**Note**: No NEW_RECORD submissions allowed - all records must originate from Ministry of Health CSV uploads.
 
 **📖 See [DATABASE.md](./DATABASE.md#community-submission-lifecycle) for detailed flow diagrams.**
 

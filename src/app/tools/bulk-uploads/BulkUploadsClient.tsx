@@ -48,7 +48,8 @@ interface SimulationResult {
   };
   deletions: DiffItem[];
   updates: DiffItem[];
-  sampleInserts: DiffItem[];
+  inserts: DiffItem[]; // Full list for apply
+  sampleInserts: DiffItem[]; // Sample for UI display
 }
 
 export default function BulkUploadsClient() {
@@ -63,6 +64,7 @@ export default function BulkUploadsClient() {
   const [simulating, setSimulating] = useState(false);
   const [applying, setApplying] = useState(false);
   const [rollingBack, setRollingBack] = useState<string | null>(null);
+  const [simulationExpiresAt, setSimulationExpiresAt] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // INLINE ERROR/SUCCESS STATE (Legacy - kept for easy revert)
@@ -73,6 +75,37 @@ export default function BulkUploadsClient() {
   useEffect(() => {
     fetchUploads();
   }, []);
+
+  // 60-second timeout: Reset form after simulation expires
+  useEffect(() => {
+    if (!simulationExpiresAt) return;
+
+    const now = Date.now();
+    const timeUntilExpiry = simulationExpiresAt - now;
+
+    if (timeUntilExpiry <= 0) {
+      // Already expired
+      handleSimulationExpired();
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      handleSimulationExpired();
+    }, timeUntilExpiry);
+
+    return () => clearTimeout(timer);
+  }, [simulationExpiresAt]);
+
+  const handleSimulationExpired = () => {
+    toast.error('Simulation expired after 60 seconds', {
+      description: 'Please re-simulate before applying',
+      duration: 5000,
+    });
+    setSimulation(null);
+    setBlobUrl(null);
+    setBlobMetadata(null);
+    setSimulationExpiresAt(null);
+  };
 
   const fetchUploads = async () => {
     try {
@@ -97,6 +130,7 @@ export default function BulkUploadsClient() {
       setSimulation(null);
       setBlobUrl(null); // Reset blob URL when new file is selected
       setBlobMetadata(null); // Reset blob metadata when new file is selected
+      setSimulationExpiresAt(null); // Clear expiration timer
     }
   };
 
@@ -118,6 +152,48 @@ export default function BulkUploadsClient() {
 
     setSimulating(true);
     
+    // STEP 1: Validate CSV locally BEFORE uploading
+    const validationToast = toast.loading('Validating CSV file...', {
+      description: 'Checking format and data integrity',
+      duration: Infinity,
+    });
+    
+    try {
+      console.log('[CLIENT] 📋 Reading file for validation...');
+      const fileContent = await selectedFile.text();
+      
+      console.log('[CLIENT] ✅ File read, validating...');
+      const { validateCSVContent } = await import('@/lib/csv-validation-client');
+      const validation = validateCSVContent(fileContent);
+      
+      if (!validation.valid) {
+        console.error('[CLIENT] ❌ Validation failed:', validation.error);
+        toast.error(validation.error || 'CSV validation failed', {
+          id: validationToast,
+          description: validation.details,
+          duration: Infinity,
+        });
+        setSimulating(false);
+        return; // Stop here - don't upload invalid file!
+      }
+      
+      console.log('[CLIENT] ✅ Validation passed:', validation.rowCount, 'rows');
+      toast.success(`CSV validated: ${validation.rowCount} rows`, {
+        id: validationToast,
+        duration: 2000,
+      });
+    } catch (err) {
+      console.error('[CLIENT] ❌ Validation error:', err);
+      toast.error('Failed to validate CSV', {
+        id: validationToast,
+        description: err instanceof Error ? err.message : 'Unknown error',
+        duration: Infinity,
+      });
+      setSimulating(false);
+      return;
+    }
+    
+    // STEP 2: Upload to blob storage (only if validation passed)
     const simulateToast = toast.loading('Uploading file to blob storage...', {
       description: `Uploading ${(selectedFile.size / 1024 / 1024).toFixed(2)} MB directly to storage`,
       duration: Infinity,
@@ -150,9 +226,10 @@ export default function BulkUploadsClient() {
       const uploadedBlobUrl = newBlob.url;
       setBlobUrl(uploadedBlobUrl);
       
-      toast.loading('Simulating upload...', {
+      // STEP 3: Simulate changes
+      toast.loading('Simulating changes...', {
         id: simulateToast,
-        description: 'Analyzing CSV and comparing with database',
+        description: 'Comparing CSV with database to detect changes',
         duration: Infinity,
       });
       
@@ -180,10 +257,15 @@ export default function BulkUploadsClient() {
         console.log('[CLIENT] 📦 Blob metadata:', data.blobMetadata);
         setSimulation(data.simulation);
         setBlobMetadata(data.blobMetadata);
+        
+        // Set 60-second expiration timer
+        const expiresAt = Date.now() + 60000; // 60 seconds from now
+        setSimulationExpiresAt(expiresAt);
+        
         const { summary } = data.simulation;
         toast.success('Simulation complete!', { 
           id: simulateToast,
-          description: `${summary.inserts} inserts, ${summary.updates} updates, ${summary.deletes} deletes`,
+          description: `${summary.inserts} inserts, ${summary.updates} updates, ${summary.deletes} deletes. Valid for 60 seconds.`,
           duration: Infinity,
         });
       }
@@ -244,7 +326,7 @@ export default function BulkUploadsClient() {
         body: JSON.stringify({
           blobUrl,
           blobMetadata,
-          simulationSummary: simulation?.summary,
+          simulationData: simulation, // Pass full simulation data, not just summary
           label: label.trim(),
           dateReleased,
           filename: selectedFile.name
@@ -273,6 +355,7 @@ export default function BulkUploadsClient() {
         setSimulation(null);
         setBlobUrl(null);
         setBlobMetadata(null);
+        setSimulationExpiresAt(null);
         
         // Clear file input element
         if (fileInputRef.current) {
@@ -314,6 +397,7 @@ export default function BulkUploadsClient() {
     setSimulation(null);
     setBlobUrl(null);
     setBlobMetadata(null);
+    setSimulationExpiresAt(null);
     
     // Clear file input element
     if (fileInputRef.current) {
@@ -401,7 +485,7 @@ export default function BulkUploadsClient() {
                 onChange={handleFileChange} 
                 className="w-full md:w-1/2 text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary/5 file:text-primary hover:file:bg-primary/10"
               />
-              <p className="mt-2 text-sm text-muted-foreground">CSV must contain only: external_id, name, gender, date_of_birth</p>
+              <p className="mt-2 text-sm text-muted-foreground">CSV will be validated before upload. Required: id, name_ar_raw, sex, dob</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">Date Released <span className="text-destructive">*</span></label>
@@ -599,7 +683,7 @@ export default function BulkUploadsClient() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-destructive">{upload.stats.deletes}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {upload.canRollback ? (
-                          <button onClick={() => handleRollback(upload.id, upload.filename)} disabled={rollingBack === upload.id} className="bg-destructive text-white px-3 py-1 rounded-md hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium">{rollingBack === upload.id ? 'Rolling back...' : 'Rollback'}</button>
+                          <button onClick={() => handleRollback(upload.id, upload.filename)} disabled={rollingBack === upload.id} className="bg-destructive text-destructive-foreground px-3 py-1 rounded-md hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium">{rollingBack === upload.id ? 'Rolling back...' : 'Rollback'}</button>
                         ) : (
                           <span className="inline-block px-3 py-1 rounded-md bg-muted text-muted-foreground text-xs font-medium cursor-not-allowed" title="Cannot rollback: subsequent uploads have modified these records. Rollback recent uploads first (LIFO).">Rollback</span>
                         )}

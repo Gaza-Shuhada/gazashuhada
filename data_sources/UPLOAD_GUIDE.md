@@ -48,7 +48,7 @@ Both formats are accepted and will be normalized:
 
 1. Go to **Bulk Uploads** page
 2. Click **Upload New Bulk File**
-3. Select your CSV file from `moh-updates/` folder
+3. Select your CSV file from `data_sources/` folder
 4. Enter a **Label** (e.g., "MOH Update - March 2024")
 5. Enter **Date Released** (when MOH published the data)
 6. Click **Simulate Upload** to preview changes
@@ -57,22 +57,6 @@ Both formats are accepted and will be normalized:
    - How many updates (changed records)
    - How many deletes (records not in new file)
 8. If satisfied, click **Apply Upload**
-
-## Files Ready for Upload
-
-All files in this directory have been validated:
-
-| File | Records | Notes |
-|------|---------|-------|
-| 2024-01-05.csv | 14,140 | Earliest data |
-| 2024-03-29.csv | 20,390 | Includes MM/DD/YYYY dates |
-| 2024-04-30.csv | 24,672 | |
-| 2024-06-30.csv | 28,185 | |
-| 2024-08-31.csv | 34,344 | |
-| 2025-03-23.csv | 50,020 | |
-| 2025-06-15.csv | 55,202 | |
-| 2025-07-15.csv | 58,380 | |
-| 2025-07-31.csv | 60,199 | Latest data |
 
 ## Important Notes
 

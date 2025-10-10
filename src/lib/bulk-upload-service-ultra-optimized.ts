@@ -175,7 +175,8 @@ export interface SimulationResult {
   };
   deletions: DiffItem[];
   updates: DiffItem[];
-  sampleInserts: DiffItem[];
+  inserts: DiffItem[]; // Full list of inserts (changed from sampleInserts)
+  sampleInserts: DiffItem[]; // Keep for backwards compatibility (first 10)
 }
 
 export async function simulateBulkUpload(rows: BulkUploadRow[]): Promise<SimulationResult> {
@@ -289,103 +290,60 @@ export async function simulateBulkUpload(rows: BulkUploadRow[]): Promise<Simulat
     },
     deletions: deleteDiffs,
     updates: updateDiffs,
-    sampleInserts: insertDiffs.slice(0, 10),
+    inserts: insertDiffs, // Full list for apply to use
+    sampleInserts: insertDiffs.slice(0, 10), // Sample for UI display
   };
 }
 
 /**
- * ULTRA-OPTIMIZED VERSION: Uses bulk operations for massive speed improvement
- * This approach uses createMany/updateMany which is 50-100x faster than individual inserts
+ * TRUST-SIMULATION VERSION: Uses simulation results directly, no re-fetching
+ * Applies changes based on what simulation found, dramatically faster
  */
 export async function applyBulkUpload(
-  rows: BulkUploadRow[],
+  simulationData: SimulationResult | null,
   filename: string,
   blobUrl: string,
   blobMetadata: { size: number; sha256: string; contentType: string; previewLines?: string | null },
   comment: string | null,
-  dateReleased: Date,
-  simulationSummary?: { inserts: number; updates: number; deletes: number }
+  dateReleased: Date
 ): Promise<{ uploadId: string; changeSourceId: string }> {
-  const incomingIds = rows.map(r => r.external_id);
-  const incomingIdsSet = new Set(incomingIds);
+  console.log(`  Applying bulk upload - TRUSTING SIMULATION RESULTS`);
   
-  console.log(`  Applying bulk upload with ${rows.length} rows...`);
-  
-  // OPTIMIZATION: If simulation detected 0 changes, skip expensive DB queries
-  const hasChanges = !simulationSummary || 
-    simulationSummary.inserts > 0 || 
-    simulationSummary.updates > 0 || 
-    simulationSummary.deletes > 0;
+  // TRUST SIMULATION: Use results directly, no re-fetching
+  const hasChanges = simulationData && (
+    simulationData.summary.inserts > 0 || 
+    simulationData.summary.updates > 0 || 
+    simulationData.summary.deletes > 0
+  );
   
   if (!hasChanges) {
-    console.log('  ⚡ No changes detected - skipping database operations');
+    console.log('  ⚡ No changes to apply');
   }
   
-  // SMART FETCHING: Only fetch what we actually need
-  let toInsert: BulkUploadRow[];
-  let toUpdate: Array<{ existing: ExistingPerson; row: BulkUploadRow }>;
-  let toDelete: ExistingPerson[];
+  // Extract changes from simulation (already computed during simulation)
+  const insertsToApply = simulationData?.inserts || []; // Full list of inserts
+  const updatesToApply = simulationData?.updates || [];
+  const deletesToApply = simulationData?.deletions || [];
   
-  if (hasChanges) {
-    // Initialize arrays
-    toInsert = [];
-    toUpdate = [];
+  console.log(`  📊 Changes to apply (from simulation):`, {
+    inserts: simulationData?.summary.inserts || 0,
+    updates: updatesToApply.length,
+    deletes: deletesToApply.length,
+  });
+  
+  // Fetch only the records we need to apply changes to (updates and deletes)
+  let existingRecordsMap = new Map<string, ExistingPerson>();
+  
+  if (hasChanges && (updatesToApply.length > 0 || deletesToApply.length > 0)) {
+    const idsToFetch = [
+      ...updatesToApply.map(u => u.externalId),
+      ...deletesToApply.map(d => d.externalId),
+    ];
     
-    // Step 1: Get lightweight ID-only list from database (very fast)
-    console.log('  📊 Fetching existing IDs from database...');
-    const existingIds = await prisma.person.findMany({
-      where: { isDeleted: false },
-      select: { externalId: true }
-    });
-    const existingIdsSet = new Set(existingIds.map(p => p.externalId));
-    
-    // Step 2: Determine which IDs need updating vs inserting
-    const idsToUpdate = rows.filter(r => existingIdsSet.has(r.external_id)).map(r => r.external_id);
-    const idsToDelete = existingIds.filter(e => !incomingIdsSet.has(e.externalId)).map(e => e.externalId);
-    
-    console.log(`  📊 ID analysis: ${idsToUpdate.length} potential updates, ${rows.length - idsToUpdate.length} inserts, ${idsToDelete.length} deletes`);
-    
-    // Step 3: Only fetch full records for IDs that need updating or deleting
-    const idsToFetch = [...idsToUpdate, ...idsToDelete];
-    const personsToCheck = idsToFetch.length > 0 ? await fetchFullPersonsInBatches(idsToFetch) : [];
-    
-    console.log(`  📦 Fetched ${personsToCheck.length} full records (only what's needed)`);
-    
-    const existingMap = new Map(personsToCheck.map(p => [p.externalId, p]));
-    
-    // Step 4: Build update and delete lists
-    for (const row of rows) {
-      const existing = existingMap.get(row.external_id);
-      
-      if (!existing) {
-        // New record - insert it
-        toInsert.push(row);
-      } else {
-        // Existing record - check if it needs updating
-        const incomingDate = row.date_of_birth ? new Date(row.date_of_birth) : null;
-        const existingDate = existing.dateOfBirth ? new Date(existing.dateOfBirth) : null;
-        const isDifferent = 
-          existing.name !== row.name ||
-          existing.nameEnglish !== row.name_english ||
-          existing.gender !== row.gender ||
-          (existingDate?.getTime() !== incomingDate?.getTime()) ||
-          existing.isDeleted;
-        
-        if (isDifferent) {
-          toUpdate.push({ existing, row });
-        }
-      }
-    }
-    
-    // Step 5: Prepare deletions
-    toDelete = personsToCheck.filter(p => 
-      !incomingIdsSet.has(p.externalId) && !p.isDeleted
-    );
-  } else {
-    // No changes - initialize empty arrays
-    toInsert = [];
-    toUpdate = [];
-    toDelete = [];
+    console.log(`  📦 Fetching ${idsToFetch.length} records for updates/deletes`);
+    const existingRecords = await fetchFullPersonsInBatches(idsToFetch);
+    existingRecordsMap = new Map(existingRecords.map(p => [p.externalId, p]));
+    console.log(`  ✅ Fetched ${existingRecords.length} existing records`);
   }
   
   // Create metadata (blob already uploaded during simulation)
@@ -411,23 +369,23 @@ export async function applyBulkUpload(
     },
   });
   
-  console.log(`  ✅ Bulk operations determined: ${toInsert.length} inserts, ${toUpdate.length} updates, ${toDelete.length} deletes`);
+  console.log(`  ✅ Changes determined: ${insertsToApply.length} inserts, ${updatesToApply.length} updates, ${deletesToApply.length} deletes`);
   
   // BULK INSERT - Batched to handle large datasets
-  if (toInsert.length > 0) {
+  if (insertsToApply.length > 0) {
     const allInsertedPersons = [];
     
-    for (let i = 0; i < toInsert.length; i += INSERT_BATCH_SIZE) {
-      const batch = toInsert.slice(i, Math.min(i + INSERT_BATCH_SIZE, toInsert.length));
+    for (let i = 0; i < insertsToApply.length; i += INSERT_BATCH_SIZE) {
+      const batch = insertsToApply.slice(i, Math.min(i + INSERT_BATCH_SIZE, insertsToApply.length));
       
-      // Insert persons in bulk (batch)
+      // Insert persons in bulk (batch) - using DiffItem.incoming data
       const insertedPersons = await prisma.person.createManyAndReturn({
-        data: batch.map(row => ({
-          externalId: row.external_id,
-          name: row.name,
-          nameEnglish: row.name_english,
-          gender: row.gender,
-          dateOfBirth: row.date_of_birth ? new Date(row.date_of_birth) : null,
+        data: batch.map(item => ({
+          externalId: item.externalId,
+          name: item.incoming.name,
+          nameEnglish: item.incoming.nameEnglish,
+          gender: item.incoming.gender,
+          dateOfBirth: item.incoming.dateOfBirth,
         })),
       });
       
@@ -448,16 +406,16 @@ export async function applyBulkUpload(
         })),
       });
       
-      console.log(`  ✓ Inserted batch ${Math.floor(i / INSERT_BATCH_SIZE) + 1}: ${insertedPersons.length} persons (total: ${allInsertedPersons.length}/${toInsert.length})`);
+      console.log(`  ✓ Inserted batch ${Math.floor(i / INSERT_BATCH_SIZE) + 1}: ${insertedPersons.length} persons (total: ${allInsertedPersons.length}/${insertsToApply.length})`);
     }
     
-    console.log(`  ✓ Bulk inserted ${toInsert.length} persons in ${Math.ceil(toInsert.length / INSERT_BATCH_SIZE)} batches`);
+    console.log(`  ✓ Bulk inserted ${insertsToApply.length} persons in ${Math.ceil(insertsToApply.length / INSERT_BATCH_SIZE)} batches`);
   }
   
-  // OPTIMIZED BATCH UPDATES - Fetch all latest versions first, then batch operations
-  if (toUpdate.length > 0) {
+  // OPTIMIZED BATCH UPDATES - Using simulation results
+  if (updatesToApply.length > 0) {
     // Step 1: Get all latest version numbers - batched to avoid bind variable limit
-    const personIds = toUpdate.map(u => u.existing.id);
+    const personIds = Array.from(existingRecordsMap.values()).map(p => p.id);
     const versionMap = new Map<string, number>();
     
     // Fetch version numbers in batches
@@ -474,30 +432,35 @@ export async function applyBulkUpload(
       });
     }
     
-    console.log(`  Fetched latest versions for ${toUpdate.length} persons`);
+    console.log(`  Fetched latest versions for ${updatesToApply.length} persons`);
     
     // Step 2: Process updates in batches
-    for (let i = 0; i < toUpdate.length; i += UPDATE_BATCH_SIZE) {
-      const batch = toUpdate.slice(i, Math.min(i + UPDATE_BATCH_SIZE, toUpdate.length));
+    for (let i = 0; i < updatesToApply.length; i += UPDATE_BATCH_SIZE) {
+      const batch = updatesToApply.slice(i, Math.min(i + UPDATE_BATCH_SIZE, updatesToApply.length));
       
       await prisma.$transaction(async (tx) => {
         const personUpdates = [];
         const versionCreates = [];
         
-        for (const { existing, row } of batch) {
-          const incomingDate = row.date_of_birth ? new Date(row.date_of_birth) : null;
+        for (const updateItem of batch) {
+          const existing = existingRecordsMap.get(updateItem.externalId);
+          if (!existing) {
+            console.warn(`  ⚠️ Warning: Cannot find existing record for ${updateItem.externalId}, skipping`);
+            continue;
+          }
+          
           const currentVersion = versionMap.get(existing.id) || 0;
           const nextVersionNumber = currentVersion + 1;
           
-          // Prepare batch updates
+          // Prepare batch updates - using DiffItem.incoming data
           personUpdates.push(
             tx.person.update({
               where: { id: existing.id },
               data: {
-                name: row.name,
-                nameEnglish: row.name_english,
-                gender: row.gender,
-                dateOfBirth: incomingDate,
+                name: updateItem.incoming.name,
+                nameEnglish: updateItem.incoming.nameEnglish,
+                gender: updateItem.incoming.gender,
+                dateOfBirth: updateItem.incoming.dateOfBirth,
                 isDeleted: false, // Restore record if it was deleted
                 currentVersion: nextVersionNumber,
               },
@@ -507,11 +470,11 @@ export async function applyBulkUpload(
           // Prepare version records
           versionCreates.push({
             personId: existing.id,
-            externalId: row.external_id,
-            name: row.name,
-            nameEnglish: row.name_english,
-            gender: row.gender,
-            dateOfBirth: incomingDate,
+            externalId: updateItem.externalId,
+            name: updateItem.incoming.name,
+            nameEnglish: updateItem.incoming.nameEnglish,
+            gender: updateItem.incoming.gender,
+            dateOfBirth: updateItem.incoming.dateOfBirth,
             dateOfDeath: existing.dateOfDeath,
             locationOfDeathLat: existing.locationOfDeathLat,
             locationOfDeathLng: existing.locationOfDeathLng,
@@ -537,15 +500,19 @@ export async function applyBulkUpload(
         timeout: 90000,
       });
       
-      console.log(`  Progress: ${Math.min(i + UPDATE_BATCH_SIZE, toUpdate.length)}/${toUpdate.length} updates`);
+      console.log(`  Progress: ${Math.min(i + UPDATE_BATCH_SIZE, updatesToApply.length)}/${updatesToApply.length} updates`);
     }
   }
   
-  // MARK AS DELETED
+  // MARK AS DELETED - Using simulation results
   // Records not in the new MoH upload should be marked as deleted
-  if (toDelete.length > 0) {
+  if (deletesToApply.length > 0) {
     // Step 1: Get all latest version numbers - batched to avoid bind variable limit
-    const deleteIds = toDelete.map(d => d.id);
+    const deleteIds = deletesToApply.map(d => {
+      const existing = existingRecordsMap.get(d.externalId);
+      return existing?.id;
+    }).filter(id => id !== undefined) as string[];
+    
     const deleteVersionMap = new Map<string, number>();
     
     // Fetch version numbers in batches
@@ -562,17 +529,23 @@ export async function applyBulkUpload(
       });
     }
     
-    console.log(`  Fetched latest versions for ${toDelete.length} persons to mark as deleted`);
+    console.log(`  Fetched latest versions for ${deletesToApply.length} persons to mark as deleted`);
     
     // Step 2: Process delete operations in batches
-    for (let i = 0; i < toDelete.length; i += UPDATE_BATCH_SIZE) {
-      const batch = toDelete.slice(i, Math.min(i + UPDATE_BATCH_SIZE, toDelete.length));
+    for (let i = 0; i < deletesToApply.length; i += UPDATE_BATCH_SIZE) {
+      const batch = deletesToApply.slice(i, Math.min(i + UPDATE_BATCH_SIZE, deletesToApply.length));
       
       await prisma.$transaction(async (tx) => {
         const personUpdates = [];
         const versionCreates = [];
         
-        for (const existing of batch) {
+        for (const deleteItem of batch) {
+          const existing = existingRecordsMap.get(deleteItem.externalId);
+          if (!existing) {
+            console.warn(`  ⚠️ Warning: Cannot find existing record for ${deleteItem.externalId}, skipping`);
+            continue;
+          }
+          
           const currentVersion = deleteVersionMap.get(existing.id) || 0;
           const nextVersionNumber = currentVersion + 1;
           
@@ -587,7 +560,7 @@ export async function applyBulkUpload(
             })
           );
           
-          // Prepare version records
+          // Prepare version records (using current data from DiffItem.current)
           versionCreates.push({
             personId: existing.id,
             externalId: existing.externalId,
@@ -617,7 +590,7 @@ export async function applyBulkUpload(
         timeout: 90000,
       });
       
-      console.log(`  Progress: ${Math.min(i + UPDATE_BATCH_SIZE, toDelete.length)}/${toDelete.length} records marked as deleted`);
+      console.log(`  Progress: ${Math.min(i + UPDATE_BATCH_SIZE, deletesToApply.length)}/${deletesToApply.length} records marked as deleted`);
     }
   }
   

@@ -194,15 +194,15 @@ export default function AdminDashboard() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Database</span>
-                  <Badge variant="default" className="bg-green-500">Operational</Badge>
+                  <Badge variant="default">Operational</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Blob Storage</span>
-                  <Badge variant="default" className="bg-green-500">Operational</Badge>
+                  <Badge variant="default">Operational</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Authentication</span>
-                  <Badge variant="default" className="bg-green-500">Operational</Badge>
+                  <Badge variant="default">Operational</Badge>
                 </div>
               </div>
             </CardContent>

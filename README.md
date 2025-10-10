@@ -12,16 +12,17 @@ Admin control panel for managing the Gaza Death Toll database. Handles bulk uplo
 
 #### 1. Bulk Upload System
 - Upload CSV files with person records (name, gender, date of birth)
+- **Client-side CSV validation** before upload (instant feedback)
 - Simulation preview showing INSERT/UPDATE/DELETE operations
+- **Trust simulation** optimization (applies simulation results directly without re-fetching)
 - Transaction-safe apply with rollback capability
 - LIFO rollback protection (prevents conflicts)
 - Audit logging for all operations
-- Label and date tracking for uploads
-- **Performance**: Handles 30K+ records with PostgreSQL batching
+- Comment and date tracking for uploads
+- **Performance**: Handles 60K+ records with PostgreSQL batching and optimized workflows
 
 #### 2. Community Submissions
-- **New Record Proposals**: Community members can propose new person records
-- **Edit Suggestions**: Propose changes to death-related information
+- **Edit Suggestions**: Propose changes to death-related information for existing records
 - **Photo Upload**: Integrated Vercel Blob storage with automatic resizing
   - Automatic resize to 2048x2048px max
   - Converts to optimized WebP/JPEG
@@ -30,6 +31,7 @@ Admin control panel for managing the Gaza Death Toll database. Handles bulk uplo
   - Validation: -90 to 90 (latitude), -180 to 180 (longitude)
 - **Submission History**: Track your own submissions and their status
 - **Toast Notifications**: Real-time feedback via persistent toast messages
+- **Note**: Only edits to existing records are allowed (identity fields from MoH cannot be changed)
 
 #### 3. Moderation Queue
 - Review pending community submissions (FIFO queue)
@@ -54,7 +56,6 @@ Admin control panel for managing the Gaza Death Toll database. Handles bulk uplo
 
 #### 6. Dashboard
 - Real-time statistics (total records, photos, pending submissions)
-- **Data source breakdown**: MoH-confirmed vs Community contributions
 - Quick access to all admin tools
 
 ---
@@ -157,7 +158,6 @@ Open [http://localhost:3000](http://localhost:3000)
 │   └── middleware.ts           # Auth middleware (role-based access)
 └── docs/                       # Documentation
     ├── DATABASE.md             # Database schema and design
-    ├── DATA_CONFLICTS.md       # Edge cases and conflict resolution
     ├── ENGINEERING.md          # Technical architecture
     ├── PRODUCT.md              # Product overview
     ├── CONTRIBUTING.md         # Contribution guidelines
@@ -191,10 +191,10 @@ Open [http://localhost:3000](http://localhost:3000)
 ## Key Concepts
 
 ### Person Record
-- **Identity Fields**: Cannot be edited (name, gender, date of birth)
-- **Death Information**: Can be updated via community submissions
-- **Version Tracking**: Every change creates a new version
-- **Confirmation Status**: MoH-confirmed (bulk) vs community-submitted
+- **Identity Fields**: Cannot be edited (name, gender, date of birth) - sourced from Ministry of Health
+- **Death Information**: Can be updated via community submissions (date of death, location, photos)
+- **Version Tracking**: Every change creates a new version with full audit trail
+- **Data Source**: All identity data originates from Ministry of Health CSV releases
 
 ### Versioning
 - Each person has multiple versions tracked in `PersonVersion`
@@ -210,11 +210,11 @@ Open [http://localhost:3000](http://localhost:3000)
 5. Can rollback if needed (LIFO protection)
 
 ### Community Submission Workflow
-1. Community member submits NEW_RECORD or EDIT
+1. Community member submits EDIT for existing person
 2. Submission enters moderation queue (PENDING)
 3. Moderator reviews and approves/rejects
-4. If approved, changes applied to database
-5. Community records marked as `confirmedByMoh=false`
+4. If approved, changes applied to database as new version
+5. All identity fields remain unchanged (sourced from MoH)
 
 ---
 
@@ -222,7 +222,6 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ### Essential Reading
 - 🗄️ **[DATABASE.md](docs/DATABASE.md)** - Database schema, design patterns, event sourcing
-- ⚠️ **[DATA_CONFLICTS.md](docs/DATA_CONFLICTS.md)** - Edge cases, conflict resolution, undelete operations
 - 🏗️ **[ENGINEERING.md](docs/ENGINEERING.md)** - Technical architecture, configuration, performance
 - 📦 **[PRODUCT.md](docs/PRODUCT.md)** - Product overview, features, workflows
 - 🤝 **[CONTRIBUTING.md](docs/CONTRIBUTING.md)** - Development standards (read .cursorrules!)

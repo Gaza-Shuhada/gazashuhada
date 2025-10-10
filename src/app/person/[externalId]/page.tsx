@@ -127,7 +127,7 @@ export default function PersonDetailPage() {
   const getChangeTypeBadge = (changeType: string) => {
     switch (changeType) {
       case 'INSERT':
-        return <Badge variant="default" className="bg-green-600">Insert</Badge>;
+        return <Badge variant="default">Insert</Badge>;
       case 'UPDATE':
         return <Badge variant="secondary">Update</Badge>;
       case 'DELETE':

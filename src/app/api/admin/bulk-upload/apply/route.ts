@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { parseCSV, BulkUploadRow } from '@/lib/csv-utils';
 import { applyBulkUpload } from '@/lib/bulk-upload-service-ultra-optimized';
 import { requireAdmin } from '@/lib/auth-utils';
 import { createAuditLog, AuditAction, ResourceType } from '@/lib/audit-log';
@@ -49,7 +48,7 @@ export async function POST(request: NextRequest) {
     
     const body = await request.json();
     console.log('[SERVER] 📦 Request body keys:', Object.keys(body));
-    const { blobUrl, label: comment, dateReleased, filename, blobMetadata, simulationSummary } = body;
+    const { blobUrl, label: comment, dateReleased, filename, blobMetadata, simulationData } = body;
     
     console.log('[SERVER] 📋 Request metadata:', {
       hasBlob: !!blobUrl,
@@ -88,65 +87,13 @@ export async function POST(request: NextRequest) {
     console.log('[SERVER] ✅ Date validation passed:', dateReleasedObj.toISOString());
     
     // OPTIMIZATION: Check if there are any changes to apply
-    const hasChanges = !simulationSummary || 
-      simulationSummary.inserts > 0 || 
-      simulationSummary.updates > 0 || 
-      simulationSummary.deletes > 0;
+    const hasChanges = !simulationData || 
+      simulationData.summary.inserts > 0 || 
+      simulationData.summary.updates > 0 || 
+      simulationData.summary.deletes > 0;
     
     if (!hasChanges) {
-      console.log('[SERVER] ⚡ No changes detected - skipping CSV download and parse');
-    }
-    
-    // Parse CSV content - only if there are changes
-    let rows: BulkUploadRow[];
-    if (hasChanges) {
-      console.log('[SERVER] 🔗 Blob URL:', blobUrl);
-      console.log('[SERVER] ⬇️ Downloading CSV from Vercel Blob...');
-      
-      // Download CSV from Vercel Blob
-      const downloadStart = Date.now();
-      const response = await fetch(blobUrl);
-      console.log('[SERVER] 📨 Blob fetch response status:', response.status);
-      
-      if (!response.ok) {
-        console.error('[SERVER] ❌ Failed to download from blob:', response.statusText);
-        throw new Error(`Failed to download file from blob storage: ${response.statusText}`);
-      }
-      
-      const csvContent = await response.text();
-      const downloadTime = Date.now() - downloadStart;
-      
-      console.log('[SERVER] ✅ Download complete!');
-      console.log('[SERVER] 📊 File stats:', {
-        sizeBytes: csvContent.length,
-        sizeMB: (csvContent.length / 1024 / 1024).toFixed(2),
-        downloadTimeMs: downloadTime,
-        downloadTimeSec: (downloadTime / 1000).toFixed(2),
-      });
-      
-      // Parse and validate CSV
-      console.log('[SERVER] 📄 Parsing CSV content...');
-      try {
-        const parseStart = Date.now();
-        rows = parseCSV(csvContent);
-        const parseTime = Date.now() - parseStart;
-        console.log('[SERVER] ✅ CSV parsed successfully!');
-        console.log('[SERVER] 📊 Parse stats:', {
-          rowCount: rows.length,
-          parseTimeMs: parseTime,
-          parseTimeSec: (parseTime / 1000).toFixed(2),
-        });
-      } catch (error) {
-        console.error('[SERVER] ❌ CSV parse error:', error);
-        return NextResponse.json(
-          { error: error instanceof Error ? error.message : 'Invalid CSV format' },
-          { status: 400 }
-        );
-      }
-    } else {
-      // No changes - use empty array (won't be processed anyway)
-      rows = [];
-      console.log('[SERVER] ⚡ Using empty rows array (no changes to process)');
+      console.log('[SERVER] ⚡ No changes detected - skipping apply entirely');
     }
     
     // Apply the upload
@@ -155,19 +102,20 @@ export async function POST(request: NextRequest) {
       filename,
       comment: comment?.trim() || null,
       dateReleased: dateReleasedObj.toISOString(),
-      rowCount: rows.length,
+      inserts: simulationData?.summary.inserts || 0,
+      updates: simulationData?.summary.updates || 0,
+      deletes: simulationData?.summary.deletes || 0,
       blobUrl,
       blobSize: blobMetadata.size,
     });
     const applyStart = Date.now();
     const result = await applyBulkUpload(
-      rows, 
+      simulationData,
       filename, 
       blobUrl,
       blobMetadata,
       comment?.trim() || null, 
-      dateReleasedObj,
-      simulationSummary
+      dateReleasedObj
     );
     const applyTime = Date.now() - applyStart;
     
@@ -181,14 +129,18 @@ export async function POST(request: NextRequest) {
     });
     
     // Create audit log
+    const totalRecords = simulationData?.summary.totalIncoming || 0;
     await createAuditLog({
       action: AuditAction.BULK_UPLOAD_APPLIED,
       resourceType: ResourceType.BULK_UPLOAD,
       resourceId: result.uploadId,
-      description: `Applied bulk upload: ${filename} (${rows.length} records)`,
+      description: `Applied bulk upload: ${filename} (${totalRecords} records)`,
       metadata: {
         filename,
-        totalRecords: rows.length,
+        totalRecords,
+        inserts: simulationData?.summary.inserts || 0,
+        updates: simulationData?.summary.updates || 0,
+        deletes: simulationData?.summary.deletes || 0,
         uploadId: result.uploadId,
         changeSourceId: result.changeSourceId,
       },

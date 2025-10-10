@@ -80,24 +80,41 @@ const faqItems = [
     answer: 'Casualty is a euphemism, murder requires individual intent, shahid possibly excludes those who don\'t subscribe to religious purpose. We chose deaths as a neutral and specific word to not detract from the objectivity of the data.',
   },
   {
+    question: 'What are your data sources?',
+    answer: (
+      <>
+        The Palestinian Ministry of Health (MoH) is our primary source of truth. They periodically release updated lists of identified individuals killed in Gaza. We maintain a complete archive of all MoH data releases in our {' '}
+        <a
+          href="https://github.com/Gaza-Deaths/gazadeaths/tree/main/data_sources"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary hover:underline"
+        >
+          GitHub repository 
+        </a>
+        {' '}ensuring full transparency and allowing anyone to verify our data against the original source materials.
+      </>
+    ),
+  },
+  {
     question: 'Who is involved in this project?',
     answer: 'An informal advisory team (see page) has been formed that is establishing a charity in the UK that will hold all of the data and assets. This group will also establish Memorandum and Articles of Association, Code of Conduct, and Editorial Principles.',
   },
   {
     question: 'Who owns the data and how can it be used?',
-    answer: 'All of the data will be made available to the public as exported bulk files. The data and the technology platform will be covered by open source and open data licensing.',
+    answer: 'All of the data will bis licensed and available to the public as easy downloadable files. The data and the technology platform is covered by open source and open data licensing.',
   },
   {
     question: 'How is this project funded?',
     answer: 'Already confirmed funding is sufficient to enable this project to reach its first milestone. From that point onwards it will require fundraising for its ongoing expenses (primarily technology infrastructure).',
   },
   {
-    question: 'What is your relationship to Iraq Body Count and Tech4Palestine?',
-    answer: 'Iraq Body Count has been doing the highly important work of documenting, and quantifying, human suffering from war since 2002. They have written extensively about their process on their substack and x accounts. Our ambition is to extend their work by enabling community engagement with the official data.',
+    question: 'What is your relationship to Iraq Body Count?',
+    answer: 'Iraq Body Count has been doing the highly important work of documenting, and quantifying, human suffering from war since 2002. They have written extensively about their process on their substack and x accounts.',
   },
   {
     question: 'What is your relationship to Tech4Palestine?',
-    answer: 'Tech4Palestine is a movement and a community. Their impact is powerful and if you are in the technology sector, or associated industry, you should look to participate in their work. We are applying to be part of their incubator to stay close to their ecosystem.',
+    answer: 'Tech4Palestine is a movement and a community. They are doing fantastic work in the technology sector and we are proud to be part of their ecosystem. They have their own tracking of the MoH data releases which we have made use of.',
   },
   {
     question: 'What is your relationship to the Gaza Ministry of Health?',
@@ -190,7 +207,7 @@ export default function AboutPage() {
                     {item.question}
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
-                    <p>{item.answer}</p>
+                    {typeof item.answer === 'string' ? <p>{item.answer}</p> : item.answer}
                   </AccordionContent>
                 </AccordionItem>
               ))}

@@ -284,7 +284,7 @@ export default function ContributeEditPage() {
                     <button
                       type="button"
                       onClick={handleRemovePhoto}
-                      className="absolute -top-2 -right-2 bg-destructive/50 text-white rounded-full p-1 hover:bg-destructive"
+                      className="absolute -top-2 -right-2 bg-destructive/50 text-destructive-foreground rounded-full p-1 hover:bg-destructive"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

@@ -37,7 +37,7 @@ export default function ModerationLayout({ children }: ModerationLayoutProps) {
           <p className="text-muted-foreground mb-6">You must be signed in to access moderation features.</p>
           <Link
             href="/sign-in"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-secondary hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-secondary-foreground bg-secondary hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring"
           >
             Sign In
           </Link>
@@ -71,7 +71,7 @@ export default function ModerationLayout({ children }: ModerationLayoutProps) {
             </Link>
             <Link
               href="/"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-secondary hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-secondary-foreground bg-secondary hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring"
             >
               Go Home
             </Link>

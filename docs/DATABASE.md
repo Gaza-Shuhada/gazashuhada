@@ -145,11 +145,10 @@ model Person {
   dateOfDeath       DateTime?
   locationOfDeathLat Float?                   // -90..90
   locationOfDeathLng Float?                   // -180..180
-  obituary          String?
   photoUrlOriginal  String?                   // Vercel Blob URL
   photoUrlThumb     String?                   // Thumbnail (512x512)
-  confirmedByMoh    Boolean   @default(false) // true = from bulk upload
   isDeleted         Boolean   @default(false) // soft delete
+  currentVersion    Int       @default(1)     // Current version number
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   
@@ -159,9 +158,10 @@ model Person {
 ```
 
 **Key Points:**
-- `externalId` is **UNIQUE** - one person per ID
-- `confirmedByMoh` = `true` if ever included in MoH bulk upload
+- `externalId` is **UNIQUE** - one person per ID  
+- All identity data (name, gender, date of birth) originates from Ministry of Health CSV uploads
 - `isDeleted` = soft delete (preserve history, hide from public)
+- `currentVersion` tracks the latest version number for quick reference
 - Gets **updated** when bulk uploads or approved edits change data
 
 ---
@@ -186,10 +186,8 @@ model PersonVersion {
   dateOfDeath       DateTime?
   locationOfDeathLat Float?
   locationOfDeathLng Float?
-  obituary          String?
   photoUrlOriginal  String?
   photoUrlThumb     String?
-  confirmedByMoh    Boolean
   isDeleted         Boolean
   uploadedAt        DateTime    @default(now())
   
@@ -238,9 +236,13 @@ model BulkUpload {
   id              String        @id @default(uuid())
   changeSourceId  String        @unique
   filename        String
-  label           String                      // User-provided label (max 200 chars)
+  comment         String?                     // Optional user-provided comment
   dateReleased    DateTime                    // When MoH released this data
   fileUrl         String                      // Vercel Blob URL
+  fileSize        Int                         // File size in bytes
+  fileSha256      String                      // SHA-256 hash for integrity
+  contentType     String                      // MIME type
+  previewLines    String?                     // First ~20 lines for preview
   uploadedAt      DateTime      @default(now())
   
   changeSource    ChangeSource  @relation(fields: [changeSourceId], references: [id])
@@ -248,9 +250,9 @@ model BulkUpload {
 ```
 
 **Key Points:**
-- `label` is required for user-friendly identification
+- `comment` is optional for user-friendly identification (replaces old `label` field)
 - `dateReleased` tracks when MoH published the data
-- `fileUrl` stored in Vercel Blob (not in database)
+- `fileUrl` stored in Vercel Blob with metadata for integrity verification
 
 ---
 
@@ -260,27 +262,25 @@ model BulkUpload {
 ```prisma
 model CommunitySubmission {
   id                      String            @id @default(uuid())
-  type                    SubmissionType    // NEW_RECORD | EDIT
-  status                  SubmissionStatus  // PENDING | APPROVED | REJECTED | SUPERSEDED
+  type                    SubmissionType    // Always EDIT (only edits allowed)
+  baseVersionId           String            // Required: version being edited
+  personId                String            // Required: person being edited
+  proposedPayload         Json              // Only editable fields: date_of_death, location, photo
+  reason                  String?           // Optional explanation for the submission
   submittedBy             String            // Clerk user ID
+  status                  SubmissionStatus  @default(PENDING)
   createdAt               DateTime          @default(now())
-  
-  // BEFORE APPROVAL (submission time)
-  baseVersionId           String?           // NULL for NEW_RECORD, versionId for EDIT
-  personId                String?           // NULL for NEW_RECORD, personId for EDIT
-  proposedPayload         Json              // All data stored as JSON
-  reason                  String?           // User's explanation
   
   // AFTER APPROVAL (moderation time)
   approvedBy              String?           // Clerk user ID
   approvedAt              DateTime?
+  decisionAction          DecisionAction?   // UPDATE | DELETE
   decisionNote            String?           // Moderator's note
-  approvedChangeSourceId  String?           // FK to ChangeSource (created on approval)
-  appliedVersionId        String?           // FK to PersonVersion (created on approval)
-  decisionAction          DecisionAction?   // UPDATE | DELETE (for EDIT only)
+  approvedChangeSourceId  String?           @unique
+  appliedVersionId        String?
   
-  person                  Person?           @relation(fields: [personId], references: [id])
   baseVersion             PersonVersion?    @relation("BaseVersion", fields: [baseVersionId], references: [id])
+  person                  Person?           @relation(fields: [personId], references: [id])
   approvedChangeSource    ChangeSource?     @relation(fields: [approvedChangeSourceId], references: [id])
   appliedVersion          PersonVersion?    @relation("AppliedVersion", fields: [appliedVersionId], references: [id])
 }
@@ -288,8 +288,9 @@ model CommunitySubmission {
 
 **Key Points:**
 - **Stays in table forever** (permanent audit history)
-- `baseVersionId` and `personId` nullable **by design** (see Conflict Detection section)
-- `proposedPayload` is JSON - flexible schema for different submission types
+- `baseVersionId` and `personId` are **required** (only edits to existing records allowed)
+- `proposedPayload` is JSON - contains only editable fields (date of death, location, photos)
+- No NEW_RECORD submissions - all records must originate from Ministry of Health
 
 ---
 
@@ -315,109 +316,25 @@ model AuditLog {
 
 ## Community Submission Lifecycle
 
-### NEW_RECORD Flow
-
-#### 1. User Submits (Phase 1)
-```sql
--- POST /api/community/submit
-CommunitySubmission:
-  id: "sub-abc"
-  type: 'NEW_RECORD'
-  status: 'PENDING'
-  submittedBy: "user_123"
-  proposedPayload: {
-    "externalId": "P9999",
-    "name": "Jane Smith",
-    "gender": "FEMALE",
-    "dateOfBirth": "1990-05-15",
-    "dateOfDeath": null,
-    "photoUrlThumb": "https://blob.../thumb.webp",
-    "photoUrlOriginal": "https://blob.../original.webp"
-  }
-  
-  -- These are NULL because nothing exists yet:
-  personId: NULL
-  baseVersionId: NULL
-  appliedVersionId: NULL
-```
-
-**State:**
-- ❌ NO Person record
-- ❌ NO PersonVersion record
-- ✅ Data in JSON, waiting for moderation
-
----
-
-#### 2. Moderator Approves (Phase 2)
-```sql
--- POST /api/moderator/moderation/sub-abc/approve
-BEGIN TRANSACTION;
-
--- Create ChangeSource
-INSERT INTO ChangeSource VALUES (
-  id: "src-xyz",
-  type: 'COMMUNITY_SUBMISSION',
-  description: 'Community-submitted new record: Jane Smith (P9999)'
-);
-
--- Create Person (current state)
-INSERT INTO Person VALUES (
-  id: "person-new",
-  externalId: "P9999",
-  name: "Jane Smith",
-  gender: "FEMALE",
-  dateOfBirth: "1990-05-15",
-  confirmedByMoh: false,  -- Community submission, not MoH
-  ...
-);
-
--- Create PersonVersion (history)
-INSERT INTO PersonVersion VALUES (
-  id: "ver-1",
-  personId: "person-new",
-  versionNumber: 1,         -- First version!
-  changeType: 'INSERT',
-  sourceId: "src-xyz",
-  -- All person data copied here
-);
-
--- Update CommunitySubmission (link everything)
-UPDATE CommunitySubmission WHERE id = "sub-abc" SET
-  status: 'APPROVED',
-  approvedBy: "admin_456",
-  approvedAt: NOW(),
-  personId: "person-new",          -- NOW LINKED
-  appliedVersionId: "ver-1";       -- NOW LINKED
-
-COMMIT;
-```
-
-**Final State:**
-- ✅ Person exists
-- ✅ PersonVersion v1 exists
-- ✅ CommunitySubmission updated with links
-- ✅ ChangeSource tracks provenance
-
----
-
-### EDIT Flow
+### EDIT Flow (Only Option)
 
 #### 1. User Submits Edit
 ```sql
--- User wants to update dateOfDeath for existing person "P12345"
+-- User wants to update dateOfDeath and location for existing person "P12345"
 -- They see version 5 of this person when submitting
 
 CommunitySubmission:
   id: "sub-edit"
-  type: 'EDIT'
+  type: 'EDIT'                       -- Always EDIT (only option)
   status: 'PENDING'
   submittedBy: "user_789"
   proposedPayload: {
     "dateOfDeath": "2024-10-01",
-    "obituary": "Updated obituary text"
+    "locationOfDeathLat": 31.5,
+    "locationOfDeathLng": 34.4
   }
   
-  -- These are SET because person exists:
+  -- These are REQUIRED because person exists:
   personId: "person-existing"        -- Editing this person
   baseVersionId: "version-5"         -- Based on version 5
   appliedVersionId: NULL             -- Not approved yet
@@ -452,7 +369,8 @@ INSERT INTO ChangeSource VALUES (
 -- Update Person (current state)
 UPDATE Person WHERE id = "person-existing" SET
   dateOfDeath: "2024-10-01",
-  obituary: "Updated obituary text";
+  locationOfDeathLat: 31.5,
+  locationOfDeathLng: 34.4;
 
 -- Create PersonVersion (history)
 INSERT INTO PersonVersion VALUES (
@@ -486,13 +404,13 @@ Person (id: "abc-123", name: "John", dateOfDeath: "2024-10-15")
   ↑ Current state (matches version 3)
 
 PersonVersion History:
-┌─────┬────────┬────────┬─────────────┬────────────────┐
-│ Ver │ Type   │ Source │ dateOfDeath │ confirmedByMoh │
-├─────┼────────┼────────┼─────────────┼────────────────┤
-│ 1   │ INSERT │ Comm.  │ NULL        │ false          │  ← Created by community
-│ 2   │ UPDATE │ Comm.  │ 2024-10-01  │ false          │  ← Community added death date
-│ 3   │ UPDATE │ Bulk   │ 2024-10-15  │ true           │  ← MoH corrected date (now official)
-└─────┴────────┴────────┴─────────────┴────────────────┘
+┌─────┬────────┬────────┬─────────────┬───────────────────┐
+│ Ver │ Type   │ Source │ dateOfDeath │ Notes             │
+├─────┼────────┼────────┼─────────────┼───────────────────┤
+│ 1   │ INSERT │ Bulk   │ NULL        │ MoH initial data  │
+│ 2   │ UPDATE │ Comm.  │ 2024-10-01  │ Community added   │
+│ 3   │ UPDATE │ Bulk   │ 2024-10-15  │ MoH corrected     │
+└─────┴────────┴────────┴─────────────┴───────────────────┘
 ```
 
 ### Querying History
@@ -570,22 +488,21 @@ IF submission.baseVersionId.versionNumber < person.latestVersion.versionNumber:
 
 ### Field Meanings
 
-| Field | NEW_RECORD | EDIT | Purpose |
-|-------|------------|------|---------|
-| `baseVersionId` | `NULL` | `"version-5"` | "What version did user see when they made this edit?" |
-| `personId` | `NULL` | `"person-xyz"` | "Which person is being edited?" (NULL for new) |
-| `appliedVersionId` | (after approval) `"version-1"` | (after approval) `"version-6"` | "What version was created when approved?" |
+| Field | EDIT (Only Option) | Purpose |
+|-------|-------------------|---------|
+| `baseVersionId` | `"version-5"` (required) | "What version did user see when they made this edit?" |
+| `personId` | `"person-xyz"` (required) | "Which person is being edited?" |
+| `appliedVersionId` | `NULL` initially, then `"version-6"` after approval | "What version was created when approved?" |
 
 **Think of it like Git:**
 ```bash
-# NEW_RECORD:
-git init  # No previous commits (baseVersionId = NULL)
-
 # EDIT:
 git checkout abc123  # Basing changes on commit abc123 (baseVersionId = "abc123")
 
 # If someone else pushed, you have a merge conflict!
 ```
+
+**Note:** All records must originate from Ministry of Health. Community can only edit existing records.
 
 ---
 
@@ -647,21 +564,21 @@ dateOfBirth DateTime?
 
 #### `CommunitySubmission.baseVersionId`
 ```prisma
-baseVersionId String?
+baseVersionId String
 ```
 **Reason:**
-- NEW_RECORD: No previous version exists → `NULL`
-- EDIT: References the version they edited from → `"version-5"`
+- Always required - references the version they edited from (e.g., `"version-5"`)
+- No NEW_RECORD submissions allowed
 
 ---
 
 #### `CommunitySubmission.personId`
 ```prisma
-personId String?
+personId String
 ```
 **Reason:**
-- NEW_RECORD: Person doesn't exist yet → `NULL` → Filled on approval
-- EDIT: Editing existing person → `"person-xyz"`
+- Always required - identifies which existing person is being edited (e.g., `"person-xyz"`)
+- No NEW_RECORD submissions allowed
 
 ---
 
