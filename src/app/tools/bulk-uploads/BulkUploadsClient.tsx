@@ -46,10 +46,11 @@ interface SimulationResult {
     updates: number;
     deletes: number;
   };
-  deletions: DiffItem[];
-  updates: DiffItem[];
-  inserts: DiffItem[]; // Full list for apply
-  sampleInserts: DiffItem[]; // Sample for UI display
+  samples: {
+    inserts: DiffItem[];    // First 10 for preview
+    updates: DiffItem[];    // First 10 for preview
+    deletions: DiffItem[];  // First 10 for preview
+  };
 }
 
 export default function BulkUploadsClient() {
@@ -552,15 +553,15 @@ export default function BulkUploadsClient() {
                   <div className="bg-secondary/20 p-4 rounded"><div className="text-sm text-secondary-foreground">Updates</div><div className="text-2xl font-bold text-secondary-foreground">{simulation.summary.updates}</div></div>
                   <div className="bg-destructive/5 p-4 rounded"><div className="text-sm text-destructive">Deletes</div><div className="text-2xl font-bold text-destructive">{simulation.summary.deletes}</div></div>
                 </div>
-                {simulation.deletions.length > 0 && (
+                {simulation.samples.deletions.length > 0 && (
                   <div className="border border-destructive/20 rounded-lg p-4 bg-destructive/5">
-                    <h4 className="font-medium mb-2 text-destructive">⚠️ Records to be Deleted ({simulation.deletions.length})</h4>
+                    <h4 className="font-medium mb-2 text-destructive">⚠️ Records to be Deleted (showing {simulation.samples.deletions.length} of {simulation.summary.deletes})</h4>
                     <p className="text-sm text-destructive mb-3">These records exist in the database but are NOT in the CSV file:</p>
                     <div className="overflow-x-auto max-h-96">
                       <table className="min-w-full divide-y divide-border bg-background">
                         <thead className="bg-destructive/10"><tr><th className="px-4 py-2 text-left text-xs font-medium text-destructive uppercase">External ID</th><th className="px-4 py-2 text-left text-xs font-medium text-destructive uppercase">Name</th><th className="px-4 py-2 text-left text-xs font-medium text-destructive uppercase">Gender</th><th className="px-4 py-2 text-left text-xs font-medium text-destructive uppercase">Date of Birth</th></tr></thead>
                         <tbody className="divide-y divide-border">
-                          {simulation.deletions.map((diff, idx) => (
+                          {simulation.samples.deletions.map((diff, idx) => (
                             <tr key={idx} className="hover:bg-destructive/5"><td className="px-4 py-2 whitespace-nowrap text-sm font-medium">{diff.externalId}</td><td className="px-4 py-2 text-sm">{diff.current?.name}</td><td className="px-4 py-2 whitespace-nowrap text-sm">{diff.current?.gender}</td><td className="px-4 py-2 whitespace-nowrap text-sm">{diff.current && formatDateOfBirth(diff.current.dateOfBirth)}</td></tr>
                           ))}
                         </tbody>
@@ -568,15 +569,15 @@ export default function BulkUploadsClient() {
                     </div>
                   </div>
                 )}
-                {simulation.updates.length > 0 && (
+                {simulation.samples.updates.length > 0 && (
                   <div className="border rounded-lg p-4 bg-secondary/20">
-                    <h4 className="font-medium mb-2 text-secondary-foreground">📝 Records to be Updated ({simulation.updates.length})</h4>
+                    <h4 className="font-medium mb-2 text-secondary-foreground">📝 Records to be Updated (showing {simulation.samples.updates.length} of {simulation.summary.updates})</h4>
                     <p className="text-sm text-secondary-foreground mb-3">These records will be modified:</p>
                     <div className="overflow-x-auto max-h-96">
                       <table className="min-w-full divide-y divide-border bg-background">
                         <thead className="bg-secondary/50"><tr><th className="px-4 py-2 text-left text-xs font-medium text-secondary-foreground uppercase">External ID</th><th className="px-4 py-2 text-left text-xs font-medium text-secondary-foreground uppercase">Current</th><th className="px-4 py-2 text-left text-xs font-medium text-secondary-foreground uppercase">→ New</th></tr></thead>
                         <tbody className="divide-y divide-border">
-                          {simulation.updates.map((diff, idx) => (
+                          {simulation.samples.updates.map((diff, idx) => (
                             <tr key={idx} className="hover:bg-secondary/20">
                               <td className="px-4 py-2 whitespace-nowrap text-sm font-medium">{diff.externalId}</td>
                               <td className="px-4 py-2 text-sm">
@@ -612,14 +613,14 @@ export default function BulkUploadsClient() {
                     </div>
                   </div>
                 )}
-                {simulation.sampleInserts.length > 0 && (
+                {simulation.samples.inserts.length > 0 && (
                   <div className="border rounded-lg p-4 bg-accent">
-                    <h4 className="font-medium mb-2 text-accent-foreground">✨ Sample New Records ({simulation.summary.inserts > 10 ? `showing 10 of ${simulation.summary.inserts}` : simulation.summary.inserts})</h4>
+                    <h4 className="font-medium mb-2 text-accent-foreground">✨ Sample New Records (showing {simulation.samples.inserts.length} of {simulation.summary.inserts})</h4>
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-border bg-background">
                         <thead className="bg-accent"><tr><th className="px-4 py-2 text-left text-xs font-medium text-accent-foreground uppercase">External ID</th><th className="px-4 py-2 text-left text-xs font-medium text-accent-foreground uppercase">Name</th><th className="px-4 py-2 text-left text-xs font-medium text-accent-foreground uppercase">Gender</th><th className="px-4 py-2 text-left text-xs font-medium text-accent-foreground uppercase">Date of Birth</th></tr></thead>
                         <tbody className="divide-y divide-border">
-                          {simulation.sampleInserts.map((diff, idx) => (
+                          {simulation.samples.inserts.map((diff, idx) => (
                             <tr key={idx} className="hover:bg-accent"><td className="px-4 py-2 whitespace-nowrap text-sm font-medium">{diff.externalId}</td><td className="px-4 py-2 text-sm">{diff.incoming.name}</td><td className="px-4 py-2 whitespace-nowrap text-sm">{diff.incoming.gender}</td><td className="px-4 py-2 whitespace-nowrap text-sm">{formatDateOfBirth(diff.incoming.dateOfBirth)}</td></tr>
                           ))}
                         </tbody>
