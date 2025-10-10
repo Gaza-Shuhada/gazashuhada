@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { upload } from '@vercel/blob/client';
 import { Button } from '@/components/ui/button';
@@ -59,9 +59,11 @@ export default function BulkUploadsClient() {
   const [dateReleased, setDateReleased] = useState<string>('');
   const [simulation, setSimulation] = useState<SimulationResult | null>(null);
   const [blobUrl, setBlobUrl] = useState<string | null>(null); // Store blob URL for reuse between simulate and apply
+  const [blobMetadata, setBlobMetadata] = useState<{ size: number; sha256: string; contentType: string; previewLines?: string | null } | null>(null);
   const [simulating, setSimulating] = useState(false);
   const [applying, setApplying] = useState(false);
   const [rollingBack, setRollingBack] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // INLINE ERROR/SUCCESS STATE (Legacy - kept for easy revert)
   // Uncomment these and the render code below to return to inline error/success messages
@@ -94,6 +96,7 @@ export default function BulkUploadsClient() {
       setSelectedFile(file);
       setSimulation(null);
       setBlobUrl(null); // Reset blob URL when new file is selected
+      setBlobMetadata(null); // Reset blob metadata when new file is selected
     }
   };
 
@@ -174,7 +177,9 @@ export default function BulkUploadsClient() {
       } else {
         console.log('[CLIENT] ✅ Simulation successful!');
         console.log('[CLIENT] 📊 Summary:', data.simulation.summary);
+        console.log('[CLIENT] 📦 Blob metadata:', data.blobMetadata);
         setSimulation(data.simulation);
+        setBlobMetadata(data.blobMetadata);
         const { summary } = data.simulation;
         toast.success('Simulation complete!', { 
           id: simulateToast,
@@ -207,6 +212,10 @@ export default function BulkUploadsClient() {
       toast.error('Please simulate the upload first', { duration: Infinity });
       return;
     }
+    if (!blobMetadata) {
+      toast.error('Missing blob metadata. Please re-simulate the upload', { duration: Infinity });
+      return;
+    }
     if (!dateReleased.trim()) { 
       toast.error('Please provide the date when this data was released', { duration: Infinity });
       return;
@@ -214,6 +223,7 @@ export default function BulkUploadsClient() {
 
     console.log('[CLIENT] 🚀 Starting bulk upload apply');
     console.log('[CLIENT] 🔗 Blob URL:', blobUrl);
+    console.log('[CLIENT] 📦 Blob metadata:', blobMetadata);
     console.log('[CLIENT] 📋 Metadata:', { 
       label: label.trim(), 
       dateReleased, 
@@ -233,6 +243,8 @@ export default function BulkUploadsClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           blobUrl,
+          blobMetadata,
+          simulationSummary: simulation?.summary,
           label: label.trim(),
           dateReleased,
           filename: selectedFile.name
@@ -254,11 +266,19 @@ export default function BulkUploadsClient() {
         console.log('[CLIENT] 📋 Upload ID:', data.uploadId);
         console.log('[CLIENT] 📊 Stats:', data.stats);
         
+        // Clear form state
         setSelectedFile(null);
         setLabel('');
         setDateReleased('');
         setSimulation(null);
         setBlobUrl(null);
+        setBlobMetadata(null);
+        
+        // Clear file input element
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        
         fetchUploads().catch(err => console.error('Failed to refresh uploads:', err));
         toast.success('Bulk upload applied successfully!', { 
           id: applyToast,
@@ -293,6 +313,12 @@ export default function BulkUploadsClient() {
     setDateReleased('');
     setSimulation(null);
     setBlobUrl(null);
+    setBlobMetadata(null);
+    
+    // Clear file input element
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleRollback = async (uploadId: string, filename: string) => {
@@ -368,7 +394,13 @@ export default function BulkUploadsClient() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">Upload CSV File</label>
-              <input type="file" accept=".csv" onChange={handleFileChange} className="w-full md:w-1/2 text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary/5 file:text-primary hover:file:bg-primary/10"/>
+              <input 
+                ref={fileInputRef}
+                type="file" 
+                accept=".csv" 
+                onChange={handleFileChange} 
+                className="w-full md:w-1/2 text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary/5 file:text-primary hover:file:bg-primary/10"
+              />
               <p className="mt-2 text-sm text-muted-foreground">CSV must contain only: external_id, name, gender, date_of_birth</p>
             </div>
             <div>
@@ -390,11 +422,31 @@ export default function BulkUploadsClient() {
               </div>
             )}
             */}
-            {selectedFile && !simulation && (
-              <Button onClick={handleSimulate} disabled={simulating}>
+            <div className="flex gap-4">
+              <Button 
+                onClick={handleSimulate} 
+                disabled={!selectedFile || simulation !== null || simulating}
+              >
                 {simulating ? 'Simulating...' : 'Simulate Upload'}
               </Button>
-            )}
+              {simulation && (
+                <>
+                  <Button 
+                    onClick={handleApply} 
+                    disabled={!simulation || applying}
+                  >
+                    {applying ? 'Applying...' : 'Apply Upload'}
+                  </Button>
+                  <Button 
+                    onClick={handleCancel} 
+                    disabled={applying} 
+                    variant="secondary"
+                  >
+                    Cancel
+                  </Button>
+                </>
+              )}
+            </div>
             {simulation && (
               <div className="border rounded-lg p-4 space-y-4">
                 <h3 className="font-semibold text-lg">Simulation Results</h3>
@@ -403,14 +455,6 @@ export default function BulkUploadsClient() {
                   <div className="bg-accent p-4 rounded"><div className="text-sm text-accent-foreground">Inserts</div><div className="text-2xl font-bold text-accent-foreground">{simulation.summary.inserts}</div></div>
                   <div className="bg-secondary/20 p-4 rounded"><div className="text-sm text-secondary-foreground">Updates</div><div className="text-2xl font-bold text-secondary-foreground">{simulation.summary.updates}</div></div>
                   <div className="bg-destructive/5 p-4 rounded"><div className="text-sm text-destructive">Deletes</div><div className="text-2xl font-bold text-destructive">{simulation.summary.deletes}</div></div>
-                </div>
-                <div className="flex gap-4 pt-2">
-                  <Button onClick={handleApply} disabled={applying}>
-                    {applying ? 'Applying...' : 'Apply Upload'}
-                  </Button>
-                  <Button onClick={handleCancel} disabled={applying} variant="secondary">
-                    Cancel
-                  </Button>
                 </div>
                 {simulation.deletions.length > 0 && (
                   <div className="border border-destructive/20 rounded-lg p-4 bg-destructive/5">

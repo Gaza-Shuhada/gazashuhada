@@ -49,10 +49,11 @@ export async function POST(request: NextRequest) {
     
     const body = await request.json();
     console.log('[SERVER] 📦 Request body keys:', Object.keys(body));
-    const { blobUrl, label: comment, dateReleased, filename } = body;
+    const { blobUrl, label: comment, dateReleased, filename, blobMetadata, simulationSummary } = body;
     
     console.log('[SERVER] 📋 Request metadata:', {
       hasBlob: !!blobUrl,
+      hasBlobMetadata: !!blobMetadata,
       comment: comment?.trim() || null,
       dateReleased,
       filename,
@@ -61,6 +62,11 @@ export async function POST(request: NextRequest) {
     if (!blobUrl) {
       console.error('[SERVER] ❌ No blobUrl provided');
       return NextResponse.json({ error: 'No blobUrl provided' }, { status: 400 });
+    }
+    
+    if (!blobMetadata) {
+      console.error('[SERVER] ❌ No blobMetadata provided');
+      return NextResponse.json({ error: 'No blobMetadata provided' }, { status: 400 });
     }
     
     if (!filename) {
@@ -81,50 +87,66 @@ export async function POST(request: NextRequest) {
     }
     console.log('[SERVER] ✅ Date validation passed:', dateReleasedObj.toISOString());
     
-    console.log('[SERVER] 🔗 Blob URL:', blobUrl);
-    console.log('[SERVER] ⬇️ Downloading CSV from Vercel Blob...');
+    // OPTIMIZATION: Check if there are any changes to apply
+    const hasChanges = !simulationSummary || 
+      simulationSummary.inserts > 0 || 
+      simulationSummary.updates > 0 || 
+      simulationSummary.deletes > 0;
     
-    // Download CSV from Vercel Blob
-    const downloadStart = Date.now();
-    const response = await fetch(blobUrl);
-    console.log('[SERVER] 📨 Blob fetch response status:', response.status);
-    
-    if (!response.ok) {
-      console.error('[SERVER] ❌ Failed to download from blob:', response.statusText);
-      throw new Error(`Failed to download file from blob storage: ${response.statusText}`);
+    if (!hasChanges) {
+      console.log('[SERVER] ⚡ No changes detected - skipping CSV download and parse');
     }
     
-    const csvContent = await response.text();
-    const rawFile = Buffer.from(csvContent, 'utf-8');
-    const downloadTime = Date.now() - downloadStart;
-    
-    console.log('[SERVER] ✅ Download complete!');
-    console.log('[SERVER] 📊 File stats:', {
-      sizeBytes: rawFile.length,
-      sizeMB: (rawFile.length / 1024 / 1024).toFixed(2),
-      downloadTimeMs: downloadTime,
-      downloadTimeSec: (downloadTime / 1000).toFixed(2),
-    });
-    
-    // Parse and validate CSV
-    console.log('[SERVER] 📄 Parsing CSV content...');
+    // Parse CSV content - only if there are changes
     let rows;
-    try {
-      const parseStart = Date.now();
-      rows = parseCSV(csvContent);
-      const parseTime = Date.now() - parseStart;
-      console.log('[SERVER] ✅ CSV parsed successfully!');
-      console.log('[SERVER] 📊 Parse stats:', {
-        rowCount: rows.length,
-        parseTimeMs: parseTime,
-        parseTimeSec: (parseTime / 1000).toFixed(2),
+    if (hasChanges) {
+      console.log('[SERVER] 🔗 Blob URL:', blobUrl);
+      console.log('[SERVER] ⬇️ Downloading CSV from Vercel Blob...');
+      
+      // Download CSV from Vercel Blob
+      const downloadStart = Date.now();
+      const response = await fetch(blobUrl);
+      console.log('[SERVER] 📨 Blob fetch response status:', response.status);
+      
+      if (!response.ok) {
+        console.error('[SERVER] ❌ Failed to download from blob:', response.statusText);
+        throw new Error(`Failed to download file from blob storage: ${response.statusText}`);
+      }
+      
+      const csvContent = await response.text();
+      const downloadTime = Date.now() - downloadStart;
+      
+      console.log('[SERVER] ✅ Download complete!');
+      console.log('[SERVER] 📊 File stats:', {
+        sizeBytes: csvContent.length,
+        sizeMB: (csvContent.length / 1024 / 1024).toFixed(2),
+        downloadTimeMs: downloadTime,
+        downloadTimeSec: (downloadTime / 1000).toFixed(2),
       });
-    } catch (error) {
-      console.error('[SERVER] ❌ CSV parse error:', error);
-      return NextResponse.json(
-        { error: error instanceof Error ? error.message : 'Invalid CSV format' },
-        { status: 400 }
-      );
+      
+      // Parse and validate CSV
+      console.log('[SERVER] 📄 Parsing CSV content...');
+      try {
+        const parseStart = Date.now();
+        rows = parseCSV(csvContent);
+        const parseTime = Date.now() - parseStart;
+        console.log('[SERVER] ✅ CSV parsed successfully!');
+        console.log('[SERVER] 📊 Parse stats:', {
+          rowCount: rows.length,
+          parseTimeMs: parseTime,
+          parseTimeSec: (parseTime / 1000).toFixed(2),
+        });
+      } catch (error) {
+        console.error('[SERVER] ❌ CSV parse error:', error);
+        return NextResponse.json(
+          { error: error instanceof Error ? error.message : 'Invalid CSV format' },
+          { status: 400 }
+        );
+      }
+    } else {
+      // No changes - use empty array (won't be processed anyway)
+      rows = [];
+      console.log('[SERVER] ⚡ Using empty rows array (no changes to process)');
     }
     
     // Apply the upload
@@ -134,9 +156,19 @@ export async function POST(request: NextRequest) {
       comment: comment?.trim() || null,
       dateReleased: dateReleasedObj.toISOString(),
       rowCount: rows.length,
+      blobUrl,
+      blobSize: blobMetadata.size,
     });
     const applyStart = Date.now();
-    const result = await applyBulkUpload(rows, filename, rawFile, comment?.trim() || null, dateReleasedObj);
+    const result = await applyBulkUpload(
+      rows, 
+      filename, 
+      blobUrl,
+      blobMetadata,
+      comment?.trim() || null, 
+      dateReleasedObj,
+      simulationSummary
+    );
     const applyTime = Date.now() - applyStart;
     
     console.log('[SERVER] ✅ Bulk upload applied successfully!');

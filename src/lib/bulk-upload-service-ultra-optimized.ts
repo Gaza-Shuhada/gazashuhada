@@ -185,15 +185,20 @@ export async function simulateBulkUpload(rows: BulkUploadRow[]): Promise<Simulat
   
   console.log(`  Simulating bulk upload with ${rows.length} rows...`);
   
-  // Use batched query to avoid PostgreSQL bind variable limit (32767)
-  const matchingPersons = await fetchPersonsInBatches(incomingIds);
-  
-  const existingMap = new Map(matchingPersons.map(p => [p.externalId, p]));
-  
+  // SMART FETCHING: First get just IDs (lightweight), then fetch full data only for what we need
+  console.log('  📊 Fetching existing IDs from database...');
   const allExistingIds = await prisma.person.findMany({
     where: { isDeleted: false },
-    select: { externalId: true, name: true, nameEnglish: true, gender: true, dateOfBirth: true, isDeleted: true },
+    select: { externalId: true },
   });
+  const existingIdsSet = new Set(allExistingIds.map(p => p.externalId));
+  
+  // Only fetch full records for IDs that exist in the CSV (potential updates)
+  const idsToFetch = rows.filter(r => existingIdsSet.has(r.external_id)).map(r => r.external_id);
+  console.log(`  📦 Fetching ${idsToFetch.length} full records for comparison (only potential updates)`);
+  
+  const matchingPersons = idsToFetch.length > 0 ? await fetchPersonsInBatches(idsToFetch) : [];
+  const existingMap = new Map(matchingPersons.map(p => [p.externalId, p]));
   
   const insertDiffs: DiffItem[] = [];
   const updateDiffs: DiffItem[] = [];
@@ -248,24 +253,31 @@ export async function simulateBulkUpload(rows: BulkUploadRow[]): Promise<Simulat
   
   // Mark removed records as deleted
   // Records not in the new MoH upload should be marked isDeleted = true
-  for (const existing of allExistingIds) {
-    if (!incomingIdsSet.has(existing.externalId) && !existing.isDeleted) {
-      deleteDiffs.push({
-        externalId: existing.externalId,
-        changeType: ChangeType.DELETE,
-        current: {
-          name: existing.name,
-          nameEnglish: existing.nameEnglish,
-          gender: existing.gender,
-          dateOfBirth: existing.dateOfBirth,
-        },
-        incoming: {
-          name: existing.name,
-          nameEnglish: existing.nameEnglish,
-          gender: existing.gender,
-          dateOfBirth: existing.dateOfBirth,
-        },
-      });
+  const idsToDelete = allExistingIds.filter(e => !incomingIdsSet.has(e.externalId)).map(e => e.externalId);
+  
+  if (idsToDelete.length > 0) {
+    console.log(`  📦 Fetching ${idsToDelete.length} records for deletion`);
+    const personsToDelete = await fetchPersonsInBatches(idsToDelete);
+    
+    for (const existing of personsToDelete) {
+      if (!existing.isDeleted) {
+        deleteDiffs.push({
+          externalId: existing.externalId,
+          changeType: ChangeType.DELETE,
+          current: {
+            name: existing.name,
+            nameEnglish: existing.nameEnglish,
+            gender: existing.gender,
+            dateOfBirth: existing.dateOfBirth,
+          },
+          incoming: {
+            name: existing.name,
+            nameEnglish: existing.nameEnglish,
+            gender: existing.gender,
+            dateOfBirth: existing.dateOfBirth,
+          },
+        });
+      }
     }
   }
   
@@ -289,33 +301,86 @@ export async function simulateBulkUpload(rows: BulkUploadRow[]): Promise<Simulat
 export async function applyBulkUpload(
   rows: BulkUploadRow[],
   filename: string,
-  rawFile: Buffer,
+  blobUrl: string,
+  blobMetadata: { size: number; sha256: string; contentType: string; previewLines?: string | null },
   comment: string | null,
-  dateReleased: Date
+  dateReleased: Date,
+  simulationSummary?: { inserts: number; updates: number; deletes: number }
 ): Promise<{ uploadId: string; changeSourceId: string }> {
   const incomingIds = rows.map(r => r.external_id);
   const incomingIdsSet = new Set(incomingIds);
   
   console.log(`  Applying bulk upload with ${rows.length} rows...`);
   
-  // Fetch existing data - use batched query to avoid PostgreSQL bind variable limit (32767)
-  const matchingPersons = await fetchFullPersonsInBatches(incomingIds);
+  // OPTIMIZATION: If simulation detected 0 changes, skip expensive DB queries
+  const hasChanges = !simulationSummary || 
+    simulationSummary.inserts > 0 || 
+    simulationSummary.updates > 0 || 
+    simulationSummary.deletes > 0;
   
-  const existingMap = new Map(matchingPersons.map(p => [p.externalId, p]));
+  if (!hasChanges) {
+    console.log('  ⚡ No changes detected - skipping database operations');
+  }
   
-  const allExistingPersons = await prisma.person.findMany({
-    where: { isDeleted: false },
-    select: { id: true, externalId: true, name: true, nameEnglish: true, gender: true, dateOfBirth: true, dateOfDeath: true, locationOfDeathLat: true, locationOfDeathLng: true, isDeleted: true },
-  });
+  // SMART FETCHING: Only fetch what we actually need
+  let toInsert: BulkUploadRow[] = [];
+  let toUpdate: Array<{ existing: ExistingPerson; row: BulkUploadRow }> = [];
+  let toDelete: ExistingPerson[] = [];
   
-  // Upload file to Blob storage
-  const blobMetadata = await uploadToBlob(rawFile, filename, {
-    contentType: 'text/csv',
-    generatePreview: true,
-    previewLineCount: 20,
-  });
+  if (hasChanges) {
+    // Step 1: Get lightweight ID-only list from database (very fast)
+    console.log('  📊 Fetching existing IDs from database...');
+    const existingIds = await prisma.person.findMany({
+      where: { isDeleted: false },
+      select: { externalId: true }
+    });
+    const existingIdsSet = new Set(existingIds.map(p => p.externalId));
+    
+    // Step 2: Determine which IDs need updating vs inserting
+    const idsToUpdate = rows.filter(r => existingIdsSet.has(r.external_id)).map(r => r.external_id);
+    const idsToDelete = existingIds.filter(e => !incomingIdsSet.has(e.externalId)).map(e => e.externalId);
+    
+    console.log(`  📊 ID analysis: ${idsToUpdate.length} potential updates, ${rows.length - idsToUpdate.length} inserts, ${idsToDelete.length} deletes`);
+    
+    // Step 3: Only fetch full records for IDs that need updating or deleting
+    const idsToFetch = [...idsToUpdate, ...idsToDelete];
+    const personsToCheck = idsToFetch.length > 0 ? await fetchFullPersonsInBatches(idsToFetch) : [];
+    
+    console.log(`  📦 Fetched ${personsToCheck.length} full records (only what's needed)`);
+    
+    const existingMap = new Map(personsToCheck.map(p => [p.externalId, p]));
+    
+    // Step 4: Build update and delete lists
+    for (const row of rows) {
+      const existing = existingMap.get(row.external_id);
+      
+      if (!existing) {
+        // New record - insert it
+        toInsert.push(row);
+      } else {
+        // Existing record - check if it needs updating
+        const incomingDate = row.date_of_birth ? new Date(row.date_of_birth) : null;
+        const existingDate = existing.dateOfBirth ? new Date(existing.dateOfBirth) : null;
+        const isDifferent = 
+          existing.name !== row.name ||
+          existing.nameEnglish !== row.name_english ||
+          existing.gender !== row.gender ||
+          (existingDate?.getTime() !== incomingDate?.getTime()) ||
+          existing.isDeleted;
+        
+        if (isDifferent) {
+          toUpdate.push({ existing, row });
+        }
+      }
+    }
+    
+    // Step 5: Prepare deletions
+    toDelete = personsToCheck.filter(p => 
+      !incomingIdsSet.has(p.externalId) && !p.isDeleted
+    );
+  }
   
-  // Create metadata
+  // Create metadata (blob already uploaded during simulation)
   const changeSource = await prisma.changeSource.create({
     data: {
       type: 'BULK_UPLOAD',
@@ -329,8 +394,8 @@ export async function applyBulkUpload(
       filename,
       comment,
       dateReleased,
-      // Blob storage metadata (replaces rawFile)
-      fileUrl: blobMetadata.url,
+      // Use existing blob URL from simulation
+      fileUrl: blobUrl,
       fileSize: blobMetadata.size,
       fileSha256: blobMetadata.sha256,
       contentType: blobMetadata.contentType,
@@ -338,34 +403,7 @@ export async function applyBulkUpload(
     },
   });
   
-  // Separate inserts and updates
-  const toInsert: BulkUploadRow[] = [];
-  const toUpdate: Array<{ existing: ExistingPerson; row: BulkUploadRow }> = [];
-  
-  for (const row of rows) {
-    const existing = existingMap.get(row.external_id);
-    const incomingDate = row.date_of_birth ? new Date(row.date_of_birth) : null;
-    
-    if (!existing) {
-      // Truly new record - no existing record with this externalId
-      toInsert.push(row);
-    } else {
-      // Record exists (either active or deleted)
-      const existingDate = existing.dateOfBirth ? new Date(existing.dateOfBirth) : null;
-      const isDifferent = 
-        existing.name !== row.name ||
-        existing.nameEnglish !== row.name_english ||
-        existing.gender !== row.gender ||
-        (existingDate?.getTime() !== incomingDate?.getTime()) ||
-        existing.isDeleted; // If deleted, we need to un-delete it
-      
-      if (isDifferent) {
-        toUpdate.push({ existing, row });
-      }
-    }
-  }
-  
-  console.log(`  Bulk operations: ${toInsert.length} inserts, ${toUpdate.length} updates`);
+  console.log(`  ✅ Bulk operations determined: ${toInsert.length} inserts, ${toUpdate.length} updates, ${toDelete.length} deletes`);
   
   // BULK INSERT - Batched to handle large datasets
   if (toInsert.length > 0) {
@@ -452,6 +490,7 @@ export async function applyBulkUpload(
                 nameEnglish: row.name_english,
                 gender: row.gender,
                 dateOfBirth: incomingDate,
+                isDeleted: false, // Restore record if it was deleted
                 currentVersion: nextVersionNumber,
               },
             })
@@ -468,6 +507,7 @@ export async function applyBulkUpload(
             dateOfDeath: existing.dateOfDeath,
             locationOfDeathLat: existing.locationOfDeathLat,
             locationOfDeathLng: existing.locationOfDeathLng,
+            isDeleted: false, // Mark as not deleted in version history
             versionNumber: nextVersionNumber,
             sourceId: changeSource.id,
             changeType: ChangeType.UPDATE,
@@ -495,10 +535,6 @@ export async function applyBulkUpload(
   
   // MARK AS DELETED
   // Records not in the new MoH upload should be marked as deleted
-  const toDelete = allExistingPersons.filter(existing => 
-    !incomingIdsSet.has(existing.externalId) && !existing.isDeleted
-  );
-  
   if (toDelete.length > 0) {
     // Step 1: Get all latest version numbers - batched to avoid bind variable limit
     const deleteIds = toDelete.map(d => d.id);

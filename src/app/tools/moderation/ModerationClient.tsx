@@ -305,23 +305,19 @@ export default function ModerationClient() {
             </div>
 
             <div className="flex justify-end space-x-3">
-              <button
+              <Button
                 onClick={() => setModalState(null)}
-                className="px-4 py-2 text-foreground bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
+                variant="secondary"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={modalState.type === 'approve' ? handleApprove : handleReject}
                 disabled={actionLoading !== null}
-                className={`px-4 py-2 text-white rounded-lg transition-colors ${
-                  modalState.type === 'approve'
-                    ? 'bg-primary hover:bg-primary/90'
-                    : 'bg-destructive hover:bg-destructive/90'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                variant={modalState.type === 'approve' ? 'default' : 'destructive'}
               >
                 {actionLoading ? 'Processing...' : modalState.type === 'approve' ? 'Approve' : 'Reject'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
