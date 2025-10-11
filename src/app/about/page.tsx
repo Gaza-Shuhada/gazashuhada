@@ -126,26 +126,26 @@ export default function AboutPage() {
           {/* Mission Statement */}
           <div className="space-y-6 mt-6">
   
-            <div className="prose prose-lg max-w-none space-y-4 text-muted-foreground">
-              <p>
+            <div className="space-y-6">
+              <p className="text-xl leading-relaxed font-bold text-foreground">
                 Gaza Death Toll aims to memorialise those dead and missing in Gaza since Oct. 7. 
                 It uses the official MoH reports as a foundation and enables the wider Palestinian 
                 community to add information/corrections.
               </p>
               
-              <p>
+              <p className="text-lg leading-relaxed text-muted-foreground">
                 The underlying purpose is to establish a canonical document of the human costs in Gaza, 
                 that can serve as the foundation for international justice, historical accountability, 
                 and collective memory. Similar resources and documents exist for other historical genocides.
               </p>
               
-              <p>
+              <p className="text-lg leading-relaxed text-muted-foreground">
                 Today the Gaza Ministry of Health PDF updates confirmed deaths every 2-3 months through 
                 Telegram as PDF files (which contain only name, gender, date of birth). These are made 
                 available without much alteration by IraqBodyCount and Tech4Palestine.
               </p>
               
-              <p className="font-semibold text-foreground">
+              <p className="text-lg leading-relaxed font-semibold text-foreground">
                 We believe more can be done. Remembering is both an ethical and political act.
               </p>
             </div>

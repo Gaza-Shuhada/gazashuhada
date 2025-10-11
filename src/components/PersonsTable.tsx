@@ -67,7 +67,7 @@ export function PersonsTable() {
       setLoading(true);
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: mode === 'photos' ? '24' : '10', // More items for grid view
+        limit: mode === 'photos' ? '24' : '20', // More items for grid view
       });
       
       if (search.trim()) {
@@ -308,17 +308,17 @@ export function PersonsTable() {
               ) : (
                 data.persons.map((person) => (
                 <TableRow key={person.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium py-6">
                     <Link href={`/person/${person.externalId}`} className="block">
                       {person.externalId}
                     </Link>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-6">
                     <Link href={`/person/${person.externalId}`} className="block">
                       {person.name}
                     </Link>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-6">
                     <Link href={`/person/${person.externalId}`} className="block">
                       <Badge 
                         variant={
@@ -331,12 +331,12 @@ export function PersonsTable() {
                       </Badge>
                     </Link>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-6">
                     <Link href={`/person/${person.externalId}`} className="block">
                       {formatDate(person.dateOfBirth)}
                     </Link>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-6">
                     <Link href={`/person/${person.externalId}`} className="block">
                       {person.dateOfDeath ? (
                         <span className="text-destructive">{formatDate(person.dateOfDeath)}</span>
@@ -345,7 +345,7 @@ export function PersonsTable() {
                       )}
                     </Link>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-6">
                     <Link href={`/person/${person.externalId}`} className="block">
                       {person.locationOfDeathLat && person.locationOfDeathLng ? (
                         <span className="text-sm">
@@ -356,7 +356,7 @@ export function PersonsTable() {
                       )}
                     </Link>
                   </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
+                  <TableCell className="py-6" onClick={(e) => e.stopPropagation()}>
                     {person.photoUrlThumb ? (
                       <a 
                         href={person.photoUrlThumb} 
@@ -378,21 +378,21 @@ export function PersonsTable() {
                       </Link>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-6">
                     <Link href={`/person/${person.externalId}`} className="block">
                       <Badge variant="secondary">
                         v{person.currentVersion}
                       </Badge>
                     </Link>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-6">
                     <Link href={`/person/${person.externalId}`} className="block">
                       <Badge variant={person.isDeleted ? 'destructive' : 'default'}>
                         {person.isDeleted ? 'Yes' : 'No'}
                       </Badge>
                     </Link>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
+                  <TableCell className="text-muted-foreground py-6">
                     <Link href={`/person/${person.externalId}`} className="block">
                       {formatDateTime(person.updatedAt)}
                     </Link>
@@ -429,10 +429,10 @@ export function PersonsTable() {
                       className="object-cover"
                       unoptimized
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                       <div className="absolute bottom-0 left-0 right-0 p-3">
-                        <p className="text-white font-semibold text-sm truncate">{person.name}</p>
-                        <p className="text-white/80 text-xs">{person.externalId}</p>
+                        <p className="text-foreground font-semibold text-sm truncate">{person.name}</p>
+                        <p className="text-foreground/80 text-xs">{person.externalId}</p>
                       </div>
                     </div>
                   </Link>
