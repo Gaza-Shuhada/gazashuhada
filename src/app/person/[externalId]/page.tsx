@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ArrowLeft, Calendar, MapPin, Clock, Database, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { PersonSearch } from '@/components/PersonSearch';
 
 // Dynamically import LocationPicker to avoid SSR issues with Leaflet
 const LocationPicker = dynamic(() => import('@/components/LocationPicker'), {
@@ -171,59 +172,47 @@ export default function PersonDetailPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
+    <div className="max-w-8xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" onClick={() => router.back()}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Database
-          </Button>
-          <Button variant="default" asChild>
+      <div className="relative flex items-center h-16 px-4 sm:px-6 lg:px-8 border-b gap-4">
+        <Button variant="ghost" onClick={() => router.back()}>
+          <ArrowLeft className="w-4 h-4 mr-0 text-accent-foreground" />
+          Back
+        </Button>
+        
+        {/* Centered Search - Absolutely positioned to page center */}
+        <div className="absolute left-1/2 transform -translate-x-1/2">
+          <PersonSearch variant="header" />
+        </div>
+        
+        <div className="flex items-center gap-3 ml-auto">
+          <Button variant="ghost" asChild>
             <Link href={`/contribution/edit/${externalId}`}>
-              <Edit className="w-4 h-4 mr-2" />
+              <Edit className="w-4 h-4 mr-0 text-accent-foreground" />
               Contribute information
             </Link>
           </Button>
-        </div>
-        <div className="flex gap-2">
           {person.isDeleted && (
             <Badge variant="destructive">Deleted</Badge>
           )}
         </div>
       </div>
 
-      {/* Main Person Card */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div>
-              <CardTitle className="text-3xl">{person.name}</CardTitle>
-              {person.nameEnglish && (
-                <CardDescription className="text-lg mt-1">
-                  {person.nameEnglish}
-                </CardDescription>
-              )}
-            </div>
-            {person.photoUrlThumb && (
-              <a
-                href={person.photoUrlOriginal || person.photoUrlThumb}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Image
-                  src={person.photoUrlThumb}
-                  alt={`Photo of ${person.name}`}
-                  width={120}
-                  height={120}
-                  className="w-30 h-30 object-cover rounded-lg border-2 hover:border-primary transition-colors cursor-pointer"
-                  unoptimized
-                />
-              </a>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      {/* Person Name */}
+      <div className="px-4 sm:px-6 lg:px-8 pt-12 pb-10">
+        <h1 className="text-7xl font-bold text-foreground">{person.name}</h1>
+        {person.nameEnglish && (
+          <p className="text-lg text-muted-foreground mt-2">
+            {person.nameEnglish}
+          </p>
+        )}
+      </div>
+
+      {/* Main Person Card and Photo */}
+      <div className="px-4 sm:px-6 lg:px-8 pb-8">
+        <div className="flex gap-6">
+          <Card className="flex-1">
+            <CardContent className="space-y-4 pt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* External ID */}
             <div className="flex items-start gap-3">
@@ -307,15 +296,35 @@ export default function PersonDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Person Photo */}
+      {person.photoUrlThumb && (
+        <a
+          href={person.photoUrlOriginal || person.photoUrlThumb}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-shrink-0"
+        >
+          <Image
+            src={person.photoUrlThumb}
+            alt={`Photo of ${person.name}`}
+            width={400}
+            height={400}
+            className="w-full h-full object-cover rounded-lg border-2 hover:border-primary transition-colors cursor-pointer"
+            style={{ maxWidth: '400px' }}
+            unoptimized
+          />
+        </a>
+      )}
+      </div>
+      </div>
+
       {/* Version History */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Version History</CardTitle>
-          <CardDescription>
+      <div className="px-4 sm:px-6 lg:px-8 pb-8 space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground mb-2">Version History</h2>
+          <p className="text-sm text-muted-foreground mb-6">
             Complete history of changes to this record ({person.versions.length} version{person.versions.length !== 1 ? 's' : ''})
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          </p>
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -381,8 +390,8 @@ export default function PersonDetailPage() {
               </TableBody>
             </Table>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
