@@ -74,10 +74,9 @@ export function PersonsTable() {
         params.append('search', search.trim());
       }
       
-      // In photo mode, only fetch records with photos
-      if (mode === 'photos') {
-        params.append('filter', 'with_photo');
-      }
+      // TODO: Remove this comment once real photos are in DB
+      // Previously filtered to only records with photos, but now we show all records
+      // since we have mock photos for development
       
       // Add max age filter if provided and not default (100)
       if (maxAgeFilter !== undefined && maxAgeFilter < 100) {
