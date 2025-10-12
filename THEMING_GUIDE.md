@@ -5,16 +5,26 @@
 This project uses a modern theming system built on:
 - **shadcn/ui** - Pre-built component library (MANDATORY for all UI)
 - **Tailwind CSS 4** - Utility-first CSS framework
-- **next-themes** - Dark/light mode switching
 - **OKLCH color space** - Modern color system
 - **CSS Custom Properties** - Dynamic theming
 
-### 🌑 Dark Theme is Default
+### 🌑 Dark Theme Only
 
-This project uses a **dark theme as the default** (`:root`). The `.dark` class provides an optional light theme alternative. This decision was made because:
+This project uses a **dark theme exclusively**. There is no light mode or theme switching. This decision was made because:
 - The site is a memorial with a somber, respectful aesthetic
 - Dark backgrounds better showcase the photo grid
 - Aligns with the project's visual identity
+- Provides a consistent experience for all users regardless of system preferences
+
+The theme configuration in `src/app/layout.tsx`:
+```tsx
+<ThemeProvider
+  attribute="class"
+  defaultTheme="dark"
+  enableSystem={false}  // System preferences are ignored
+  disableTransitionOnChange
+>
+```
 
 ## 🚨 Critical Rules
 
@@ -35,7 +45,7 @@ import { Button } from '@/components/ui/button';
 
 ### 2. ALWAYS Use Semantic Color Tokens
 
-**NEVER use raw Tailwind colors like `bg-gray-50` or `text-blue-600`.**
+**NEVER use raw Tailwind colors like `bg-gray-50`, `text-blue-600`, or hardcoded `bg-black`/`text-white`.**
 
 ```tsx
 // ❌ WRONG - Raw colors
@@ -44,10 +54,31 @@ import { Button } from '@/components/ui/button';
   <p className="text-gray-600">Description</p>
 </div>
 
+// ❌ WRONG - Hardcoded dark colors
+<div className="bg-black text-white">
+  <h1>Title</h1>
+</div>
+
 // ✅ CORRECT - Semantic tokens
 <div className="bg-card text-card-foreground border">
   <h1 className="text-primary">Title</h1>
   <p className="text-muted-foreground">Description</p>
+</div>
+```
+
+### 3. NO `dark:` Prefixes Needed
+
+Since we use a single fixed dark theme, **NEVER use `dark:` prefixes** in your code (except in shadcn/ui components).
+
+```tsx
+// ❌ WRONG - Dark mode prefix
+<div className="bg-white dark:bg-gray-900">
+  Content
+</div>
+
+// ✅ CORRECT - Semantic token (automatically dark)
+<div className="bg-card">
+  Content
 </div>
 ```
 
@@ -92,11 +123,11 @@ The project has **23 shadcn components** installed in `src/components/ui/`:
 
 ### Semantic Color Tokens
 
-The theme uses semantic tokens that automatically adapt to light/dark mode:
+The theme uses semantic tokens defined in `src/app/globals.css`:
 
 #### Text Colors
 ```tsx
-text-foreground          // Primary text (black/white)
+text-foreground          // Primary text (almost white)
 text-muted-foreground    // Secondary text (gray)
 text-primary             // Brand/accent text
 text-destructive         // Error/danger text
@@ -106,8 +137,8 @@ text-popover-foreground  // Text in popovers
 
 #### Background Colors
 ```tsx
-bg-background      // Page background
-bg-card            // Card background
+bg-background      // Page background (almost black)
+bg-card            // Card background (dark gray)
 bg-popover         // Popover background
 bg-primary         // Primary brand color
 bg-secondary       // Secondary brand color
@@ -141,69 +172,6 @@ bg-chart-4    // Chart color 4
 bg-chart-5    // Chart color 5
 ```
 
-## 🌓 Dark Mode
-
-The project has built-in dark mode support using `next-themes`.
-
-### How It Works
-
-1. **Theme Provider** wraps the app in `src/app/layout.tsx`
-2. **Theme switcher** component (you can add one if needed)
-3. **Automatic color switching** via CSS variables
-
-### Adding a Theme Toggle
-
-To add a theme toggle button:
-
-```bash
-# Install the theme toggle component
-npx shadcn@latest add dropdown-menu
-```
-
-Then create a theme toggle component:
-
-```tsx
-// src/components/theme-toggle.tsx
-'use client';
-
-import { Moon, Sun } from 'lucide-react';
-import { useTheme } from 'next-themes';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-
-export function ThemeToggle() {
-  const { setTheme } = useTheme();
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon">
-          <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          <span className="sr-only">Toggle theme</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme('light')}>
-          Light
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('dark')}>
-          Dark
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('system')}>
-          System
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-```
-
 ## 🎨 Customizing Colors
 
 ### Where Colors Are Defined
@@ -212,17 +180,12 @@ All theme colors are in `src/app/globals.css`:
 
 ```css
 :root {
-  --background: oklch(1 0 0);           /* White */
-  --foreground: oklch(0.145 0 0);       /* Black */
-  --primary: oklch(0.205 0 0);          /* Dark gray */
-  --destructive: oklch(0.577 0.245 27.325);  /* Red */
+  --background: oklch(0.145 0 0);       /* Almost black */
+  --foreground: oklch(0.985 0 0);       /* Almost white */
+  --card: oklch(0.205 0 0);             /* Dark gray */
+  --primary: oklch(0.922 0 0);          /* Light gray */
+  --destructive: oklch(0.5819 0.1748 27.94);  /* Red */
   /* ... more colors */
-}
-
-.dark {
-  --background: oklch(0.145 0 0);       /* Black */
-  --foreground: oklch(0.985 0 0);       /* White */
-  /* ... dark mode colors */
 }
 ```
 
@@ -236,22 +199,17 @@ To change the brand color (primary):
 
 ```css
 :root {
-  /* Old: Neutral gray */
-  --primary: oklch(0.205 0 0);
+  /* Current: Light gray */
+  --primary: oklch(0.922 0 0);
   
-  /* New: Blue */
-  --primary: oklch(0.5 0.15 250);
-  
-  /* New: Red */
-  --primary: oklch(0.55 0.22 25);
-  
-  /* New: Green */
-  --primary: oklch(0.6 0.15 145);
-}
-
-.dark {
-  /* Also update dark mode variant */
+  /* Example: Blue */
   --primary: oklch(0.7 0.15 250);
+  
+  /* Example: Red */
+  --primary: oklch(0.6 0.22 25);
+  
+  /* Example: Green */
+  --primary: oklch(0.65 0.15 145);
 }
 ```
 
@@ -287,7 +245,7 @@ rounded-lg    // Large rounded (--radius)
 rounded-xl    // Extra large rounded (--radius + 4px)
 ```
 
-Default radius is `0.65rem` (10.4px). To change it:
+Default radius is `0.625rem` (10px). To change it:
 
 ```css
 /* src/app/globals.css */
@@ -441,26 +399,24 @@ import { cn } from '@/lib/utils';
 </Button>
 ```
 
-### 4. Dark Mode Specific Styles
+### 4. Always Use Semantic Tokens
 
-Use the `dark:` prefix for dark mode overrides:
+Since the project uses a fixed dark theme, always use semantic tokens:
 
 ```tsx
-<div className="
-  bg-white 
-  dark:bg-gray-900 
-  text-gray-900 
-  dark:text-white
-">
+// ✅ CORRECT - Semantic tokens
+<div className="bg-card text-card-foreground">
   Content
 </div>
-```
 
-But prefer semantic tokens instead:
+// ❌ AVOID - Hardcoded colors
+<div className="bg-gray-900 text-white">
+  Content
+</div>
 
-```tsx
-<div className="bg-card text-card-foreground">
-  Content (automatically adapts to dark mode)
+// ❌ AVOID - Dark mode prefixes (not needed)
+<div className="dark:bg-gray-900">
+  Content
 </div>
 ```
 
@@ -600,7 +556,6 @@ hover:bg-accent active:scale-95 disabled:opacity-50
 - **shadcn/ui Docs**: https://ui.shadcn.com/docs
 - **Tailwind CSS**: https://tailwindcss.com/docs
 - **OKLCH Color Picker**: https://oklch.com
-- **next-themes**: https://github.com/pacocoursey/next-themes
 - **Project Components**: `/Users/wil/dev/gazashuhada/src/components/ui/`
 
 ## ✅ Contribution Checklist
@@ -608,14 +563,13 @@ hover:bg-accent active:scale-95 disabled:opacity-50
 Before submitting style changes:
 
 - [ ] Used shadcn components (not custom UI)
-- [ ] Used semantic color tokens (not raw colors like `bg-gray-50`)
-- [ ] Tested in both light and dark modes
-- [ ] Responsive design works on mobile/tablet/desktop
+- [ ] Used semantic color tokens (not raw colors like `bg-gray-50` or `text-white`)
+- [ ] Tested on mobile/tablet/desktop (responsive design)
 - [ ] Followed existing component patterns
 - [ ] No inline styles or hardcoded colors
+- [ ] No `dark:` prefixes (not needed - single theme only)
 - [ ] Updated documentation if adding new patterns
 
 ---
 
 **Remember**: If shadcn has it, use it. Always use semantic tokens. Never build custom UI from scratch.
-
