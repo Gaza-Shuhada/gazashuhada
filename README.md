@@ -104,26 +104,13 @@ Create a `.env` file:
 
 ```bash
 # Database
-DATABASE_URL="prisma+postgres://..."
-
-# Clerk Authentication
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_..."
-CLERK_SECRET_KEY="sk_test_..."
-NEXT_PUBLIC_CLERK_SIGN_IN_URL="/sign-in"
-NEXT_PUBLIC_CLERK_SIGN_UP_URL="/sign-up"
-CLERK_WEBHOOK_SECRET="whsec_..."
-
-# Vercel Blob Storage (for photo uploads)
-BLOB_READ_WRITE_TOKEN="vercel_blob_rw_..."
+npm install -g vercel
+vercel link
+vercel env pull
+copy .env.local to .env for prisma
 ```
 
-4. **Set up the database** (development)
-```bash
-npx prisma migrate dev
-npx prisma generate
-```
-
-5. **Run the development server**
+4. **Run the development server**
 ```bash
 npm run dev
 ```
