@@ -113,6 +113,10 @@
       "withPhoto": "مع صورة",
       "deleted": "محذوف"
     },
+    "viewMode": {
+      "photos": "صور",
+      "list": "قائمة"
+    },
     "pagination": {
       "previous": "السابق",
       "next": "التالي",

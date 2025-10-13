@@ -3,16 +3,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Spinner } from '@/components/ui/spinner';
-import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
-import { Search, List, Grid, Download } from 'lucide-react';
+import { List, Grid, Download } from 'lucide-react';
 import { useTranslation, useFormatDate, useFormatNumber } from '@/lib/i18n-context';
+import { PersonSearch } from '@/components/PersonSearch';
 
 interface Person {
   id: string;
@@ -49,34 +48,18 @@ export function PersonsTable() {
   const [initialLoad, setInitialLoad] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'photos'>('photos');
   const [maxAge, setMaxAge] = useState<number>(100);
   const [sliderValue, setSliderValue] = useState<number>(100); // Temporary state for slider visual
   const [downloading, setDownloading] = useState(false);
 
-  // Debounce search input
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery);
-      setCurrentPage(1); // Reset to page 1 when search changes
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  const fetchPersons = useCallback(async (page: number = 1, search: string = '', mode: 'list' | 'photos' = 'list', maxAgeFilter?: number) => {
+  const fetchPersons = useCallback(async (page: number = 1, mode: 'list' | 'photos' = 'list', maxAgeFilter?: number) => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
         page: page.toString(),
         limit: mode === 'photos' ? '24' : '20', // More items for grid view
       });
-      
-      if (search.trim()) {
-        params.append('search', search.trim());
-      }
       
       // TODO: Remove this comment once real photos are in DB
       // Previously filtered to only records with photos, but now we show all records
@@ -104,15 +87,10 @@ export function PersonsTable() {
     }
   }, []);
 
-  // Fetch on mount
+  // Fetch on mount and when viewMode or maxAge changes
   useEffect(() => {
-    fetchPersons(1, '', viewMode, maxAge);
+    fetchPersons(1, viewMode, maxAge);
   }, [fetchPersons, viewMode, maxAge]);
-
-  // Fetch when debounced search changes
-  useEffect(() => {
-    fetchPersons(1, debouncedSearch, viewMode, maxAge);
-  }, [debouncedSearch, fetchPersons, viewMode, maxAge]);
 
 
   const handleDownloadCSV = async () => {
@@ -121,10 +99,6 @@ export function PersonsTable() {
       
       // Build the same query params as the current view
       const params = new URLSearchParams();
-      
-      if (debouncedSearch.trim()) {
-        params.append('search', debouncedSearch.trim());
-      }
       
       if (viewMode === 'photos') {
         params.append('filter', 'with_photo');
@@ -161,115 +135,95 @@ export function PersonsTable() {
 
   if (initialLoad && loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('database.title')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex justify-center py-8">
-            <Spinner />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex justify-center py-8">
+          <Spinner />
+        </div>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('database.title')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
+      <div className="px-4 sm:px-6 lg:px-8 py-8">
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
     );
   }
 
   if (!data) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('database.title')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            {t('database.noResults')}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center py-8 text-muted-foreground">
+          {t('database.noResults')}
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex-1 max-w-sm">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                type="text"
-                placeholder={t('database.searchPlaceholder')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            {searchQuery && (
-              <p className="text-sm text-muted-foreground mt-2">
-                {loading ? t('database.loading') : `${t('database.pagination.total')} ${formatNumber(data?.pagination.total || 0)} ${t('database.pagination.records')}`}
-              </p>
-            )}
-          </div>
-          
-          {/* Age Filter Slider */}
-          <div className="flex items-center gap-3 flex-1 max-w-xs">
-            <label className="text-sm font-medium text-foreground whitespace-nowrap">
-              Max Age: {sliderValue}
-            </label>
-            <Slider
-              value={[sliderValue]}
-              onValueChange={(value) => setSliderValue(value[0])} // Update visual during drag
-              onValueCommit={(value) => setMaxAge(value[0])} // Apply filter when released
-              min={0}
-              max={100}
-              step={1}
-              className="flex-1"
-            />
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <div className="text-sm text-muted-foreground whitespace-nowrap">
-              {t('database.pagination.total')}: <span className="font-medium text-foreground">{formatNumber(data.pagination.total)}</span> {t('database.pagination.records')}
-            </div>
-            <div className="flex gap-1 border rounded-md p-1">
-              <Button
-                variant={viewMode === 'photos' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('photos')}
-                className="gap-2"
-              >
-                <Grid className="h-4 w-4" />
-                Photos
-              </Button>
-              <Button
-                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-                className="gap-2"
-              >
-                <List className="h-4 w-4" />
-                List
-              </Button>
-            </div>
+    <div>
+      {/* Header */}
+      <div className="relative flex items-center h-16 px-4 sm:px-6 lg:px-8 border-t border-b gap-4">
+        {/* Left: Total Records Count */}
+        <div className="text-sm text-muted-foreground whitespace-nowrap">
+          <span className="font-medium text-foreground">{formatNumber(data.pagination.total)}</span> {t('database.pagination.records')}
+        </div>
+        
+        {/* Centered Search - Desktop only */}
+        <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2">
+          <PersonSearch variant="header" />
+        </div>
+        
+        {/* Right: Photos/List Toggle */}
+        <div className="flex items-center gap-3 ml-auto">
+          <div className="flex gap-1 border rounded-md p-1">
+            <Button
+              variant={viewMode === 'photos' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('photos')}
+              className="gap-2"
+            >
+              <Grid className="h-4 w-4" />
+              {t('database.viewMode.photos')}
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+              className="gap-2"
+            >
+              <List className="h-4 w-4" />
+              {t('database.viewMode.list')}
+            </Button>
           </div>
         </div>
-      </CardHeader>
-      <CardContent>
+      </div>
+
+      {/* Age Filter Slider - Commented out for now */}
+      {/* <div className="flex items-center gap-3 px-4 sm:px-6 lg:px-8 py-4 border-b">
+        <label className="text-sm font-medium text-foreground whitespace-nowrap">
+          Max Age: {sliderValue}
+        </label>
+        <Slider
+          value={[sliderValue]}
+          onValueChange={(value) => setSliderValue(value[0])} // Update visual during drag
+          onValueCommit={(value) => setMaxAge(value[0])} // Apply filter when released
+          min={0}
+          max={100}
+          step={1}
+          className="flex-1 max-w-md"
+        />
+      </div> */}
+
+      {/* Mobile Search */}
+      <div className="md:hidden px-4 sm:px-6 lg:px-8 py-4 border-b">
+        <PersonSearch variant="default" />
+      </div>
+
+      <div className="px-4 sm:px-6 lg:px-8 py-6">
         {viewMode === 'list' ? (
           /* List View - Table */
           <div className="rounded-md border">
@@ -459,7 +413,7 @@ export function PersonsTable() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => fetchPersons(currentPage - 1, debouncedSearch, viewMode, maxAge)}
+                  onClick={() => fetchPersons(currentPage - 1, viewMode, maxAge)}
                   disabled={currentPage === 1}
                 >
                   {t('database.pagination.previous')}
@@ -467,7 +421,7 @@ export function PersonsTable() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => fetchPersons(currentPage + 1, debouncedSearch, viewMode, maxAge)}
+                  onClick={() => fetchPersons(currentPage + 1, viewMode, maxAge)}
                   disabled={currentPage === data.pagination.pages}
                 >
                   {t('database.pagination.next')}
@@ -476,7 +430,7 @@ export function PersonsTable() {
             )}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
