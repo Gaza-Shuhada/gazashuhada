@@ -113,6 +113,10 @@
       "withPhoto": "With Photo",
       "deleted": "Deleted"
     },
+    "viewMode": {
+      "photos": "Photos",
+      "list": "List"
+    },
     "pagination": {
       "previous": "Previous",
       "next": "Next",

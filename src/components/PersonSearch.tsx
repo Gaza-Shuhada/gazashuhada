@@ -8,6 +8,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
 import { Search, ArrowRight } from 'lucide-react';
 import { useTranslation, useFormatDate } from '@/lib/i18n-context';
+import { createPortal } from 'react-dom';
 
 interface Person {
   externalId: string;
@@ -26,15 +27,48 @@ export function PersonSearch({ variant = 'default' }: PersonSearchProps) {
   const [results, setResults] = useState<Person[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const router = useRouter();
   const searchRef = useRef<HTMLDivElement>(null);
   const { t, locale } = useTranslation();
   const { formatDate } = useFormatDate();
 
+  // Update dropdown position when it shows or on scroll/resize
+  useEffect(() => {
+    const updatePosition = () => {
+      if (showResults && searchRef.current) {
+        const rect = searchRef.current.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + window.scrollY,
+          left: rect.left + window.scrollX,
+          width: rect.width
+        });
+      }
+    };
+
+    updatePosition();
+
+    if (showResults) {
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
+      return () => {
+        window.removeEventListener('scroll', updatePosition, true);
+        window.removeEventListener('resize', updatePosition);
+      };
+    }
+  }, [showResults]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setShowResults(false);
+      const target = event.target as Node;
+      // Check if click is outside both the search input and the dropdown
+      if (searchRef.current && !searchRef.current.contains(target)) {
+        // Also check if the click is on a dropdown item (which is portaled)
+        const isDropdownClick = (target as Element).closest('[role="button"]') || 
+                                (target as Element).closest('.divide-y');
+        if (!isDropdownClick) {
+          setShowResults(false);
+        }
       }
     };
 
@@ -133,8 +167,15 @@ export function PersonSearch({ variant = 'default' }: PersonSearchProps) {
         </div>
       </div>
 
-      {showResults && results.length > 0 && (
-        <Card className="absolute z-50 w-full mt-2 max-h-96 overflow-y-auto">
+      {typeof window !== 'undefined' && showResults && results.length > 0 && createPortal(
+        <Card 
+          className="fixed z-[9999] mt-2 max-h-96 overflow-y-auto"
+          style={{
+            top: `${dropdownPosition.top + 8}px`,
+            left: `${dropdownPosition.left}px`,
+            width: `${dropdownPosition.width}px`
+          }}
+        >
           <div className="divide-y">
             {results.map((person) => (
               <button
@@ -171,15 +212,24 @@ export function PersonSearch({ variant = 'default' }: PersonSearchProps) {
               </button>
             ))}
           </div>
-        </Card>
+        </Card>,
+        document.body
       )}
 
-      {showResults && query.trim().length >= 2 && results.length === 0 && !isLoading && (
-        <Card className="absolute z-50 w-full mt-2">
+      {typeof window !== 'undefined' && showResults && query.trim().length >= 2 && results.length === 0 && !isLoading && createPortal(
+        <Card 
+          className="fixed z-[9999] mt-2"
+          style={{
+            top: `${dropdownPosition.top + 8}px`,
+            left: `${dropdownPosition.left}px`,
+            width: `${dropdownPosition.width}px`
+          }}
+        >
           <div className="px-4 py-3 text-sm text-muted-foreground text-center">
             {t('search.noResults')}
           </div>
-        </Card>
+        </Card>,
+        document.body
       )}
     </div>
   );
