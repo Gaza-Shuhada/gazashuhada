@@ -25,6 +25,40 @@
     "teamTitle": "Advisory Team",
     "teamSubtitle": "A diverse team committed to preserving the memory of every life lost",
     "faqTitle": "Frequently Asked Questions",
+    "team": {
+      "dima": {
+        "title": "Journalist and filmmaker",
+        "description": "Manager of the Marie Colvin Journalists' Network (MCJN) | Media Trainer & Consultant"
+      },
+      "joshua": {
+        "title": "International lawyer & Legal academic",
+        "description": "International lawyer with expertise in law of armed conflict and international human rights"
+      },
+      "randa": {
+        "title": "Visual artist",
+        "description": "Artist focused on feminist work through photography, video, installation, and performance"
+      },
+      "jens": {
+        "title": "Entrepreneur & Builder",
+        "description": "Building technology solutions that serve humanitarian causes and social justice"
+      },
+      "wil": {
+        "title": "Product leader",
+        "description": "20 years of experience in product design and 8 years as a founder of UK tech startup"
+      },
+      "heidi": {
+        "title": "Geo data & Activism",
+        "description": "Open-source GIS for NGOs, humanitarian meets tech, making data fun & interactive"
+      },
+      "imran": {
+        "title": "Technical Lead",
+        "description": "From product to execution. Full-Stack Engineer, Technical Lead, Scalable Systems Architect"
+      },
+      "yousef": {
+        "title": "Director of video",
+        "description": "Award winning director. He has shot for e.g. Guardian, BBC, Monocle, WIRED, and Vice"
+      }
+    },
     "faq": {
       "involved": {
         "q": "Who is involved in this project?",

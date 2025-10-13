@@ -12,8 +12,7 @@ import { useTranslation } from '@/lib/i18n-context';
 
 type Person = {
   name: string;
-  title: string;
-  description: string;
+  key: string;
   link: string;
   photo?: string;
 }
@@ -21,57 +20,49 @@ type Person = {
 const people: Person[] = [
   {
     name: 'Dima Hamdan',
-    title: 'Journalist and filmmaker',
-    description: 'Manager of the Marie Colvin Journalists\' Network (MCJN) | Media Trainer & Consultant',
+    key: 'dima',
     link: 'https://www.linkedin.com/in/dima-hamdan-9654b53/',
     photo: 'dima.jpg',
   },
   {
     name: 'Joshua Andresen',
-    title: 'International lawyer & Legal academic',
-    description: 'International lawyer with expertise in law of armed conflict and international human rights',
+    key: 'joshua',
     link: 'https://www.linkedin.com/in/joshua-andresen-690907262/',
     photo: 'joshua.jpg',
   },
   {
     name: 'Randa Mirza',
-    title: 'Visual artist',
-    description: 'Artist focused on feminist work through photography, video, installation, and performance',
+    key: 'randa',
     link: 'http://www.randamirza.com/',
     photo: 'randa.jpg',
   },
   {
     name: 'Jens Munch',
-    title: 'Entrepreneur & Builder',
-    description: 'Building technology solutions that serve humanitarian causes and social justice',
+    key: 'jens',
     link: 'https://www.jensmunch.com/',
     photo: 'jens.jpg',
   },
   {
     name: 'Wil Grace',
-    title: 'Product leader',
-    description: '20 years of experience in product design and 8 years as a founder of UK tech startup',
+    key: 'wil',
     link: 'https://www.linkedin.com/in/wilgrace/',
     photo: 'wil.jpg',
   },
   {
     name: 'Heidi El-Hosaini',
-    title: 'Geo data & Activism',
-    description: 'Open-source GIS for NGOs, humanitarian meets tech, making data fun & interactive',
+    key: 'heidi',
     link: 'https://www.instagram.com/he.idi.eh/?hl=en',
     photo: 'heidi.jpg',
   },
   {
     name: 'Imran Sulemanji',
-    title: 'Technical Lead',
-    description: 'From product to execution. Full-Stack Engineer, Technical Lead, Scalable Systems Architect',
+    key: 'imran',
     link: 'https://www.linkedin.com/in/imransulemanji/',
     photo: 'imran.jpg',
   },
   {
     name: 'Yousef Eldin',
-    title: 'Director of video',
-    description: 'Award winning director. He has shot for e.g. Guardian, BBC, Monocle, WIRED, and Vice',
+    key: 'yousef',
     link: 'http://yousefeldin.com/info/',
     photo: 'yousef.jpg',
   },
