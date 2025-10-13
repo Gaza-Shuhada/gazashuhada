@@ -7,6 +7,8 @@ import { Card } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
 import { Search, ArrowRight } from 'lucide-react';
+import { useTranslation, useFormatDate } from '@/lib/i18n-context';
+import { createPortal } from 'react-dom';
 
 interface Person {
   externalId: string;
@@ -25,13 +27,48 @@ export function PersonSearch({ variant = 'default' }: PersonSearchProps) {
   const [results, setResults] = useState<Person[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const router = useRouter();
   const searchRef = useRef<HTMLDivElement>(null);
+  const { t, locale } = useTranslation();
+  const { formatDate } = useFormatDate();
+
+  // Update dropdown position when it shows or on scroll/resize
+  useEffect(() => {
+    const updatePosition = () => {
+      if (showResults && searchRef.current) {
+        const rect = searchRef.current.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + window.scrollY,
+          left: rect.left + window.scrollX,
+          width: rect.width
+        });
+      }
+    };
+
+    updatePosition();
+
+    if (showResults) {
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
+      return () => {
+        window.removeEventListener('scroll', updatePosition, true);
+        window.removeEventListener('resize', updatePosition);
+      };
+    }
+  }, [showResults]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setShowResults(false);
+      const target = event.target as Node;
+      // Check if click is outside both the search input and the dropdown
+      if (searchRef.current && !searchRef.current.contains(target)) {
+        // Also check if the click is on a dropdown item (which is portaled)
+        const isDropdownClick = (target as Element).closest('[role="button"]') || 
+                                (target as Element).closest('.divide-y');
+        if (!isDropdownClick) {
+          setShowResults(false);
+        }
       }
     };
 
@@ -73,16 +110,7 @@ export function PersonSearch({ variant = 'default' }: PersonSearchProps) {
   const handleSelectPerson = (externalId: string) => {
     setShowResults(false);
     setQuery('');
-    router.push(`/person/${externalId}`);
-  };
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return '';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    router.push(`/${locale}/person/${externalId}`);
   };
 
   const isHeaderVariant = variant === 'header';
@@ -96,7 +124,7 @@ export function PersonSearch({ variant = 'default' }: PersonSearchProps) {
         
         <Input
           type="text"
-          placeholder="Search by name or ID"
+          placeholder={t('search.placeholder')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => {
@@ -139,8 +167,15 @@ export function PersonSearch({ variant = 'default' }: PersonSearchProps) {
         </div>
       </div>
 
-      {showResults && results.length > 0 && (
-        <Card className="absolute z-50 w-full mt-2 max-h-96 overflow-y-auto">
+      {typeof window !== 'undefined' && showResults && results.length > 0 && createPortal(
+        <Card 
+          className="fixed z-[9999] mt-2 max-h-96 overflow-y-auto"
+          style={{
+            top: `${dropdownPosition.top + 8}px`,
+            left: `${dropdownPosition.left}px`,
+            width: `${dropdownPosition.width}px`
+          }}
+        >
           <div className="divide-y">
             {results.map((person) => (
               <button
@@ -148,11 +183,24 @@ export function PersonSearch({ variant = 'default' }: PersonSearchProps) {
                 onClick={() => handleSelectPerson(person.externalId)}
                 className="w-full text-left px-4 py-3 hover:bg-muted transition-colors"
               >
-                <div className="font-large text-xl">{person.name}</div>
-                {person.nameEnglish && (
-                  <div className="text-xl text-muted-foreground">{person.nameEnglish}</div>
+                {locale === 'ar' ? (
+                  <>
+                    <div className="font-large text-xl">{person.name}</div>
+                    {person.nameEnglish && (
+                      <div className="text-md text-muted-foreground">{person.nameEnglish}</div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {person.nameEnglish && (
+                      <div className="font-large text-xl">{person.nameEnglish}</div>
+                    )}
+                    <div className={`text-xl ${person.nameEnglish ? 'text-muted-foreground' : ''}`}>
+                      {person.name}
+                    </div>
+                  </>
                 )}
-                <div className="text-sm text-muted-foreground mt-1 flex items-center gap-3">
+                <div className="text-sm text-muted-foreground mt-1 flex items-center gap-3 force-ltr">
                   <span>ID: {person.externalId}</span>
                   {person.dateOfBirth && (
                     <span>Born: {formatDate(person.dateOfBirth)}</span>
@@ -164,15 +212,24 @@ export function PersonSearch({ variant = 'default' }: PersonSearchProps) {
               </button>
             ))}
           </div>
-        </Card>
+        </Card>,
+        document.body
       )}
 
-      {showResults && query.trim().length >= 2 && results.length === 0 && !isLoading && (
-        <Card className="absolute z-50 w-full mt-2">
+      {typeof window !== 'undefined' && showResults && query.trim().length >= 2 && results.length === 0 && !isLoading && createPortal(
+        <Card 
+          className="fixed z-[9999] mt-2"
+          style={{
+            top: `${dropdownPosition.top + 8}px`,
+            left: `${dropdownPosition.left}px`,
+            width: `${dropdownPosition.width}px`
+          }}
+        >
           <div className="px-4 py-3 text-sm text-muted-foreground text-center">
-            No results found
+            {t('search.noResults')}
           </div>
-        </Card>
+        </Card>,
+        document.body
       )}
     </div>
   );

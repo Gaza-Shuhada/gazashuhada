@@ -97,6 +97,24 @@ export async function GET(
       );
     }
 
+    // Apply mock photos if no photo exists (same as list API)
+    // Generate array of 50 image paths: /people/person1.webp through person50.webp
+    const mockPhotos = Array.from({ length: 50 }, (_, i) => `/people/person${i + 1}.webp`);
+
+    // Get person's index from list query to assign consistent mock photo
+    if (!person.photoUrlThumb) {
+      const listResult = await prisma.person.findMany({
+        where: { isDeleted: false },
+        select: { id: true },
+        orderBy: { updatedAt: 'desc' },
+        take: 100, // Check first 100 to find this person's position
+      });
+      const personIndex = listResult.findIndex(p => p.id === person.id);
+      if (personIndex !== -1) {
+        person.photoUrlThumb = mockPhotos[personIndex % mockPhotos.length];
+      }
+    }
+
     // If full history is requested, return complete person data including versions
     // (This is used for admin/staff views)
     if (includeHistory) {

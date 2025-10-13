@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useFormatNumber } from '@/lib/i18n-context';
 
 interface AnimatedCounterProps {
   end: number;
@@ -9,6 +10,7 @@ interface AnimatedCounterProps {
 
 export function AnimatedCounter({ end, duration = 2000 }: AnimatedCounterProps) {
   const [count, setCount] = useState(0);
+  const { formatNumber } = useFormatNumber();
 
   useEffect(() => {
     let startTime: number;
@@ -40,6 +42,6 @@ export function AnimatedCounter({ end, duration = 2000 }: AnimatedCounterProps) 
     };
   }, [end, duration]);
 
-  return <strong className="tabular-nums">{count.toLocaleString()}</strong>;
+  return <strong className="tabular-nums">{formatNumber(count)}</strong>;
 }
 

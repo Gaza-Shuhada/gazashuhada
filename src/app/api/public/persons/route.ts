@@ -108,20 +108,9 @@ export async function GET(request: NextRequest) {
     ]);
 
     // TODO: Remove mock photos once real photos are in the database
-    // Mock photos for development - loops through images in /public/people
-    const mockPhotos = [
-      '/people/anas.webp',
-      '/people/faten.webp',
-      '/people/hind.webp',
-      '/people/ismael.webp',
-      '/people/khaled.webp',
-      '/people/lana.webp',
-      '/people/omar.webp',
-      '/people/rakan.webp',
-      '/people/sara.webp',
-      '/people/suleiman.webp',
-      '/people/yaqeen.webp',
-    ];
+    // Mock photos for development - using processed images from /public/people_new
+    // Generate array of 50 image paths: /people_new/person1.webp through person50.webp
+    const mockPhotos = Array.from({ length: 50 }, (_, i) => `/people/person${i + 1}.webp`);
     
     const personsWithMockPhotos = persons.map((person, index) => ({
       ...person,
