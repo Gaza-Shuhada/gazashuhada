@@ -12,6 +12,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Search, List, Grid, Download } from 'lucide-react';
+import { useTranslation, useFormatDate, useFormatNumber } from '@/lib/i18n-context';
 
 interface Person {
   id: string;
@@ -40,6 +41,9 @@ interface PersonsData {
 }
 
 export function PersonsTable() {
+  const { t, locale } = useTranslation();
+  const { formatDate } = useFormatDate();
+  const { formatNumber } = useFormatNumber();
   const [data, setData] = useState<PersonsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
@@ -110,13 +114,6 @@ export function PersonsTable() {
     fetchPersons(1, debouncedSearch, viewMode, maxAge);
   }, [debouncedSearch, fetchPersons, viewMode, maxAge]);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
-
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
-  };
 
   const handleDownloadCSV = async () => {
     try {
@@ -166,7 +163,7 @@ export function PersonsTable() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Database Records</CardTitle>
+          <CardTitle>{t('database.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex justify-center py-8">
@@ -181,7 +178,7 @@ export function PersonsTable() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Database Records</CardTitle>
+          <CardTitle>{t('database.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <Alert variant="destructive">
@@ -196,11 +193,11 @@ export function PersonsTable() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Database Records</CardTitle>
+          <CardTitle>{t('database.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-muted-foreground">
-            No records found. Upload some data to get started.
+            {t('database.noResults')}
           </div>
         </CardContent>
       </Card>
@@ -216,7 +213,7 @@ export function PersonsTable() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 type="text"
-                placeholder="Search by name, external ID..."
+                placeholder={t('database.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -224,7 +221,7 @@ export function PersonsTable() {
             </div>
             {searchQuery && (
               <p className="text-sm text-muted-foreground mt-2">
-                {loading ? 'Searching...' : `Found ${data?.pagination.total || 0} result${data?.pagination.total === 1 ? '' : 's'}`}
+                {loading ? t('database.loading') : `${t('database.pagination.total')} ${formatNumber(data?.pagination.total || 0)} ${t('database.pagination.records')}`}
               </p>
             )}
           </div>
@@ -247,7 +244,7 @@ export function PersonsTable() {
           
           <div className="flex items-center gap-4">
             <div className="text-sm text-muted-foreground whitespace-nowrap">
-              Total: <span className="font-medium text-foreground">{data.pagination.total.toLocaleString()}</span> records
+              {t('database.pagination.total')}: <span className="font-medium text-foreground">{formatNumber(data.pagination.total)}</span> {t('database.pagination.records')}
             </div>
             <div className="flex gap-1 border rounded-md p-1">
               <Button
@@ -279,15 +276,15 @@ export function PersonsTable() {
             <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>National ID</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Gender</TableHead>
-                <TableHead>Date of Birth</TableHead>
-                <TableHead>Date of Death</TableHead>
+                <TableHead>{t('database.columns.externalId')}</TableHead>
+                <TableHead>{t('database.columns.name')}</TableHead>
+                <TableHead>{t('database.columns.gender')}</TableHead>
+                <TableHead>{t('database.columns.dateOfBirth')}</TableHead>
+                <TableHead>{t('database.columns.dateOfDeath')}</TableHead>
                 <TableHead>Location</TableHead>
-                <TableHead>Photo</TableHead>
+                <TableHead>{t('database.columns.photo')}</TableHead>
                 <TableHead>Version</TableHead>
-                <TableHead>Deleted</TableHead>
+                <TableHead>{t('database.columns.deleted')}</TableHead>
                 <TableHead>Last Updated</TableHead>
               </TableRow>
             </TableHeader>
@@ -301,24 +298,24 @@ export function PersonsTable() {
               ) : data.persons.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={10} className="h-32 text-center text-muted-foreground">
-                    No records found {searchQuery ? 'matching your search' : ''}.
+                    {t('database.noResults')}
                   </TableCell>
                 </TableRow>
               ) : (
                 data.persons.map((person) => (
                 <TableRow key={person.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <TableCell className="font-medium py-6">
-                    <Link href={`/person/${person.externalId}`} className="block">
+                  <TableCell className="font-medium py-6 force-ltr">
+                    <Link href={`/${locale}/person/${person.externalId}`} className="block">
                       {person.externalId}
                     </Link>
                   </TableCell>
                   <TableCell className="py-6">
-                    <Link href={`/person/${person.externalId}`} className="block">
+                    <Link href={`/${locale}/person/${person.externalId}`} className="block">
                       {person.name}
                     </Link>
                   </TableCell>
                   <TableCell className="py-6">
-                    <Link href={`/person/${person.externalId}`} className="block">
+                    <Link href={`/${locale}/person/${person.externalId}`} className="block">
                       <Badge 
                         variant={
                           person.gender === 'MALE' ? 'default' :
@@ -326,17 +323,17 @@ export function PersonsTable() {
                           'outline'
                         }
                       >
-                        {person.gender}
+                        {t(`person.gender.${person.gender}`)}
                       </Badge>
                     </Link>
                   </TableCell>
-                  <TableCell className="py-6">
-                    <Link href={`/person/${person.externalId}`} className="block">
+                  <TableCell className="py-6 force-ltr">
+                    <Link href={`/${locale}/person/${person.externalId}`} className="block">
                       {formatDate(person.dateOfBirth)}
                     </Link>
                   </TableCell>
-                  <TableCell className="py-6">
-                    <Link href={`/person/${person.externalId}`} className="block">
+                  <TableCell className="py-6 force-ltr">
+                    <Link href={`/${locale}/person/${person.externalId}`} className="block">
                       {person.dateOfDeath ? (
                         <span className="text-destructive">{formatDate(person.dateOfDeath)}</span>
                       ) : (
@@ -344,8 +341,8 @@ export function PersonsTable() {
                       )}
                     </Link>
                   </TableCell>
-                  <TableCell className="py-6">
-                    <Link href={`/person/${person.externalId}`} className="block">
+                  <TableCell className="py-6 force-ltr">
+                    <Link href={`/${locale}/person/${person.externalId}`} className="block">
                       {person.locationOfDeathLat && person.locationOfDeathLng ? (
                         <span className="text-sm">
                           {person.locationOfDeathLat.toFixed(4)}, {person.locationOfDeathLng.toFixed(4)}
@@ -372,28 +369,28 @@ export function PersonsTable() {
                         />
                       </a>
                     ) : (
-                      <Link href={`/person/${person.externalId}`} className="block">
+                      <Link href={`/${locale}/person/${person.externalId}`} className="block">
                         <span className="text-muted-foreground">—</span>
                       </Link>
                     )}
                   </TableCell>
                   <TableCell className="py-6">
-                    <Link href={`/person/${person.externalId}`} className="block">
+                    <Link href={`/${locale}/person/${person.externalId}`} className="block">
                       <Badge variant="secondary">
                         v{person.currentVersion}
                       </Badge>
                     </Link>
                   </TableCell>
                   <TableCell className="py-6">
-                    <Link href={`/person/${person.externalId}`} className="block">
+                    <Link href={`/${locale}/person/${person.externalId}`} className="block">
                       <Badge variant={person.isDeleted ? 'destructive' : 'default'}>
-                        {person.isDeleted ? 'Yes' : 'No'}
+                        {person.isDeleted ? t('person.versionHistory.yes') : t('person.versionHistory.no')}
                       </Badge>
                     </Link>
                   </TableCell>
-                  <TableCell className="text-muted-foreground py-6">
-                    <Link href={`/person/${person.externalId}`} className="block">
-                      {formatDateTime(person.updatedAt)}
+                  <TableCell className="text-muted-foreground py-6 force-ltr">
+                    <Link href={`/${locale}/person/${person.externalId}`} className="block">
+                      {formatDate(person.updatedAt)}
                     </Link>
                   </TableCell>
                 </TableRow>
@@ -411,14 +408,14 @@ export function PersonsTable() {
               </div>
             ) : data.persons.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">
-                No records with photos found {searchQuery ? 'matching your search' : ''}.
+                {t('database.noResults')}
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 {data.persons.map((person) => (
                   <Link 
                     key={person.id} 
-                    href={`/person/${person.externalId}`}
+                    href={`/${locale}/person/${person.externalId}`}
                     className="group relative aspect-square overflow-hidden rounded-lg border-2 border-transparent hover:border-primary transition-all"
                   >
                     <Image
@@ -445,8 +442,8 @@ export function PersonsTable() {
         <div className="flex items-center justify-between mt-6">
           <div className="flex items-center gap-4">
             {data.pagination.pages > 1 && (
-              <div className="text-sm text-muted-foreground">
-                Showing page {data.pagination.page} of {data.pagination.pages}
+              <div className="text-sm text-muted-foreground force-ltr">
+                {t('database.pagination.page')} {data.pagination.page} {t('database.pagination.of')} {data.pagination.pages}
               </div>
             )}
           </div>
@@ -460,7 +457,7 @@ export function PersonsTable() {
               className="gap-2"
             >
               <Download className="h-4 w-4" />
-              {downloading ? 'Downloading...' : 'Download CSV'}
+              {downloading ? t('common.loading') : 'Download CSV'}
             </Button>
             
             {data.pagination.pages > 1 && (
@@ -471,7 +468,7 @@ export function PersonsTable() {
                   onClick={() => fetchPersons(currentPage - 1, debouncedSearch, viewMode, maxAge)}
                   disabled={currentPage === 1}
                 >
-                  Previous
+                  {t('database.pagination.previous')}
                 </Button>
                 <Button
                   variant="outline"
@@ -479,7 +476,7 @@ export function PersonsTable() {
                   onClick={() => fetchPersons(currentPage + 1, debouncedSearch, viewMode, maxAge)}
                   disabled={currentPage === data.pagination.pages}
                 >
-                  Next
+                  {t('database.pagination.next')}
                 </Button>
               </>
             )}

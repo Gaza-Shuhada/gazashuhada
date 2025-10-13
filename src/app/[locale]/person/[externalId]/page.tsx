@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -13,12 +13,13 @@ import { ArrowLeft, Calendar, MapPin, Clock, Database, Edit } from 'lucide-react
 import Link from 'next/link';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PersonSearch } from '@/components/PersonSearch';
+import { useTranslation, useFormatDate } from '@/lib/i18n-context';
 
 // Dynamically import LocationPicker to avoid SSR issues with Leaflet
 const LocationPicker = dynamic(() => import('@/components/LocationPicker'), {
   ssr: false,
   loading: () => <div className="h-96 w-full bg-muted rounded-md flex items-center justify-center">
-    <p className="text-muted-foreground">Loading map...</p>
+    <p className="text-muted-foreground">{/* Loading map... */}</p>
   </div>
 });
 
@@ -78,6 +79,8 @@ export default function PersonDetailPage() {
   const params = useParams();
   const router = useRouter();
   const externalId = params.externalId as string;
+  const { t, locale } = useTranslation();
+  const { formatDate, formatDateTime } = useFormatDate();
 
   const [person, setPerson] = useState<Person | null>(null);
   const [loading, setLoading] = useState(true);
@@ -106,33 +109,17 @@ export default function PersonDetailPage() {
     fetchPerson();
   }, [externalId]);
 
-  const formatDate = (date: string | null) => {
-    if (!date) return '—';
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-  const formatDateTime = (date: string) => {
-    return new Date(date).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
   const getChangeTypeBadge = (changeType: string) => {
+    const type = changeType as 'INSERT' | 'UPDATE' | 'DELETE';
+    const label = t(`person.versionHistory.changeTypes.${type}`);
+    
     switch (changeType) {
       case 'INSERT':
-        return <Badge variant="default">Insert</Badge>;
+        return <Badge variant="default">{label}</Badge>;
       case 'UPDATE':
-        return <Badge variant="secondary">Update</Badge>;
+        return <Badge variant="secondary">{label}</Badge>;
       case 'DELETE':
-        return <Badge variant="destructive">Delete</Badge>;
+        return <Badge variant="destructive">{label}</Badge>;
       default:
         return <Badge variant="outline">{changeType}</Badge>;
     }
@@ -140,9 +127,9 @@ export default function PersonDetailPage() {
 
   const getSourceBadge = (source: PersonVersion['source']) => {
     if (source.type === 'BULK_UPLOAD') {
-      return <Badge variant="default">MoH Bulk Upload</Badge>;
+      return <Badge variant="default">{t('person.versionHistory.sources.BULK_UPLOAD')}</Badge>;
     } else if (source.type === 'COMMUNITY_SUBMISSION') {
-      return <Badge variant="secondary">Community Submission</Badge>;
+      return <Badge variant="secondary">{t('person.versionHistory.sources.COMMUNITY_SUBMISSION')}</Badge>;
     }
     return <Badge variant="outline">{source.type}</Badge>;
   };
@@ -160,11 +147,11 @@ export default function PersonDetailPage() {
       <div className="container mx-auto py-8">
         <Button variant="ghost" onClick={() => router.back()} className="mb-4">
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
+          {t('person.back')}
         </Button>
         <Alert variant="destructive">
           <AlertDescription>
-            {error || 'Person not found'}
+            {error || t('person.fields.externalId')}
           </AlertDescription>
         </Alert>
       </div>
@@ -177,7 +164,7 @@ export default function PersonDetailPage() {
       <div className="relative flex items-center h-16 px-4 sm:px-6 lg:px-8 border-b gap-4">
         <Button variant="ghost" onClick={() => router.back()}>
           <ArrowLeft className="w-4 h-4 mr-0 text-accent-foreground" />
-          Back
+          {t('person.back')}
         </Button>
         
         {/* Centered Search - Absolutely positioned to page center */}
@@ -187,24 +174,37 @@ export default function PersonDetailPage() {
         
         <div className="flex items-center gap-3 ml-auto">
           <Button variant="ghost" asChild>
-            <Link href={`/contribution/edit/${externalId}`}>
+            <Link href={`/${locale}/contribution/edit/${externalId}`}>
               <Edit className="w-4 h-4 mr-0 text-accent-foreground" />
-              Contribute information
+              {t('person.contribute')}
             </Link>
           </Button>
           {person.isDeleted && (
-            <Badge variant="destructive">Deleted</Badge>
+            <Badge variant="destructive">{t('person.deleted')}</Badge>
           )}
         </div>
       </div>
 
       {/* Person Name */}
       <div className="px-4 sm:px-6 lg:px-8 pt-12 pb-10">
-        <h1 className="text-7xl font-bold text-foreground">{person.name}</h1>
-        {person.nameEnglish && (
-          <p className="text-lg text-muted-foreground mt-2">
-            {person.nameEnglish}
-          </p>
+        {locale === 'ar' ? (
+          <>
+            <h1 className="text-7xl font-bold text-foreground">{person.name}</h1>
+            {person.nameEnglish && (
+              <p className="text-lg text-muted-foreground mt-2">
+                {person.nameEnglish}
+              </p>
+            )}
+          </>
+        ) : (
+          <>
+            {person.nameEnglish && (
+              <h1 className="text-7xl font-bold text-foreground">{person.nameEnglish}</h1>
+            )}
+            <p className={`text-${person.nameEnglish ? 'lg' : '7xl'} ${person.nameEnglish ? 'text-muted-foreground mt-2' : 'font-bold text-foreground'}`}>
+              {person.name}
+            </p>
+          </>
         )}
       </div>
 
@@ -218,8 +218,8 @@ export default function PersonDetailPage() {
             <div className="flex items-start gap-3">
               <Database className="w-5 h-5 text-muted-foreground mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-muted-foreground">External ID</p>
-                <p className="text-lg font-mono">{person.externalId}</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('person.fields.externalId')}</p>
+                <p className="text-lg font-mono force-ltr">{person.externalId}</p>
               </div>
             </div>
 
@@ -227,7 +227,7 @@ export default function PersonDetailPage() {
             <div className="flex items-start gap-3">
               <div className="w-5 h-5 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Gender</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('person.fields.gender')}</p>
                 <Badge
                   variant={
                     person.gender === 'MALE' ? 'default' :
@@ -236,7 +236,7 @@ export default function PersonDetailPage() {
                   }
                   className="mt-1"
                 >
-                  {person.gender}
+                  {t(`person.gender.${person.gender}`)}
                 </Badge>
               </div>
             </div>
@@ -245,8 +245,8 @@ export default function PersonDetailPage() {
             <div className="flex items-start gap-3">
               <Calendar className="w-5 h-5 text-muted-foreground mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Date of Birth</p>
-                <p className="text-lg">{formatDate(person.dateOfBirth)}</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('person.fields.dateOfBirth')}</p>
+                <p className="text-lg force-ltr">{formatDate(person.dateOfBirth)}</p>
               </div>
             </div>
 
@@ -254,8 +254,8 @@ export default function PersonDetailPage() {
             <div className="flex items-start gap-3">
               <Calendar className="w-5 h-5 text-destructive mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Date of Death</p>
-                <p className="text-lg text-destructive">
+                <p className="text-sm font-medium text-muted-foreground">{t('person.fields.dateOfDeath')}</p>
+                <p className="text-lg text-destructive force-ltr">
                   {formatDate(person.dateOfDeath)}
                 </p>
               </div>
@@ -266,7 +266,7 @@ export default function PersonDetailPage() {
               <div className="md:col-span-2">
                 <div className="flex items-center gap-2 mb-2">
                   <MapPin className="w-5 h-5 text-muted-foreground" />
-                  <p className="text-sm font-medium text-muted-foreground">Location of Death</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('person.fields.location')}</p>
                 </div>
                 <LocationPicker
                   initialLat={person.locationOfDeathLat}
@@ -280,16 +280,16 @@ export default function PersonDetailPage() {
             <div className="flex items-start gap-3">
               <Clock className="w-5 h-5 text-muted-foreground mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Created</p>
-                <p className="text-sm">{formatDateTime(person.createdAt)}</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('person.fields.created')}</p>
+                <p className="text-sm force-ltr">{formatDateTime(person.createdAt)}</p>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
               <Clock className="w-5 h-5 text-muted-foreground mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Last Updated</p>
-                <p className="text-sm">{formatDateTime(person.updatedAt)}</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('person.fields.lastUpdated')}</p>
+                <p className="text-sm force-ltr">{formatDateTime(person.updatedAt)}</p>
               </div>
             </div>
           </div>
@@ -321,21 +321,21 @@ export default function PersonDetailPage() {
       {/* Version History */}
       <div className="px-4 sm:px-6 lg:px-8 pb-8 space-y-6">
         <div>
-          <h2 className="text-2xl font-bold text-foreground mb-2">Version History</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-2">{t('person.versionHistory.title')}</h2>
           <p className="text-sm text-muted-foreground mb-6">
-            Complete history of changes to this record ({person.versions.length} version{person.versions.length !== 1 ? 's' : ''})
+            {t('person.versionHistory.subtitle')} ({person.versions.length} {person.versions.length !== 1 ? t('person.versionHistory.versions') : t('person.versionHistory.version')})
           </p>
           <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Version</TableHead>
-                  <TableHead>Change Type</TableHead>
-                  <TableHead>Source</TableHead>
-                  <TableHead>Deleted</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Date of Death</TableHead>
-                  <TableHead>Timestamp</TableHead>
+                  <TableHead>{t('person.versionHistory.columns.version')}</TableHead>
+                  <TableHead>{t('person.versionHistory.columns.changeType')}</TableHead>
+                  <TableHead>{t('person.versionHistory.columns.source')}</TableHead>
+                  <TableHead>{t('person.versionHistory.columns.deleted')}</TableHead>
+                  <TableHead>{t('person.versionHistory.columns.name')}</TableHead>
+                  <TableHead>{t('person.versionHistory.columns.dateOfDeath')}</TableHead>
+                  <TableHead>{t('person.versionHistory.columns.timestamp')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -354,7 +354,7 @@ export default function PersonDetailPage() {
                           {version.source.description}
                         </p>
                         {version.source.bulkUpload && (
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-muted-foreground force-ltr">
                             {version.source.bulkUpload.comment} ({formatDate(version.source.bulkUpload.dateReleased)})
                           </p>
                         )}
@@ -362,7 +362,7 @@ export default function PersonDetailPage() {
                     </TableCell>
                     <TableCell>
                       <Badge variant={version.isDeleted ? 'destructive' : 'outline'}>
-                        {version.isDeleted ? 'Yes' : 'No'}
+                        {version.isDeleted ? t('person.versionHistory.yes') : t('person.versionHistory.no')}
                       </Badge>
                     </TableCell>
                     <TableCell className="max-w-xs truncate">
@@ -373,7 +373,7 @@ export default function PersonDetailPage() {
                         </span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="force-ltr">
                       {version.dateOfDeath ? (
                         <span className="text-destructive">
                           {formatDate(version.dateOfDeath)}
@@ -382,7 +382,7 @@ export default function PersonDetailPage() {
                         <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
+                    <TableCell className="text-muted-foreground text-sm force-ltr">
                       {formatDateTime(version.createdAt)}
                     </TableCell>
                   </TableRow>

@@ -1,111 +1,113 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { defaultLocale, isValidLocale, getLocaleFromPathname } from './lib/i18n';
 
-// Define public routes that don't require authentication
-const isPublicRoute = createRouteMatcher([
-  "/",
-  "/about",
-  "/database",
-  "/contribution(.*)",
-  "/person(.*)",
-  "/sign-in(.*)",
-  "/sign-up(.*)",
-  "/api/webhook",
-  "/api/public(.*)"
+// Define routes that should not have locale prefix
+const isNonLocalizedRoute = createRouteMatcher([
+  '/tools(.*)',      // Admin tools stay in English
+  '/api(.*)',        // API routes don't need locale
+  '/_next(.*)',      // Next.js internals
+  '/sign-in(.*)',    // Clerk sign-in
+  '/sign-up(.*)',    // Clerk sign-up
+  '/favicon.ico',
+  '/icon.png',
+  '/apple-icon.png',
+  '/flag.webp',
+  '/people(.*)',
+  '/team(.*)',
 ]);
 
-// Define staff routes that require admin or moderator role
-const isStaffRoute = createRouteMatcher([
-  "/tools"
-]);
-
-// Define admin routes that require admin role
-const isAdminRoute = createRouteMatcher([
-  "/tools/admin(.*)",
-  "/tools/bulk-uploads(.*)",
-  "/api/admin(.*)"
-]);
-
-// Define moderator routes that require moderator or admin role
-const isModeratorRoute = createRouteMatcher([
-  "/tools/moderation(.*)",
-  "/tools/audit-logs(.*)",
-  "/api/moderator(.*)"
-]);
-
-// Note: Submission and database routes (/submission, /database) are accessible by all authenticated users
-// No special matcher needed since everyone (admin, moderator, community) can access them
-
-export default clerkMiddleware(async (auth, req) => {
-  const { userId, sessionClaims } = await auth();
-  const isPublic = isPublicRoute(req);
-  const isStaff = isStaffRoute(req);
-  const isAdmin = isAdminRoute(req);
-  const isModerator = isModeratorRoute(req);
-
-  // Handle users who aren't authenticated
-  if (!userId && !isPublic) {
-    const signInUrl = new URL('/sign-in', req.url);
-    signInUrl.searchParams.set('redirect_url', req.url);
-    return NextResponse.redirect(signInUrl);
+function getPreferredLocale(request: NextRequest): string {
+  // Check if there's a locale cookie
+  const localeCookie = request.cookies.get('NEXT_LOCALE')?.value;
+  if (localeCookie && isValidLocale(localeCookie)) {
+    return localeCookie;
   }
-  
-  // Get user role from session claims
-  const userRole = sessionClaims?.metadata?.role as string | undefined;
-  
-  // Check staff routes - Require admin or moderator
-  if (isStaff && userId) {
-    if (userRole !== 'admin' && userRole !== 'moderator') {
-      const homeUrl = new URL('/', req.url);
-      homeUrl.searchParams.set('error', 'staff_required');
-      return NextResponse.redirect(homeUrl);
-    }
-  }
-  
-  // Check admin routes - Protect both API and page routes
-  if (isAdmin && userId) {
-    if (userRole !== 'admin') {
-      if (req.nextUrl.pathname.startsWith('/api/admin')) {
-        return NextResponse.json(
-          { error: 'Forbidden - Admin access required' },
-          { status: 403 }
-        );
+
+  // Check Accept-Language header
+  const acceptLanguage = request.headers.get('accept-language');
+  if (acceptLanguage) {
+    // Parse accept-language header (e.g., "ar,en-US;q=0.9,en;q=0.8")
+    const languages = acceptLanguage
+      .split(',')
+      .map(lang => {
+        const [code, qValue] = lang.trim().split(';');
+        const quality = qValue ? parseFloat(qValue.replace('q=', '')) : 1.0;
+        const langCode = code.split('-')[0]; // Get just the language code (ar from ar-EG)
+        return { code: langCode, quality };
+      })
+      .sort((a, b) => b.quality - a.quality);
+
+    for (const { code } of languages) {
+      if (isValidLocale(code)) {
+        return code;
       }
-      // Redirect to home for page routes
-      const homeUrl = new URL('/', req.url);
-      homeUrl.searchParams.set('error', 'admin_required');
-      return NextResponse.redirect(homeUrl);
-    }
-  }
-  
-  // Check moderator routes - Protect both API and page routes
-  if (isModerator && userId) {
-    if (userRole !== 'moderator' && userRole !== 'admin') {
-      if (req.nextUrl.pathname.startsWith('/api/moderator')) {
-        return NextResponse.json(
-          { error: 'Forbidden - Moderator access required' },
-          { status: 403 }
-        );
-      }
-      // Redirect to home for page routes
-      const homeUrl = new URL('/', req.url);
-      homeUrl.searchParams.set('error', 'moderator_required');
-      return NextResponse.redirect(homeUrl);
     }
   }
 
-  // Community routes are accessible by everyone (admin, moderator, and community members)
-  // No special restrictions needed - everyone is part of the community
-  
-  // If user is signed in and the current path is /sign-in or /sign-up, redirect to home
-  if (userId && (req.nextUrl.pathname === '/sign-in' || req.nextUrl.pathname === '/sign-up')) {
-    const homeUrl = new URL('/', req.url);
-    return NextResponse.redirect(homeUrl);
+  return defaultLocale;
+}
+
+export default clerkMiddleware(async (auth, request) => {
+  const { pathname } = request.nextUrl;
+
+  // Skip locale handling for non-localized routes
+  if (isNonLocalizedRoute(request)) {
+    return NextResponse.next();
   }
+
+  // Check if pathname already has a valid locale
+  const currentLocale = getLocaleFromPathname(pathname);
+
+  // If no locale in pathname, redirect to localized version
+  if (!currentLocale) {
+    const preferredLocale = getPreferredLocale(request);
+    const localizedUrl = new URL(`/${preferredLocale}${pathname}`, request.url);
+    
+    // Preserve query parameters
+    localizedUrl.search = request.nextUrl.search;
+    
+    const response = NextResponse.redirect(localizedUrl);
+    
+    // Set locale cookie for future requests
+    response.cookies.set('NEXT_LOCALE', preferredLocale, {
+      maxAge: 60 * 60 * 24 * 365, // 1 year
+      path: '/',
+    });
+    
+    return response;
+  }
+
+  // If locale is valid, continue with request and set cookie
+  if (isValidLocale(currentLocale)) {
+    const response = NextResponse.next();
+    
+    // Update locale cookie if different
+    const currentCookie = request.cookies.get('NEXT_LOCALE')?.value;
+    if (currentCookie !== currentLocale) {
+      response.cookies.set('NEXT_LOCALE', currentLocale, {
+        maxAge: 60 * 60 * 24 * 365, // 1 year
+        path: '/',
+      });
+    }
+    
+    return response;
+  }
+
+  // If locale is invalid, redirect to default locale
+  const pathWithoutInvalidLocale = pathname.replace(/^\/[^/]+/, '');
+  const defaultUrl = new URL(`/${defaultLocale}${pathWithoutInvalidLocale}`, request.url);
+  defaultUrl.search = request.nextUrl.search;
   
-  return NextResponse.next();
+  return NextResponse.redirect(defaultUrl);
 });
 
 export const config = {
-  matcher: ['/((?!.+\\.[\\w]+$|_next).*)', '/', '/(api|trpc)(.*)'],
+  matcher: [
+    // Skip Next.js internals and all static files, unless found in search params
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Always run for API routes
+    '/(api|trpc)(.*)',
+  ],
 };

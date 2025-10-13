@@ -43,6 +43,7 @@
 
 @theme inline {
   --font-sans: var(--font-inter);
+  --font-arabic: var(--font-arabic);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -108,5 +109,39 @@
   }
   .rounded-3xl {
     border-radius: 2rem; /* 32px */
+  }
+  
+  /* Arabic font family */
+  .font-arabic {
+    font-family: var(--font-arabic), var(--font-sans), sans-serif;
+  }
+}
+
+/* RTL Support */
+@layer utilities {
+  /* Flip margins for RTL */
+  [dir="rtl"] .ml-auto {
+    margin-left: 0;
+    margin-right: auto;
+  }
+  
+  [dir="rtl"] .mr-auto {
+    margin-right: 0;
+    margin-left: auto;
+  }
+  
+  /* Flip text alignment for RTL */
+  [dir="rtl"] .text-left {
+    text-align: right;
+  }
+  
+  [dir="rtl"] .text-right {
+    text-align: left;
+  }
+  
+  /* Keep certain elements LTR even in RTL context */
+  .force-ltr {
+    direction: ltr;
+    text-align: left;
   }
 }

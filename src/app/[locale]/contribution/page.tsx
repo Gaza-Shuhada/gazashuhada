@@ -4,6 +4,7 @@ import { useUser } from '@clerk/nextjs';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/lib/i18n-context';
 
 interface Contribution {
   id: string;
@@ -20,6 +21,7 @@ interface Contribution {
 export default function CommunityContributePage() {
   const { isLoaded, isSignedIn } = useUser();
   const router = useRouter();
+  const { t } = useTranslation();
   
   const [contributions, setContributions] = useState<Contribution[]>([]);
 
@@ -57,22 +59,22 @@ export default function CommunityContributePage() {
     <div className="min-h-screen bg-background pt-8 pb-8 px-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold">Contribution History</h1>
-          <p className="text-muted-foreground mt-2">View the status of your edit proposals</p>
+          <h1 className="text-3xl font-bold">{t('contribution.title')}</h1>
+          <p className="text-muted-foreground mt-2">{t('contribution.subtitle')}</p>
         </div>
 
         {!isSignedIn && (
           <div className="bg-card border rounded-lg p-6 mb-6">
-            <h2 className="text-xl font-semibold mb-2">Sign in to view contributions</h2>
+            <h2 className="text-xl font-semibold mb-2">{t('contribution.signInRequired')}</h2>
             <p className="text-muted-foreground mb-4">
-              You need to sign in to view your contribution history.
+              {t('contribution.signInMessage')}
             </p>
             <div className="flex gap-3">
               <Button onClick={() => router.push('/sign-in')}>
-                Sign In
+                {t('contribution.signIn')}
               </Button>
               <Button onClick={() => router.push('/sign-up')} variant="outline">
-                Sign Up
+                {t('contribution.signUp')}
               </Button>
             </div>
           </div>
@@ -83,17 +85,17 @@ export default function CommunityContributePage() {
             <div>
               {contributions.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
-                  <p>You haven&apos;t made any contributions yet.</p>
-                  <p className="text-sm mt-2">Find a record in the database and click &quot;Contribute&quot; to suggest edits.</p>
+                  <p>{t('contribution.noContributions')}</p>
+                  <p className="text-sm mt-2">{t('contribution.noContributionsHint')}</p>
                 </div>
               ) : (
                   <div className="space-y-4">
                     {contributions.map((contribution) => (
                       <div key={contribution.id} className="border rounded-lg p-4 bg-card">
                         <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center space-x-3">
+                          <div className="flex items-center space-x-3 rtl:space-x-reverse">
                             <span className="px-2 py-1 text-xs font-medium rounded bg-primary/10 text-primary">
-                              Edit
+                              {t('contribution.type.EDIT')}
                             </span>
                             <span className={`px-2 py-1 text-xs font-medium rounded ${
                               contribution.status === 'PENDING' ? 'bg-secondary/50 text-secondary-foreground' :
@@ -101,36 +103,36 @@ export default function CommunityContributePage() {
                               contribution.status === 'REJECTED' ? 'bg-destructive/10 text-destructive' :
                               'bg-accent text-accent-foreground'
                             }`}>
-                              {contribution.status}
+                              {t(`contribution.status.${contribution.status}`)}
                             </span>
                           </div>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-xs text-muted-foreground force-ltr">
                             {new Date(contribution.createdAt).toLocaleDateString()}
                           </span>
                         </div>
 
                         <div className="text-sm text-foreground mb-2">
-                          <p className="font-medium">Edit to record: {contribution.personId || 'N/A'}</p>
+                          <p className="font-medium">{t('contribution.editTo')} {contribution.personId || 'N/A'}</p>
                           <p className="text-muted-foreground">
-                            Fields: {Object.keys(contribution.proposedPayload).join(', ')}
+                            {t('contribution.fields')} {Object.keys(contribution.proposedPayload).join(', ')}
                           </p>
                         </div>
 
                         {contribution.reason && (
                           <p className="text-sm text-muted-foreground mb-2">
-                            <span className="font-medium">Your note:</span> {contribution.reason}
+                            <span className="font-medium">{t('contribution.yourNote')}</span> {contribution.reason}
                           </p>
                         )}
 
                         {contribution.status === 'APPROVED' && contribution.approvedAt && (
-                          <p className="text-sm text-accent-foreground">
-                            ✓ Approved on {new Date(contribution.approvedAt).toLocaleDateString()}
+                          <p className="text-sm text-accent-foreground force-ltr">
+                            ✓ {t('contribution.approved')} {new Date(contribution.approvedAt).toLocaleDateString()}
                           </p>
                         )}
 
                         {contribution.status === 'REJECTED' && contribution.decisionNote && (
                           <p className="text-sm text-destructive">
-                            <span className="font-medium">Moderator note:</span> {contribution.decisionNote}
+                            <span className="font-medium">{t('contribution.moderatorNote')}</span> {contribution.decisionNote}
                           </p>
                         )}
                       </div>

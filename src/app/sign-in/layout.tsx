@@ -1,9 +1,5 @@
-import { ToolsNavbar } from '@/components/ToolsNavbar';
-import { ReactNode } from 'react';
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "@/components/ui/sonner";
-import { Analytics } from "@vercel/analytics/react";
 import "../globals.css";
 
 const inter = Inter({
@@ -12,11 +8,11 @@ const inter = Inter({
   display: "swap",
 });
 
-interface ToolsLayoutProps {
-  children: ReactNode;
-}
-
-export default function ToolsLayout({ children }: ToolsLayoutProps) {
+export default function SignInLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`} suppressHydrationWarning>
@@ -26,11 +22,8 @@ export default function ToolsLayout({ children }: ToolsLayoutProps) {
           enableSystem={false}
           disableTransitionOnChange
         >
-          <ToolsNavbar />
           {children}
-          <Toaster />
         </ThemeProvider>
-        <Analytics />
       </body>
     </html>
   );
