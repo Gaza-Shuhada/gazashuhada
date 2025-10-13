@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { SignInButton, SignOutButton, useAuth, useUser } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Menu } from 'lucide-react';
+import { Menu, Globe } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from '@/lib/i18n-context';
 import { removeLocaleFromPathname, addLocaleToPathname, type Locale } from '@/lib/i18n';
@@ -115,8 +115,9 @@ export function PublicNavbar() {
                         switchLanguage(locale === 'ar' ? 'en' : 'ar');
                         setMobileMenuOpen(false);
                       }}
-                      className="text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium transition-colors border-t pt-4 mt-4 text-left rtl:text-right"
+                      className="flex items-center gap-2 text-muted-foreground hover:text-foreground px-3 py-2 rounded-md text-sm font-medium transition-colors border-t pt-4 mt-4 text-left rtl:text-right"
                     >
+                      <Globe className="h-4 w-4" />
                       {locale === 'ar' ? 'English' : 'العربية'}
                     </button>
                   )}
@@ -204,10 +205,13 @@ export function PublicNavbar() {
             {showLanguageToggle && (
               <button 
                 onClick={() => switchLanguage(locale === 'ar' ? 'en' : 'ar')}
-                className="text-lg text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                 aria-label={locale === 'ar' ? 'Switch to English' : 'التبديل إلى العربية'}
               >
-                {locale === 'ar' ? 'English' : 'العربية'}
+                <Globe className="h-4 w-4" />
+                <span className={locale === 'ar' ? 'text-md' : 'text-lg'}>
+                  {locale === 'ar' ? 'English' : 'العربية'}
+                </span>
               </button>
             )}
             
