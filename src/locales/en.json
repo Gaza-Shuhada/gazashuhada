@@ -1,0 +1,226 @@
+{
+  "nav": {
+    "about": "About",
+    "database": "Witnesses",
+    "contributions": "Contributions",
+    "adminTools": "Admin Tools",
+    "signIn": "Sign In",
+    "signOut": "Sign Out"
+  },
+  "home": {
+    "title": "We will not forget them",
+    "subtitle": "Documenting and humanising the",
+    "subtitleCount": "who have died in the",
+    "subtitleLocation": "Gaza",
+    "subtitleEvent": "genocide",
+    "searchPlaceholder": "Search by name or ID number...",
+    "contributeText": "Contribute missing information and help remember their lives"
+  },
+  "about": {
+    "title": "About",
+    "mission": "Gaza Death Toll aims to memorialise those dead and missing in Gaza since Oct. 7. It uses the official MoH reports as a foundation and enables the wider Palestinian community to add information/corrections.",
+    "purpose": "The underlying purpose is to establish a canonical document of the human costs in Gaza, that can serve as the foundation for international justice, historical accountability, and collective memory. Similar resources and documents exist for other historical genocides.",
+    "current": "Today the Gaza Ministry of Health PDF updates confirmed deaths every 2-3 months through Telegram as PDF files (which contain only name, gender, date of birth). These are made available without much alteration by IraqBodyCount and Tech4Palestine.",
+    "belief": "We believe more can be done. Remembering is both an ethical and political act.",
+    "teamTitle": "Advisory Team",
+    "teamSubtitle": "A diverse team committed to preserving the memory of every life lost",
+    "faqTitle": "Frequently Asked Questions",
+    "faq": {
+      "involved": {
+        "q": "Who is involved in this project?",
+        "a": "An informal advisory team (see page) has been formed that is establishing a charity in the UK that will hold all of the data and assets. This group will also establish Memorandum and Articles of Association, Code of Conduct, and Editorial Principles."
+      },
+      "dataSources": {
+        "q": "What are your data sources?",
+        "a": "The Palestinian Ministry of Health (MoH) is our primary source of truth. They periodically release updated lists of identified individuals killed in Gaza. We maintain a complete archive of all MoH data releases in our",
+        "aLink": "GitHub repository",
+        "a2": "ensuring full transparency and allowing anyone to verify our data against the original source materials."
+      },
+      "ownership": {
+        "q": "Who owns the data and how can it be used?",
+        "a": "All of the data will be licensed and available to the public as easy downloadable files. The data and the technology platform is covered by open source and open data licensing."
+      },
+      "funding": {
+        "q": "How is this project funded?",
+        "a": "Already confirmed funding is sufficient to enable this project to reach its first milestone. From that point onwards it will require fundraising for its ongoing expenses (primarily technology infrastructure)."
+      },
+      "iraqBodyCount": {
+        "q": "What is your relationship to Iraq Body Count?",
+        "a": "Iraq Body Count has been doing the highly important work of documenting, and quantifying, human suffering from war since 2002. They have written extensively about their process on their substack and x accounts."
+      },
+      "tech4palestine": {
+        "q": "What is your relationship to Tech4Palestine?",
+        "a": "Tech4Palestine is a movement and a community. They are doing fantastic work in the technology sector and we are proud to be part of their ecosystem. They have their own tracking of the MoH data releases which we have made use of."
+      },
+      "moh": {
+        "q": "What is your relationship to the Gaza Ministry of Health?",
+        "a": "Understandably, the Gaza MoH is very stretched currently and is providing their updates on deaths in their Telegram channel through PDFs. Today we have no partnership or open channel with them."
+      }
+    },
+    "footer": "We will not forget them."
+  },
+  "database": {
+    "title": "Witnesses Database",
+    "searchPlaceholder": "Search by name or ID...",
+    "noResults": "No results found",
+    "loading": "Loading...",
+    "columns": {
+      "externalId": "ID",
+      "photo": "Photo",
+      "name": "Name",
+      "englishName": "English Name",
+      "gender": "Gender",
+      "dateOfBirth": "Date of Birth",
+      "dateOfDeath": "Date of Death",
+      "deleted": "Status"
+    },
+    "filters": {
+      "all": "All",
+      "withPhoto": "With Photo",
+      "deleted": "Deleted"
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "page": "Page",
+      "of": "of",
+      "total": "Total:",
+      "records": "records"
+    },
+    "status": {
+      "active": "Active",
+      "deleted": "Deleted"
+    }
+  },
+  "person": {
+    "back": "Back",
+    "contribute": "Contribute information",
+    "deleted": "Deleted",
+    "fields": {
+      "externalId": "External ID",
+      "gender": "Gender",
+      "dateOfBirth": "Date of Birth",
+      "dateOfDeath": "Date of Death",
+      "location": "Location of Death",
+      "created": "Created",
+      "lastUpdated": "Last Updated"
+    },
+    "gender": {
+      "MALE": "Male",
+      "FEMALE": "Female",
+      "OTHER": "Other"
+    },
+    "versionHistory": {
+      "title": "Version History",
+      "subtitle": "Complete history of changes to this record",
+      "version": "version",
+      "versions": "versions",
+      "columns": {
+        "version": "Version",
+        "changeType": "Change Type",
+        "source": "Source",
+        "deleted": "Deleted",
+        "name": "Name",
+        "dateOfDeath": "Date of Death",
+        "timestamp": "Timestamp"
+      },
+      "changeTypes": {
+        "INSERT": "Insert",
+        "UPDATE": "Update",
+        "DELETE": "Delete"
+      },
+      "sources": {
+        "BULK_UPLOAD": "MoH Bulk Upload",
+        "COMMUNITY_SUBMISSION": "Community Submission"
+      },
+      "yes": "Yes",
+      "no": "No"
+    }
+  },
+  "contribution": {
+    "title": "Contribution History",
+    "subtitle": "View the status of your edit proposals",
+    "signInRequired": "Sign in to view contributions",
+    "signInMessage": "You need to sign in to view your contribution history.",
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "noContributions": "You haven't made any contributions yet.",
+    "noContributionsHint": "Find a record in the database and click \"Contribute\" to suggest edits.",
+    "type": {
+      "EDIT": "Edit"
+    },
+    "status": {
+      "PENDING": "Pending",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "SUPERSEDED": "Superseded"
+    },
+    "editTo": "Edit to record:",
+    "fields": "Fields:",
+    "yourNote": "Your note:",
+    "approved": "Approved on",
+    "moderatorNote": "Moderator note:",
+    "edit": {
+      "title": "Contribute Information",
+      "loading": "Loading person details...",
+      "notFound": "Person not found",
+      "editingFor": "You are contributing information for",
+      "with": "with date of birth",
+      "description": "Help us preserve the memory of this person by adding missing information. All submissions are reviewed by our moderation team before being published.",
+      "optionalFields": "Optional: Add or update the following information",
+      "dateOfDeath": "Date of Death",
+      "dateOfDeathPlaceholder": "YYYY-MM-DD",
+      "location": "Location of Death",
+      "locationInstructions": "Click on the map to set the location, or enter coordinates manually",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "photo": "Photo",
+      "photoInstructions": "Upload a clear portrait photo (max 10MB, JPG/PNG/WebP)",
+      "photoButton": "Choose Photo",
+      "photoSelected": "Photo selected:",
+      "photoChange": "Change Photo",
+      "reason": "Reason for Changes",
+      "reasonPlaceholder": "Please explain why you are making these changes (required)",
+      "submit": "Submit for Review",
+      "submitting": "Submitting...",
+      "cancel": "Cancel",
+      "success": "Contribution submitted successfully!",
+      "successMessage": "Your contribution has been submitted and is now pending review by our moderation team.",
+      "viewContributions": "View Your Contributions",
+      "error": "Failed to submit contribution",
+      "validationError": "Please provide at least one change and a reason"
+    }
+  },
+  "search": {
+    "placeholder": "Search by name or ID number...",
+    "searching": "Searching...",
+    "noResults": "No results found",
+    "tryAgain": "Try a different search term",
+    "viewProfile": "View Profile",
+    "quickSearch": "Quick search"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "view": "View",
+    "close": "Close",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "noData": "No data available",
+    "loadingMap": "Loading map..."
+  },
+  "dates": {
+    "notAvailable": "—"
+  }
+}
+

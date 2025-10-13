@@ -19,7 +19,7 @@ export function ToolsNavbar() {
 
   return (
     <nav className="sticky top-0 z-50 bg-background shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-0">
         <div className="flex justify-between h-16">
           <div className="flex items-center space-x-4">
             {/* Mobile Menu Button - Only visible on mobile when signed in */}
@@ -95,7 +95,7 @@ export function ToolsNavbar() {
                       onClick={() => setMobileMenuOpen(false)}
                       className="text-primary hover:text-primary/80 px-3 py-2 rounded-md text-sm font-medium transition-colors border-t pt-4 mt-4"
                     >
-                      ← Back to Site
+                      Back to Site
                     </Link>
                   </nav>
                 </SheetContent>
@@ -104,7 +104,7 @@ export function ToolsNavbar() {
 
             {/* Logo/Home */}
             <Link href="/tools" className="flex items-center">
-              <span className="text-xl font-bold text-foreground">Tools</span>
+              <span className="text-xl font-bold text-foreground">Admin</span>
             </Link>
 
             {/* Desktop Navigation - Hidden on mobile */}
@@ -163,16 +163,18 @@ export function ToolsNavbar() {
                     )}
                   </>
                 )}
-
-                {/* Back to Public Site */}
-                <Link
-                  href="/"
-                  className="text-primary hover:text-primary/80 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  ← Back to Site
-                </Link>
               </div>
             )}
+          </div>
+
+          {/* Right Side: Back to Site (Desktop only) */}
+          <div className="hidden md:flex items-center">
+            <Link
+              href="/"
+              className="text-primary hover:text-primary/80 px-3 py-2 rounded-md text-sm font-medium"
+            >
+              Back to Site
+            </Link>
           </div>
         </div>
       </div>

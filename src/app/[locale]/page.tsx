@@ -1,40 +1,12 @@
+'use client';
+
 import { PersonSearch } from '@/components/PersonSearch';
 import { AnimatedCounter } from '@/components/AnimatedCounter';
 import { Card, CardContent } from '@/components/ui/card';
-import { prisma } from '@/lib/prisma';
 import Image from 'next/image';
 import Link from 'next/link';
-
-async function getStats() {
-  try {
-    // Fetch stats directly from database instead of API call
-    const totalPersons = await prisma.person.count({
-      where: { isDeleted: false }
-    });
-    
-    // Count persons with community contributions (approved submissions)
-    const personsWithCommunityEdits = await prisma.person.count({
-      where: {
-        isDeleted: false,
-        submissions: {
-          some: {
-            status: 'APPROVED'
-          }
-        }
-      }
-    });
-    
-    // Calculate percentage of records still missing community information
-    const percentageMissing = totalPersons > 0 
-      ? Math.round(((totalPersons - personsWithCommunityEdits) / totalPersons) * 100)
-      : 0;
-    
-    return { totalPersons, percentageMissing };
-  } catch (error) {
-    console.error('Failed to fetch stats:', error);
-    return null;
-  }
-}
+import { useTranslation } from '@/lib/i18n-context';
+import { useState, useEffect } from 'react';
 
 const people = [
   { name: 'Anas', image: '/people/anas.webp' },
@@ -87,52 +59,28 @@ const people = [
   { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.12.48.webp' },
   { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.12.52.webp' },
   { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.21.07.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.10.17.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.10.24.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.10.30.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.10.34.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.10.38.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.10.42.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.10.48.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.10.52.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.10.56.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.11.02.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.11.05.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.11.09.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.11.13.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.11.16.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.11.20.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.11.25.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.11.29.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.11.33.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.11.37.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.11.40.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.11.44.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.11.48.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.11.52.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.11.56.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.12.00.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.12.03.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.12.06.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.12.11.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.12.15.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.12.19.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.12.26.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.12.29.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.12.33.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.12.36.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.12.39.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.12.44.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.12.48.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.12.52.webp' },
-  { name: 'Person', image: '/people/Screenshot 2025-10-09 at 11.21.07.webp' },
 ];
 
-export default async function Home() {
-  const stats = await getStats();
+export default function Home() {
+  const { t, locale } = useTranslation();
+  const [stats, setStats] = useState<{ totalPersons: number } | null>(null);
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const response = await fetch('/api/public/stats');
+        const result = await response.json();
+        if (result.success && result.data) {
+          setStats({ totalPersons: result.data.totalPersons });
+        }
+      } catch (error) {
+        console.error('Failed to fetch stats:', error);
+      }
+    }
+    fetchStats();
+  }, []);
 
   // Calculate number of photos needed for each screen size to fill viewport
-  // Mobile: 6x12 = 72, Tablet: 8x8 = 64, Desktop: 12x6 = 72, Large: 14x6 = 84, XLarge: 20x8 = 160
   const totalPhotos = 250;
 
   return (
@@ -149,7 +97,7 @@ export default async function Home() {
             return (
               <Link
                 key={`${person.name}-${index}`}
-                href="/person/803354208"
+                href={`/${locale}/person/803354208`}
                 className="group relative aspect-square overflow-hidden cursor-pointer transition-all duration-100 hover:scale-105 hover:z-20 hover:border-2 hover:border-destructive block"
               >
                 <Image
@@ -170,12 +118,14 @@ export default async function Home() {
       <main className="relative z-10 mx-auto max-w-6xl px-4 pt-20 pb-0 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h1 className="mb-8 text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl text-foreground">
-            We will not forget them
+            {t('home.title')}
           </h1>
           <p className="mx-auto mb-16 max-w-3xl text-2xl sm:text-3xl lg:text-4xl text-foreground/60 leading-relaxed tracking-tight">
-            Documenting and humanising the<span className="text-destructive">{' '}
-            {stats ? <AnimatedCounter end={stats.totalPersons} /> : 0}{' '}</span>
-            who have died in the <span className="font-bold text-accent-foreground">Gaza</span> genocide
+            {t('home.subtitle')}
+            <span className="text-destructive">
+              {' '}{stats ? <AnimatedCounter end={stats.totalPersons} /> : 0}{' '}
+            </span>
+            {t('home.subtitleCount')} <span className="font-bold text-accent-foreground">{t('home.subtitleLocation')}</span> {t('home.subtitleEvent')}
           </p>
         </div>
       </main>
@@ -186,7 +136,7 @@ export default async function Home() {
           <CardContent className="pt-10 pb-10 px-8">
             <PersonSearch />
             <p className="text-center text-muted-foreground text-md mt-6">
-              Contribute missing information and help remember their lives
+              {t('home.contributeText')}
             </p>
           </CardContent>
         </Card>
@@ -197,3 +147,4 @@ export default async function Home() {
     </div>
   );
 }
+

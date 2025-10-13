@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
 import { Search, ArrowRight } from 'lucide-react';
+import { useTranslation, useFormatDate } from '@/lib/i18n-context';
 
 interface Person {
   externalId: string;
@@ -27,6 +28,8 @@ export function PersonSearch({ variant = 'default' }: PersonSearchProps) {
   const [showResults, setShowResults] = useState(false);
   const router = useRouter();
   const searchRef = useRef<HTMLDivElement>(null);
+  const { t, locale } = useTranslation();
+  const { formatDate } = useFormatDate();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -73,16 +76,7 @@ export function PersonSearch({ variant = 'default' }: PersonSearchProps) {
   const handleSelectPerson = (externalId: string) => {
     setShowResults(false);
     setQuery('');
-    router.push(`/person/${externalId}`);
-  };
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return '';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    router.push(`/${locale}/person/${externalId}`);
   };
 
   const isHeaderVariant = variant === 'header';
@@ -96,7 +90,7 @@ export function PersonSearch({ variant = 'default' }: PersonSearchProps) {
         
         <Input
           type="text"
-          placeholder="Search by name or ID"
+          placeholder={t('search.placeholder')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => {
@@ -148,11 +142,24 @@ export function PersonSearch({ variant = 'default' }: PersonSearchProps) {
                 onClick={() => handleSelectPerson(person.externalId)}
                 className="w-full text-left px-4 py-3 hover:bg-muted transition-colors"
               >
-                <div className="font-large text-xl">{person.name}</div>
-                {person.nameEnglish && (
-                  <div className="text-xl text-muted-foreground">{person.nameEnglish}</div>
+                {locale === 'ar' ? (
+                  <>
+                    <div className="font-large text-xl">{person.name}</div>
+                    {person.nameEnglish && (
+                      <div className="text-md text-muted-foreground">{person.nameEnglish}</div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {person.nameEnglish && (
+                      <div className="font-large text-xl">{person.nameEnglish}</div>
+                    )}
+                    <div className={`text-xl ${person.nameEnglish ? 'text-muted-foreground' : ''}`}>
+                      {person.name}
+                    </div>
+                  </>
                 )}
-                <div className="text-sm text-muted-foreground mt-1 flex items-center gap-3">
+                <div className="text-sm text-muted-foreground mt-1 flex items-center gap-3 force-ltr">
                   <span>ID: {person.externalId}</span>
                   {person.dateOfBirth && (
                     <span>Born: {formatDate(person.dateOfBirth)}</span>
@@ -170,7 +177,7 @@ export function PersonSearch({ variant = 'default' }: PersonSearchProps) {
       {showResults && query.trim().length >= 2 && results.length === 0 && !isLoading && (
         <Card className="absolute z-50 w-full mt-2">
           <div className="px-4 py-3 text-sm text-muted-foreground text-center">
-            No results found
+            {t('search.noResults')}
           </div>
         </Card>
       )}
