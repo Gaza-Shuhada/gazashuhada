@@ -1,42 +1,56 @@
-# refactor: Update person detail API to use new image naming scheme
+# feat: Add grayscale-to-color hover effect on image grids
 
 ## Overview
 
-Update single person API endpoint to use the new programmatic image naming scheme (`person1.webp` through `person50.webp`) instead of hardcoded array, matching the list API implementation.
+Add visual hover effect to person images on homepage and database page. Images display in grayscale by default and transition to full color on hover for a striking visual effect.
 
 ## Changes
 
-### `api/public/person/[id]/route.ts`
+### Homepage Image Grid (`[locale]/page.tsx`)
+```tsx
+// Before
+className="object-cover opacity-80 transition-all duration-100 group-hover:opacity-80"
 
-**Before:**
-- 50-line hardcoded array of image paths
-- Included old screenshots and named files
-
-**After:**
-- Single line programmatic generation: `Array.from({ length: 50 }, (_, i) => ...)`
-- Uses clean naming: `/people/person1.webp` through `person50.webp`
-- Matches list API implementation exactly
-
-**Code:**
-```typescript
-const mockPhotos = Array.from({ length: 50 }, (_, i) => `/people/person${i + 1}.webp`);
+// After
+className="object-cover opacity-80 grayscale group-hover:grayscale-0 transition-all duration-100"
 ```
+
+### Database Page Photo Grid (`PersonsTable.tsx`)
+```tsx
+// Before
+className="object-cover grayscale"
+
+// After
+className="object-cover grayscale group-hover:grayscale-0 transition-all"
+```
+
+## Visual Effect
+
+**Default State:**
+- Images rendered in grayscale
+- Creates cohesive, respectful visual aesthetic
+
+**On Hover:**
+- Grayscale removed (`grayscale-0`)
+- Full color image revealed
+- Smooth transition via `transition-all`
 
 ## Benefits
 
-- ✅ **DRY:** Programmatic generation vs hardcoded array
-- ✅ **Maintainable:** Easy to add/remove images (just change length)
-- ✅ **Consistent:** Matches list API implementation
-- ✅ **Cleaner:** Removed 48 lines of array definition
+- ✅ **Respectful:** Grayscale creates somber, appropriate tone
+- ✅ **Interactive:** Color on hover adds life and engagement
+- ✅ **Consistent:** Same effect on both homepage and database
+- ✅ **Smooth:** Transitions are fluid and polished
 
 ## Testing
 
 - [x] Build passes (`npm run build`)
 - [x] No linter errors
-- [x] Person pages display correct images
+- [x] Hover effect works on homepage grid
+- [x] Hover effect works on database photo view
 
 ---
 
-**Files Modified:** 1  
-**Lines Changed:** -48 lines (replaced with 1 line)  
-**Compatibility:** Works with new person1-50.webp naming scheme
+**Files Modified:** 2  
+**Effect:** Grayscale → Color on hover  
+**Pages:** Homepage, Database

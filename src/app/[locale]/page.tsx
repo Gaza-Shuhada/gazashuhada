@@ -75,7 +75,7 @@ export default function Home() {
                   src={person.photoUrlThumb || '/placeholder.jpg'}
                   alt={person.name}
                   fill
-                  className="object-cover opacity-80 transition-all duration-100 group-hover:opacity-80"
+                  className="object-cover opacity-80 grayscale group-hover:grayscale-0 transition-all duration-100"
                   sizes="(max-width: 640px) 25vw, (max-width: 768px) 20vw, (max-width: 1024px) 14vw, 10vw"
                   unoptimized
                 />
