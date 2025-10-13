@@ -364,7 +364,7 @@ export function PersonsTable() {
                           alt={`Photo of ${person.name}`}
                           width={48}
                           height={48}
-                          className="w-12 h-12 object-cover rounded border-2 hover:border-primary transition-colors cursor-pointer"
+                          className="w-12 h-12 object-cover rounded border-2 hover:border-primary transition-colors cursor-pointer grayscale"
                           unoptimized
                         />
                       </a>
@@ -422,7 +422,7 @@ export function PersonsTable() {
                       src={person.photoUrlThumb || '/placeholder.jpg'}
                       alt={person.name}
                       fill
-                      className="object-cover"
+                      className="object-cover grayscale"
                       unoptimized
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
