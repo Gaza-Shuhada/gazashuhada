@@ -107,10 +107,31 @@ export async function GET(request: NextRequest) {
       prisma.person.count({ where: whereClause })
     ]);
 
+    // TODO: Remove mock photos once real photos are in the database
+    // Mock photos for development - loops through images in /public/people
+    const mockPhotos = [
+      '/people/anas.webp',
+      '/people/faten.webp',
+      '/people/hind.webp',
+      '/people/ismael.webp',
+      '/people/khaled.webp',
+      '/people/lana.webp',
+      '/people/omar.webp',
+      '/people/rakan.webp',
+      '/people/sara.webp',
+      '/people/suleiman.webp',
+      '/people/yaqeen.webp',
+    ];
+    
+    const personsWithMockPhotos = persons.map((person, index) => ({
+      ...person,
+      photoUrlThumb: person.photoUrlThumb || mockPhotos[index % mockPhotos.length]
+    }));
+
     return NextResponse.json({
       success: true,
       data: {
-        persons,
+        persons: personsWithMockPhotos,
         pagination: {
           page,
           limit,

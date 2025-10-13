@@ -40,11 +40,12 @@ export default function RootLayout({
       <html lang="en" suppressHydrationWarning>
         <body
           className={`${inter.variable} antialiased font-sans`}
+          suppressHydrationWarning
         >
           <ThemeProvider
             attribute="class"
-            defaultTheme="system"
-            enableSystem
+            defaultTheme="dark"
+            enableSystem={false}
             disableTransitionOnChange
           >
             <PublicNavbar />

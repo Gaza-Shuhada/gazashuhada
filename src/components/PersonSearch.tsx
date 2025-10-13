@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
+import { Button } from '@/components/ui/button';
+import { Search, ArrowRight } from 'lucide-react';
 
 interface Person {
   externalId: string;
@@ -14,7 +16,11 @@ interface Person {
   dateOfDeath: string | null;
 }
 
-export function PersonSearch() {
+interface PersonSearchProps {
+  variant?: 'default' | 'header';
+}
+
+export function PersonSearch({ variant = 'default' }: PersonSearchProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Person[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -79,9 +85,15 @@ export function PersonSearch() {
     });
   };
 
+  const isHeaderVariant = variant === 'header';
+
   return (
-    <div className="relative w-full" ref={searchRef}>
-      <div className="relative">
+    <div className={`relative ${isHeaderVariant ? 'w-auto' : 'w-full'}`} ref={searchRef}>
+      <div className="relative flex items-center">
+        <div className="absolute left-3 z-10">
+          <Search className={`h-5 w-5 ${isHeaderVariant ? 'text-gray-400' : 'text-muted-foreground'}`} />
+        </div>
+        
         <Input
           type="text"
           placeholder="Search by name or ID"
@@ -90,13 +102,41 @@ export function PersonSearch() {
           onFocus={() => {
             if (results.length > 0) setShowResults(true);
           }}
-          className="w-full h-12 text-base pr-10"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && results.length > 0) {
+              handleSelectPerson(results[0].externalId);
+            }
+          }}
+          className={
+            isHeaderVariant
+              ? "w-auto min-w-[300px] h-10 pl-10 pr-4 text-lg text-white bg-black border-0 rounded-md shadow-none focus:ring-0 focus:outline-none placeholder:text-gray-500"
+              : "w-full h-14 pl-10 pr-14 text-xl text-black bg-white border-2 border-white/10 rounded-md shadow-lg focus:border-accent-foreground transition-colors placeholder:text-base placeholder:text-gray-500"
+          }
         />
-        {isLoading && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <Spinner className="h-5 w-5" />
-          </div>
-        )}
+        
+        <div className="absolute right-2">
+          {isLoading ? (
+            <div className="h-8 w-8 flex items-center justify-center">
+              <Spinner className="h-4 w-4 text-muted-foreground" />
+            </div>
+          ) : (
+            <Button
+              onClick={() => {
+                if (results.length > 0) {
+                  handleSelectPerson(results[0].externalId);
+                }
+              }}
+              disabled={results.length === 0 || query.trim().length < 2}
+              className={
+                isHeaderVariant
+                  ? "h-6 w-6 p-0 mr-2 bg-black hover:bg-black/80 rounded-full shadow-lg transition-colors disabled:opacity-100 disabled:bg-black disabled:cursor-not-allowed"
+                  : "h-6 w-6 p-0 mr-2 bg-accent-foreground hover:bg-accent-foreground/80 rounded-full shadow-lg transition-colors disabled:opacity-100 disabled:bg-accent-foreground disabled:cursor-not-allowed"
+              }
+            >
+              <ArrowRight className={`h-3 w-3 ${isHeaderVariant ? 'text-accent-foreground' : 'text-white'}`} />
+            </Button>
+          )}
+        </div>
       </div>
 
       {showResults && results.length > 0 && (
@@ -108,11 +148,11 @@ export function PersonSearch() {
                 onClick={() => handleSelectPerson(person.externalId)}
                 className="w-full text-left px-4 py-3 hover:bg-muted transition-colors"
               >
-                <div className="font-medium">{person.name}</div>
+                <div className="font-large text-xl">{person.name}</div>
                 {person.nameEnglish && (
-                  <div className="text-sm text-muted-foreground">{person.nameEnglish}</div>
+                  <div className="text-xl text-muted-foreground">{person.nameEnglish}</div>
                 )}
-                <div className="text-xs text-muted-foreground mt-1 flex items-center gap-3">
+                <div className="text-sm text-muted-foreground mt-1 flex items-center gap-3">
                   <span>ID: {person.externalId}</span>
                   {person.dateOfBirth && (
                     <span>Born: {formatDate(person.dateOfBirth)}</span>
