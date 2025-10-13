@@ -53,14 +53,15 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen bg-background pt-16 pb-24">
-      {/* Background Photo Grid - Now scrolls with content */}
-      <div className="absolute inset-0 z-0">
+      {/* Background Photo Grid - Flows with page height */}
+      <div className="absolute top-0 left-0 right-0 z-0">
         {/* Gradient overlay: black at top fading to 0% opacity around 50vh */}
-        <div className="absolute inset-0 bg-gradient-to-b from-background from-0% via-background/100 via-8% to-transparent to-90% z-10 pointer-events-none" />
+        <div className="fixed inset-0 bg-gradient-to-b from-background from-0% via-background/100 via-8% to-transparent to-90% z-10 pointer-events-none" />
         
-        <div className="w-full grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-8 xl:grid-cols-11 2xl:grid-cols-14 gap-5">
+        <div className="w-full grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-8 xl:grid-cols-11 2xl:grid-cols-14 gap-5 pb-24">
           {/* Display all fetched persons */}
           {persons.map((person, index) => {
+            console.log(`Rendering photo ${index + 1}/${persons.length}:`, person.externalId);
             return (
               <Link
                 key={`${person.id}-${index}`}
@@ -109,8 +110,8 @@ export default function Home() {
         </Card>
       </div>
 
-      {/* Spacer to allow scrolling */}
-      <div className="h-screen"></div>
+      {/* Spacer to allow scrolling through all photos */}
+      <div className="h-[300vh]"></div>
     </div>
   );
 }

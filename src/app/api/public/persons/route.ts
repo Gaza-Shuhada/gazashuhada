@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     // Get query parameters for pagination, search, and filtering
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100); // Max 100 per page
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 250); // Max 250 per page
     const skip = (page - 1) * limit;
     const search = searchParams.get('search'); // Optional name search
     const filter = searchParams.get('filter'); // Optional filter
