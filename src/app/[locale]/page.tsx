@@ -61,7 +61,6 @@ export default function Home() {
         <div className="w-full grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-8 xl:grid-cols-11 2xl:grid-cols-14 gap-5 pb-24">
           {/* Display all fetched persons */}
           {persons.map((person, index) => {
-            console.log(`Rendering photo ${index + 1}/${persons.length}:`, person.externalId);
             return (
               <Link
                 key={`${person.id}-${index}`}
