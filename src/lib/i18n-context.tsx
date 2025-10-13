@@ -44,12 +44,11 @@ export function I18nProvider({
      */
     const t = (key: string, fallback?: string): string => {
       const keys = key.split('.');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let result: any = translations;
+      let result: unknown = translations;
 
       for (const k of keys) {
         if (result && typeof result === 'object' && k in result) {
-          result = result[k];
+          result = (result as Record<string, unknown>)[k];
         } else {
           return fallback || key;
         }
@@ -135,8 +134,7 @@ export function useFormatNumber() {
   const { locale } = useI18n();
 
   return {
-    formatNumber: (num: number | undefined | null) => {
-      if (num === undefined || num === null) return '0';
+    formatNumber: (num: number) => {
       // Arabic locale uses Eastern Arabic numerals (٠١٢٣٤٥٦٧٨٩)
       const localeString = locale === 'ar' ? 'ar-EG' : 'en-US';
       return num.toLocaleString(localeString);

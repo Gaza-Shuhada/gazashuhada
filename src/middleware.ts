@@ -1,7 +1,18 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { defaultLocale, isValidLocale, getLocaleFromPathname } from './lib/i18n';
+import { defaultLocale, isValidLocale, getLocaleFromPathname, type Locale } from './lib/i18n';
+
+// Define public routes (routes that don't require authentication)
+const isPublicRoute = createRouteMatcher([
+  '/:locale?/',
+  '/:locale?/about',
+  '/:locale?/database',
+  '/:locale?/person/:id',
+  '/sign-in(.*)',
+  '/sign-up(.*)',
+  '/api/public(.*)',
+]);
 
 // Define routes that should not have locale prefix
 const isNonLocalizedRoute = createRouteMatcher([
@@ -18,7 +29,7 @@ const isNonLocalizedRoute = createRouteMatcher([
   '/team(.*)',
 ]);
 
-function getPreferredLocale(request: NextRequest): string {
+function getPreferredLocale(request: NextRequest): Locale {
   // Check if there's a locale cookie
   const localeCookie = request.cookies.get('NEXT_LOCALE')?.value;
   if (localeCookie && isValidLocale(localeCookie)) {
