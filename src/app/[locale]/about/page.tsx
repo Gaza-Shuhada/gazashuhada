@@ -129,10 +129,10 @@ export default function AboutPage() {
                     </Link>
                   </div>
                   <div className="text-muted-foreground mb-2 text-sm font-medium">
-                    {person.title}
+                    {t(`about.team.${person.key}.title`)}
                   </div>
                   <div className="text-muted-foreground text-sm leading-relaxed">
-                    {person.description}
+                    {t(`about.team.${person.key}.description`)}
                   </div>
                 </div>
               </li>
