@@ -86,6 +86,11 @@ export default function PersonDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Scroll to top when page loads or externalId changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [externalId]);
+
   useEffect(() => {
     const fetchPerson = async () => {
       try {
@@ -167,8 +172,8 @@ export default function PersonDetailPage() {
           {t('person.back')}
         </Button>
         
-        {/* Centered Search - Absolutely positioned to page center */}
-        <div className="absolute left-1/2 transform -translate-x-1/2">
+        {/* Centered Search - Desktop only */}
+        <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2">
           <PersonSearch variant="header" />
         </div>
         
@@ -189,29 +194,33 @@ export default function PersonDetailPage() {
       <div className="px-4 sm:px-6 lg:px-8 pt-12 pb-10">
         {locale === 'ar' ? (
           <>
-            <h1 className="text-7xl font-bold text-foreground">{person.name}</h1>
+            <h1 className="text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl text-foreground">{person.name}</h1>
             {person.nameEnglish && (
-              <p className="text-lg text-muted-foreground mt-2">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl text-muted-foreground mt-2">
                 {person.nameEnglish}
-              </p>
+              </h2>
             )}
           </>
         ) : (
           <>
-            {person.nameEnglish && (
-              <h1 className="text-7xl font-bold text-foreground">{person.nameEnglish}</h1>
+            {person.nameEnglish ? (
+              <>
+                <h1 className="text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl text-foreground">{person.nameEnglish}</h1>
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl text-muted-foreground mt-2">
+                  {person.name}
+                </h2>
+              </>
+            ) : (
+              <h1 className="text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl text-foreground">{person.name}</h1>
             )}
-            <p className={`text-${person.nameEnglish ? 'lg' : '7xl'} ${person.nameEnglish ? 'text-muted-foreground mt-2' : 'font-bold text-foreground'}`}>
-              {person.name}
-            </p>
           </>
         )}
       </div>
 
       {/* Main Person Card and Photo */}
       <div className="px-4 sm:px-6 lg:px-8 pb-8">
-        <div className="flex gap-6">
-          <Card className="flex-1">
+        <div className="flex flex-col-reverse md:flex-row gap-6">
+          <Card className={`w-full ${person.photoUrlThumb ? 'md:w-2/3' : ''}`}>
             <CardContent className="space-y-4 pt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* External ID */}
@@ -298,22 +307,16 @@ export default function PersonDetailPage() {
 
       {/* Person Photo */}
       {person.photoUrlThumb && (
-        <a
-          href={person.photoUrlOriginal || person.photoUrlThumb}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex-shrink-0"
-        >
+        <div className="w-full md:w-1/3 aspect-square">
           <Image
             src={person.photoUrlThumb}
             alt={`Photo of ${person.name}`}
             width={400}
             height={400}
-            className="w-full h-full object-cover rounded-lg border-2 hover:border-primary transition-colors cursor-pointer"
-            style={{ maxWidth: '400px' }}
+            className="w-full h-full object-cover rounded-lg border-2"
             unoptimized
           />
-        </a>
+        </div>
       )}
       </div>
       </div>

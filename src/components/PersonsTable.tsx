@@ -51,7 +51,7 @@ export function PersonsTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [viewMode, setViewMode] = useState<'list' | 'photos'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'photos'>('photos');
   const [maxAge, setMaxAge] = useState<number>(100);
   const [sliderValue, setSliderValue] = useState<number>(100); // Temporary state for slider visual
   const [downloading, setDownloading] = useState(false);
@@ -248,15 +248,6 @@ export function PersonsTable() {
             </div>
             <div className="flex gap-1 border rounded-md p-1">
               <Button
-                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-                className="gap-2"
-              >
-                <List className="h-4 w-4" />
-                List
-              </Button>
-              <Button
                 variant={viewMode === 'photos' ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('photos')}
@@ -264,6 +255,15 @@ export function PersonsTable() {
               >
                 <Grid className="h-4 w-4" />
                 Photos
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                className="gap-2"
+              >
+                <List className="h-4 w-4" />
+                List
               </Button>
             </div>
           </div>
@@ -352,13 +352,9 @@ export function PersonsTable() {
                       )}
                     </Link>
                   </TableCell>
-                  <TableCell className="py-6" onClick={(e) => e.stopPropagation()}>
-                    {person.photoUrlThumb ? (
-                      <a 
-                        href={person.photoUrlThumb} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                      >
+                  <TableCell className="py-6">
+                    <Link href={`/${locale}/person/${person.externalId}`} className="block">
+                      {person.photoUrlThumb ? (
                         <Image 
                           src={person.photoUrlThumb} 
                           alt={`Photo of ${person.name}`}
@@ -367,12 +363,10 @@ export function PersonsTable() {
                           className="w-12 h-12 object-cover rounded border-2 hover:border-primary transition-colors cursor-pointer grayscale"
                           unoptimized
                         />
-                      </a>
-                    ) : (
-                      <Link href={`/${locale}/person/${person.externalId}`} className="block">
+                      ) : (
                         <span className="text-muted-foreground">—</span>
-                      </Link>
-                    )}
+                      )}
+                    </Link>
                   </TableCell>
                   <TableCell className="py-6">
                     <Link href={`/${locale}/person/${person.externalId}`} className="block">
@@ -422,7 +416,7 @@ export function PersonsTable() {
                       src={person.photoUrlThumb || '/placeholder.jpg'}
                       alt={person.name}
                       fill
-                      className="object-cover grayscale"
+                      className="object-cover grayscale group-hover:grayscale-0 transition-all"
                       unoptimized
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
