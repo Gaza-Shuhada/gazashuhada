@@ -97,6 +97,74 @@ export async function GET(
       );
     }
 
+    // Apply mock photos if no photo exists (same as list API)
+    // Use hash of externalId to get consistent mock photo index
+    const mockPhotos = [
+      '/people/anas.webp',
+      '/people/faten.webp',
+      '/people/hind.webp',
+      '/people/ismael.webp',
+      '/people/khaled.webp',
+      '/people/lana.webp',
+      '/people/omar.webp',
+      '/people/sara.webp',
+      '/people/suleiman.webp',
+      '/people/yaqeen.webp',
+      '/people/Screenshot 2025-10-09 at 11.10.17.webp',
+      '/people/Screenshot 2025-10-09 at 11.10.24.webp',
+      '/people/Screenshot 2025-10-09 at 11.10.30.webp',
+      '/people/Screenshot 2025-10-09 at 11.10.34.webp',
+      '/people/Screenshot 2025-10-09 at 11.10.38.webp',
+      '/people/Screenshot 2025-10-09 at 11.10.42.webp',
+      '/people/Screenshot 2025-10-09 at 11.10.48.webp',
+      '/people/Screenshot 2025-10-09 at 11.10.52.webp',
+      '/people/Screenshot 2025-10-09 at 11.10.56.webp',
+      '/people/Screenshot 2025-10-09 at 11.11.02.webp',
+      '/people/Screenshot 2025-10-09 at 11.11.05.webp',
+      '/people/Screenshot 2025-10-09 at 11.11.09.webp',
+      '/people/Screenshot 2025-10-09 at 11.11.13.webp',
+      '/people/Screenshot 2025-10-09 at 11.11.16.webp',
+      '/people/Screenshot 2025-10-09 at 11.11.20.webp',
+      '/people/Screenshot 2025-10-09 at 11.11.25.webp',
+      '/people/Screenshot 2025-10-09 at 11.11.29.webp',
+      '/people/Screenshot 2025-10-09 at 11.11.33.webp',
+      '/people/Screenshot 2025-10-09 at 11.11.37.webp',
+      '/people/Screenshot 2025-10-09 at 11.11.40.webp',
+      '/people/Screenshot 2025-10-09 at 11.11.44.webp',
+      '/people/Screenshot 2025-10-09 at 11.11.48.webp',
+      '/people/Screenshot 2025-10-09 at 11.11.52.webp',
+      '/people/Screenshot 2025-10-09 at 11.11.56.webp',
+      '/people/Screenshot 2025-10-09 at 11.12.00.webp',
+      '/people/Screenshot 2025-10-09 at 11.12.03.webp',
+      '/people/Screenshot 2025-10-09 at 11.12.06.webp',
+      '/people/Screenshot 2025-10-09 at 11.12.11.webp',
+      '/people/Screenshot 2025-10-09 at 11.12.15.webp',
+      '/people/Screenshot 2025-10-09 at 11.12.19.webp',
+      '/people/Screenshot 2025-10-09 at 11.12.26.webp',
+      '/people/Screenshot 2025-10-09 at 11.12.29.webp',
+      '/people/Screenshot 2025-10-09 at 11.12.33.webp',
+      '/people/Screenshot 2025-10-09 at 11.12.36.webp',
+      '/people/Screenshot 2025-10-09 at 11.12.39.webp',
+      '/people/Screenshot 2025-10-09 at 11.12.44.webp',
+      '/people/Screenshot 2025-10-09 at 11.12.48.webp',
+      '/people/Screenshot 2025-10-09 at 11.12.52.webp',
+      '/people/Screenshot 2025-10-09 at 11.21.07.webp',
+    ];
+
+    // Get person's index from list query to assign consistent mock photo
+    if (!person.photoUrlThumb) {
+      const listResult = await prisma.person.findMany({
+        where: { isDeleted: false },
+        select: { id: true },
+        orderBy: { updatedAt: 'desc' },
+        take: 100, // Check first 100 to find this person's position
+      });
+      const personIndex = listResult.findIndex(p => p.id === person.id);
+      if (personIndex !== -1) {
+        person.photoUrlThumb = mockPhotos[personIndex % mockPhotos.length];
+      }
+    }
+
     // If full history is requested, return complete person data including versions
     // (This is used for admin/staff views)
     if (includeHistory) {
