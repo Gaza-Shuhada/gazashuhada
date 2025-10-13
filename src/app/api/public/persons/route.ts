@@ -98,9 +98,10 @@ export async function GET(request: NextRequest) {
           updatedAt: true,
           // Do NOT expose: photoUrlOriginal
         },
-        orderBy: {
-          updatedAt: 'desc'
-        },
+        orderBy: [
+          { updatedAt: 'desc' },
+          { id: 'asc' }  // Stable tiebreaker for consistent ordering
+        ],
         skip,
         take: limit,
       }),
@@ -108,13 +109,14 @@ export async function GET(request: NextRequest) {
     ]);
 
     // TODO: Remove mock photos once real photos are in the database
-    // Mock photos for development - using processed images from /public/people_new
-    // Generate array of 50 image paths: /people_new/person1.webp through person50.webp
-    const mockPhotos = Array.from({ length: 50 }, (_, i) => `/people/person${i + 1}.webp`);
+    // Mock photos for development - using processed images from /public/people
+    // Generate array of 50 image paths: /people/person1.webp through person50.webp
+    const mockPhotos = Array.from({ length: 48 }, (_, i) => `/people/person${i + 1}.webp`);
     
+    // Use index-based assignment (consistent with stable ordering)
     const personsWithMockPhotos = persons.map((person, index) => ({
       ...person,
-      photoUrlThumb: person.photoUrlThumb || mockPhotos[index % mockPhotos.length]
+      photoUrlThumb: person.photoUrlThumb || mockPhotos[(skip + index) % mockPhotos.length]
     }));
 
     return NextResponse.json({
