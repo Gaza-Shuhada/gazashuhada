@@ -2,10 +2,12 @@
   "nav": {
     "about": "About",
     "database": "Witnesses",
+    "sources": "Sources",
     "contributions": "Contributions",
     "adminTools": "Admin Tools",
     "signIn": "Sign In",
-    "signOut": "Sign Out"
+    "signOut": "Sign Out",
+    "signedInAs": "Signed in as"
   },
   "home": {
     "title": "We will not forget them",
@@ -259,6 +261,23 @@
   },
   "dates": {
     "notAvailable": "—"
+  },
+  "sources": {
+    "title": "Data Sources",
+    "description": "https://github.com/Gaza-Shuhada/gazashuhada/tree/main/data_sources",
+    "noSources": "No data sources available yet.",
+    "table": {
+      "dateReleased": "Date Released",
+      "filename": "Filename",
+      "comment": "Description",
+      "totalChanges": "Total Changes",
+      "inserts": "New Records",
+      "updates": "Updates",
+      "deletes": "Deletions",
+      "download": "Download",
+      "downloadLink": "Download CSV"
+    },
+    "footer": "All data is sourced from official Gaza Ministry of Health releases. Complete archive available on GitHub."
   }
 }
 
