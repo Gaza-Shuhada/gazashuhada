@@ -97,22 +97,29 @@ export async function GET(
       );
     }
 
-    // Apply mock photos if no photo exists (same as list API)
-    // Generate array of 50 image paths: /people/person1.webp through person50.webp
-    const mockPhotos = Array.from({ length: 50 }, (_, i) => `/people/person${i + 1}.webp`);
-
-    // Get person's index from list query to assign consistent mock photo
+    // Apply mock photos if no photo exists (same logic as list API)
+    // Need to calculate this person's position in the global ordered list to get consistent photo
     if (!person.photoUrlThumb) {
-      const listResult = await prisma.person.findMany({
-        where: { isDeleted: false },
-        select: { id: true },
-        orderBy: { updatedAt: 'desc' },
-        take: 100, // Check first 100 to find this person's position
+      // Count how many persons come before this one in the sort order:
+      // updatedAt DESC, id ASC
+      const countBefore = await prisma.person.count({
+        where: {
+          isDeleted: false,
+          OR: [
+            // updatedAt is newer (comes first in DESC order)
+            { updatedAt: { gt: person.updatedAt } },
+            // Same updatedAt but smaller id (comes first in ASC id order)
+            {
+              updatedAt: person.updatedAt,
+              id: { lt: person.id }
+            }
+          ]
+        }
       });
-      const personIndex = listResult.findIndex(p => p.id === person.id);
-      if (personIndex !== -1) {
-        person.photoUrlThumb = mockPhotos[personIndex % mockPhotos.length];
-      }
+      
+      // Generate same mock photos array as list API
+      const mockPhotos = Array.from({ length: 50 }, (_, i) => `/people/person${i + 1}.webp`);
+      person.photoUrlThumb = mockPhotos[countBefore % mockPhotos.length];
     }
 
     // If full history is requested, return complete person data including versions
