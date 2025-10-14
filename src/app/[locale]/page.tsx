@@ -38,8 +38,8 @@ export default function Home() {
   useEffect(() => {
     async function fetchPersons() {
       try {
-        // Use same params as database page in photos mode (limit=24)
-        const response = await fetch('/api/public/persons?limit=24');
+        // Fetch 250 persons to fill background grid without duplicates
+        const response = await fetch('/api/public/persons?limit=250');
         const result = await response.json();
         if (result.success && result.data) {
           setPersons(result.data.persons);
@@ -51,20 +51,16 @@ export default function Home() {
     fetchPersons();
   }, []);
 
-  // Calculate number of photos needed for each screen size to fill viewport
-  const totalPhotos = 250;
-
   return (
     <div className="relative min-h-screen bg-background pt-16 pb-24">
-      {/* Background Photo Grid - Now scrolls with content */}
-      <div className="absolute inset-0 z-0">
+      {/* Background Photo Grid - Flows with page height */}
+      <div className="absolute top-0 left-0 right-0 z-0">
         {/* Gradient overlay: black at top fading to 0% opacity around 50vh */}
-        <div className="absolute inset-0 bg-gradient-to-b from-background from-0% via-background/100 via-8% to-transparent to-90% z-10 pointer-events-none" />
+        <div className="fixed inset-0 bg-gradient-to-b from-background from-0% via-background/100 via-8% to-transparent to-90% z-10 pointer-events-none" />
         
-        <div className="w-full grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-8 xl:grid-cols-11 2xl:grid-cols-14 gap-5">
-          {/* Repeat photos to fill the background */}
-          {persons.length > 0 && Array.from({ length: totalPhotos }).map((_, index) => {
-            const person = persons[index % persons.length];
+        <div className="w-full grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-8 xl:grid-cols-11 2xl:grid-cols-14 gap-5 pb-24">
+          {/* Display all fetched persons */}
+          {persons.map((person, index) => {
             return (
               <Link
                 key={`${person.id}-${index}`}
@@ -77,7 +73,6 @@ export default function Home() {
                   fill
                   className="object-cover opacity-80 grayscale group-hover:grayscale-0 transition-all duration-100"
                   sizes="(max-width: 640px) 25vw, (max-width: 768px) 20vw, (max-width: 1024px) 14vw, 10vw"
-                  unoptimized
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-background/30 to-transparent opacity-100 group-hover:opacity-50 transition-opacity duration-100 pointer-events-none" />
               </Link>
@@ -87,7 +82,7 @@ export default function Home() {
       </div>
 
       {/* Main Content */}
-      <main className="relative z-10 mx-auto max-w-6xl px-4 pt-20 pb-0 sm:px-6 lg:px-8">
+      <main className="relative z-10 mx-auto w-fit px-4 mt-20 pb-0 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h1 className="mb-8 text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl text-foreground">
             {t('home.title')}
@@ -114,8 +109,8 @@ export default function Home() {
         </Card>
       </div>
 
-      {/* Spacer to allow scrolling */}
-      <div className="h-screen"></div>
+      {/* Spacer to allow scrolling through all photos */}
+      <div className="h-[300vh]"></div>
     </div>
   );
 }
