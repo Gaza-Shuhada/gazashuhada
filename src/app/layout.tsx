@@ -19,8 +19,7 @@ export default function RootLayout({
           colorInputText: 'hsl(var(--foreground))',
           colorShimmer: 'hsl(var(--muted))',
           colorTextOnPrimaryBackground: 'hsl(var(--primary-foreground))',
-          colorInputBorder: 'hsl(var(--border))',
-          colorAlphaShade: 'hsl(var(--muted))',
+          colorBorder: 'hsl(var(--border))',
           borderRadius: 'var(--radius)',
         },
         // Map Clerk parts to shadcn utility classes to restore borders/backgrounds

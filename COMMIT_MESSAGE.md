@@ -1,3 +1,19 @@
+## fix(clerk): correct appearance variable names and build locally
+
+### Overview
+Fixes a type error from Vercel build by using valid Clerk appearance variables. Verified with a local production build to catch any other issues.
+
+### Changes
+- `src/app/layout.tsx`
+  - Replace invalid `colorInputBorder` with `colorBorder`.
+  - Remove unsupported `colorAlphaShade`.
+
+### Testing
+- Ran `npm run build` locally; build completed successfully with no type errors.
+
+### Impact
+- Build fix only; no user-facing behavior change.
+
 ## feat(person): add dashed mock image frame and translated overlay label
 
 ### Overview
