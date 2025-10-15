@@ -1,3 +1,29 @@
+## feat(person): add dashed mock image frame and translated overlay label
+
+### Overview
+Adds a visually distinct dashed frame and overlay label to the person detail mock image to clarify example imagery. Aligns styles with shadcn tokens and supports Arabic translation.
+
+### Changes
+- `src/app/[locale]/person/[externalId]/page.tsx`
+  - Wrap person image with rounded container using shadcn tokens and dashed border.
+  - Border: `border border-dashed border-white/80` (1px, 80% white), `p-3` inner padding, `bg-card/20` background.
+  - Centered overlay label container; uses `{t('person.exampleImage')}`.
+  - Set image opacity to 80% for mock clarity.
+- `src/locales/en.json`
+  - Add `person.exampleImage`: "Example Image".
+- `src/locales/ar.json`
+  - Add `person.exampleImage`: "صورة مثال".
+
+### Testing Checklist
+- Person detail page shows the image within a dashed white border with inner padding.
+- Label appears centered horizontally and vertically, readable on both themes.
+- Image opacity is 80%.
+- Switching locale to Arabic shows Arabic label.
+
+### Impact
+- Visual/UI-only; no API or data model changes.
+- Improves clarity that the displayed image is an example/mock.
+
 ## chore(clerk, styles): restore Clerk button/input borders/backgrounds and align with dark theme
 
 ### Overview
