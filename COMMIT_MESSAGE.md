@@ -1,3 +1,33 @@
+## chore(clerk, styles): restore Clerk button/input borders/backgrounds and align with dark theme
+
+### Overview
+This change fixes visual regressions where Clerk buttons and inputs lost borders and background fills under our global dark palette. We align Clerk’s appearance with our shadcn tokens and ensure sign-in/up cards render with proper borders and readable text.
+
+### Changes
+- Update `src/app/layout.tsx` to configure `ClerkProvider.appearance`:
+  - Set `variables` to map Clerk colors to shadcn tokens (`--background`, `--foreground`, `--primary`, `--input`, `--border`, etc.).
+  - Define `elements` mappings so core parts (card, primary buttons, inputs, footer, headers) use shadcn classes for backgrounds, borders, and text colors.
+- Update `src/app/sign-in/[[...sign-in]]/page.tsx` to ensure the Clerk card uses `bg-card text-card-foreground border border-border` and retains rounded/shadow.
+- Update `src/app/sign-up/[[...sign-up]]/page.tsx` similarly for visual consistency.
+
+### Technical Notes
+- Keeps `baseTheme: shadcn` but explicitly sets Clerk appearance `variables` so global dark CSS no longer overrides Clerk unintentionally.
+- Restores input visuals via `formFieldInput: 'bg-input text-foreground border border-border placeholder:text-muted-foreground'`.
+- Restores primary button visuals via `formButtonPrimary: 'bg-primary text-primary-foreground hover:bg-primary/90 border border-border'`.
+- Cards now consistently use `bg-card text-card-foreground border border-border` to match site theme.
+
+### Testing Checklist
+- Navigate to `/sign-in` and `/sign-up`:
+  - Verify form inputs have visible borders and dark input backgrounds with legible text/placeholder.
+  - Verify primary buttons have background, border, and hover state.
+  - Verify the Clerk card background matches `bg-card` and shows a visible border.
+- Smoke test other Clerk surfaces (modals, toasts if any) for contrast and borders.
+
+### Impact
+- Visual fix only; no API or behavioral changes.
+- Unblocks dark theme readability for Clerk components across the app.
+
+
 feat: Optimize landing page performance and fix photo consistency
 
 ## Overview
