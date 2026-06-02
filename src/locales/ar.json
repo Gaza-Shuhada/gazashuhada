@@ -17,7 +17,10 @@
     "subtitleEvent": "الإبادة الجماعية",
     "searchPlaceholder": "البحث بالاسم أو رقم الهوية...",
     "searchExplainer": "ابحث عن شخص للمساهمة بمعلومات ناقصة",
-    "contributeText": "ساعد في تخليد ذكراهم"
+    "contributeText": "ساعد في تخليد ذكراهم",
+    "lastUpdatedPrefix": "آخر تحديث للمصادر في",
+    "lastUpdatedDate": "31 يوليو 2025",
+    "genocideContinues": "الإبادة الجماعية مستمرة."
   },
   "about": {
     "title": "عن المشروع",

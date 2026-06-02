@@ -3,11 +3,14 @@
 import { PersonSearch } from '@/components/PersonSearch';
 import { AnimatedCounter } from '@/components/AnimatedCounter';
 import { Card, CardContent } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useTranslation } from '@/lib/i18n-context';
+import { AlertTriangle } from 'lucide-react';
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
 export default function Home() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [stats, setStats] = useState<{ totalPersons: number } | null>(null);
 
   useEffect(() => {
@@ -28,6 +31,25 @@ export default function Home() {
   return (
     <div className="fixed inset-0 top-20 md:top-16 flex flex-col items-center justify-center bg-background px-4 sm:px-6 lg:px-8 pb-16">
       <div className="text-center mb-12 lg:mb-16">
+        <Alert
+          variant="destructive"
+          className="mx-auto mb-8 max-w-xl w-fit border-destructive/30 bg-destructive/5 text-left"
+        >
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            <span className="text-foreground/80">
+              {t('home.lastUpdatedPrefix')}{' '}
+              <Link
+                href={`/${locale}/sources`}
+                className="font-medium text-destructive underline underline-offset-2 hover:text-destructive/80"
+              >
+                {t('home.lastUpdatedDate')}
+              </Link>
+              {'. '}
+            </span>
+            <span className="font-bold text-destructive">{t('home.genocideContinues')}</span>
+          </AlertDescription>
+        </Alert>
         <h1 className="mb-6 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl min-[1440px]:text-7xl text-foreground">
           {t('home.title')}
         </h1>

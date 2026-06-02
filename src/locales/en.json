@@ -17,7 +17,10 @@
     "subtitleEvent": "Ministry of Health",
     "searchPlaceholder": "Search by name or ID...",
     "searchExplainer": "Search for a person to contribute missing information",
-    "contributeText": "Help remember their lives"
+    "contributeText": "Help remember their lives",
+    "lastUpdatedPrefix": "The sources were last updated",
+    "lastUpdatedDate": "July 31, 2025",
+    "genocideContinues": "The genocide continues."
   },
   "about": {
     "title": "About",
